@@ -1,0 +1,112 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+
+  /* Tema claro */
+  --canvas: 246 247 250;
+  --surface: 255 255 255;
+  --surface-2: 241 244 248;
+  --surface-3: 226 232 240;
+  --line: 226 231 240;
+  --line-soft: 238 242 246;
+  --ink: 15 23 42;
+  --ink-soft: 51 65 85;
+  --ink-muted: 100 116 139;
+  --ink-faint: 148 163 184;
+
+  color-scheme: light;
+}
+
+:root.dark {
+  /* Tema oscuro */
+  --canvas: 8 11 16;
+  --surface: 18 24 31;
+  --surface-2: 27 34 43;
+  --surface-3: 39 49 61;
+  --line: 38 47 59;
+  --line-soft: 28 36 46;
+  --ink: 237 241 245;
+  --ink-soft: 203 213 225;
+  --ink-muted: 148 163 184;
+  --ink-faint: 100 116 139;
+
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  @apply bg-canvas text-ink antialiased;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+::selection {
+  background: rgb(16 185 129 / 0.25);
+}
+
+/* Scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--surface-3)) transparent;
+}
+*::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgb(var(--surface-3));
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-line bg-surface shadow-card;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98];
+  }
+  .btn-primary {
+    @apply btn bg-brand-600 text-white hover:bg-brand-500 shadow-sm shadow-brand-600/25;
+  }
+  .btn-secondary {
+    @apply btn bg-surface text-ink-soft ring-1 ring-inset ring-line hover:bg-surface-2;
+  }
+  .btn-ghost {
+    @apply btn text-ink-soft hover:bg-surface-2;
+  }
+  .btn-gold {
+    @apply btn bg-gold-500 text-white hover:bg-gold-600 shadow-sm shadow-gold-500/25;
+  }
+
+  .input {
+    @apply w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-faint transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20;
+  }
+  .label {
+    @apply mb-1.5 block text-sm font-medium text-ink-soft;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset;
+  }
+
+  .nav-link {
+    @apply flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-ink-soft transition-colors hover:bg-surface-2 hover:text-ink;
+  }
+  .nav-link-active {
+    @apply bg-brand-500/10 text-brand-700 hover:bg-brand-500/10 hover:text-brand-700 dark:text-brand-300 dark:hover:text-brand-300;
+  }
+
+  /* Superficie translúcida (barras superiores) */
+  .glass {
+    @apply border-line bg-surface/80 backdrop-blur-xl;
+  }
+}

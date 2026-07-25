@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Business {
+  id            String   @id @default(cuid())
+  name          String
+  rubro         String   @default("General")
+  timezone      String   @default("America/Argentina/Buenos_Aires")
+  // Días sin comprar para considerar a un cliente "inactivo"
+  inactivityDays Int     @default(60)
+  // Días esperados entre compras (para recordatorio de recompra)
+  recompraDays  Int      @default(45)
+  // Gasto acumulado para marcar VIP
+  vipMinSpend   Float    @default(50000)
+  createdAt     DateTime @default(now())
+
+  customers  Customer[]
+  purchases  Purchase[]
+  templates  Template[]
+  contacts   ContactLog[]
+  users      User[]
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  businessId   String
+  createdAt    DateTime @default(now())
+
+  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  sessions Session[]
+
+  @@index([businessId])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Customer {
+  id             String    @id @default(cuid())
+  businessId     String
+  name           String
+  phone          String?
+  email          String?
+  birthdate      DateTime?
+  notes          String?
+  tags           String    @default("") // separadas por coma
+  lastPurchaseAt DateTime?
+  createdAt      DateTime  @default(now())
+
+  business  Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  purchases Purchase[]
+  contacts  ContactLog[]
+
+  @@index([businessId])
+}
+
+model Purchase {
+  id          String   @id @default(cuid())
+  businessId  String
+  customerId  String
+  date        DateTime @default(now())
+  amount      Float
+  description String?
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([customerId])
+}
+
+model Template {
+  id         String   @id @default(cuid())
+  businessId String
+  // birthday | winback | custom
+  type       String
+  // email | whatsapp
+  channel    String
+  subject    String   @default("")
+  body       String
+  createdAt  DateTime @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+}
+
+model ContactLog {
+  id         String   @id @default(cuid())
+  businessId String
+  customerId String
+  // birthday | winback | campaign
+  reason     String
+  // email | whatsapp
+  channel    String
+  createdAt  DateTime @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([customerId])
+}
