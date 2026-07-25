@@ -11,7 +11,7 @@ CRM centrado en el cliente existente: base de datos, segmentación automática, 
 
 - **Next.js 15** (App Router) + **TypeScript** + **React 19**
 - **Tailwind CSS** (diseño móvil-primero, en español)
-- **Prisma + SQLite** (base local; migrable a Postgres/Supabase)
+- **Prisma + PostgreSQL (Supabase)** como base de datos
 - **Server Actions** para toda la escritura (sin API REST intermedia)
 - **Auth propia** (email + contraseña con bcrypt, sesiones en cookie httpOnly)
 - **Multi-tenant**: cada negocio ve solo sus datos, aislados por `businessId`
@@ -20,16 +20,23 @@ CRM centrado en el cliente existente: base de datos, segmentación automática, 
 ## Requisitos
 
 - Node.js 18+ (probado con Node 24)
+- Un proyecto de [Supabase](https://supabase.com) (o cualquier Postgres)
 
 ## Puesta en marcha
 
+1. Copiá `.env.example` a `.env` y completá `DATABASE_URL` y `DIRECT_URL` con la
+   connection string de tu proyecto Supabase (*Connect → ORMs → Prisma*).
+2. Instalá dependencias y preparalo:
+
 ```bash
 npm install          # instala dependencias y genera el cliente Prisma
-npm run db:reset     # crea la base y carga datos demo (20 clientes)
-npm run dev          # levanta el servidor en http://localhost:3000
+npm run db:push       # crea las tablas en tu base de Supabase
+npm run db:seed       # carga datos demo (20 clientes)
+npm run dev            # levanta el servidor en http://localhost:3000
 ```
 
 > Si el puerto 3000 está ocupado: `PORT=3001 npm run dev`.
+> `npm run db:reset` hace `db:push --force-reset` + `db:seed` juntos (borra y recarga todo).
 
 **Cuenta demo** (creada por el seed): `demo@perfumeriabella.com` / `demo1234`.
 También podés crear un negocio nuevo desde **Registrarse**.
@@ -92,17 +99,18 @@ prisma/
 
 ## Notas de arquitectura y próximos pasos
 
-Este MVP usa **SQLite local** para poder correr y ver la interfaz sin configuración
-externa. La capa de datos está aislada en `lib/`, por lo que migrar a
-**Supabase/PostgreSQL** implica cambiar el `datasource` de Prisma y las credenciales.
+La base vive en **Supabase (PostgreSQL)**. La app se conecta con Prisma usando dos
+URLs: `DATABASE_URL` (pooler de transacciones, puerto 6543 — la usa la app en runtime,
+ideal para serverless/Vercel) y `DIRECT_URL` (conexión directa, puerto 5432 — solo para
+aplicar el esquema con `prisma db push`).
 
 El aislamiento entre negocios se aplica hoy **a nivel de aplicación** (toda consulta
-filtra por el `businessId` de la sesión). Al migrar a Postgres/Supabase conviene
-reforzarlo con **Row Level Security** a nivel de base de datos.
+filtra por el `businessId` de la sesión). Para reforzarlo a nivel de base de datos se
+puede activar **Row Level Security** en las tablas desde el dashboard de Supabase.
 
 Pendiente para siguientes iteraciones:
 
-- Row Level Security en base de datos (al pasar a Postgres/Supabase).
+- Row Level Security en las tablas de Supabase.
 - Envío automático/masivo de emails (integrar Resend con `RESEND_API_KEY`).
 - API de WhatsApp Business para envíos automáticos.
 - Programa de puntos/beneficios y estadísticas avanzadas.
