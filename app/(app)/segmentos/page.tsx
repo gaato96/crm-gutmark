@@ -1,7 +1,8 @@
 import { getCurrentBusiness, getEnrichedCustomers, toConfig } from "@/lib/queries";
 import { SEGMENT_META, Segment } from "@/lib/segmentation";
-import { PageHeader } from "@/components/ui";
+import { PageHeader, SectionTitle } from "@/components/ui";
 import { CustomersList, CustomerRow } from "@/components/customers-list";
+import { SegmentDonut } from "@/components/segment-donut";
 
 export const dynamic = "force-dynamic";
 
@@ -45,7 +46,13 @@ export default async function SegmentosPage({
         subtitle="Tus clientes agrupados automáticamente según su comportamiento de compra."
       />
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mb-6 grid gap-6 lg:grid-cols-[minmax(0,280px)_1fr]">
+        <div className="card p-5">
+          <SectionTitle>Distribución</SectionTitle>
+          <SegmentDonut counts={counts as Record<Segment, number>} />
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
         {SEGMENTS.map((seg) => {
           const m = SEGMENT_META[seg];
           return (
@@ -55,12 +62,13 @@ export default async function SegmentosPage({
                   <span className={`h-1.5 w-1.5 rounded-full ${m.dot}`} />
                   {m.label}
                 </span>
-                <span className="text-2xl font-bold text-ink">{counts[seg]}</span>
+                <span className="text-2xl font-bold tabular-nums text-ink">{counts[seg]}</span>
               </div>
               <p className="mt-3 text-sm text-ink-muted">{m.description}</p>
             </div>
           );
         })}
+        </div>
       </div>
 
       <div className="card p-5">

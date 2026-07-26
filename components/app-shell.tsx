@@ -18,8 +18,10 @@ import {
   UserPlus,
   Upload,
   Plus,
+  ShieldAlert,
 } from "lucide-react";
 import { logout } from "@/app/auth-actions";
+import { stopImpersonatingAction } from "@/app/admin-actions";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { QuickSaleModal } from "@/components/quick-sale-modal";
 
@@ -78,11 +80,13 @@ export function AppShell({
   businessName,
   rubro,
   userEmail,
+  isImpersonating,
 }: {
   children: React.ReactNode;
   businessName: string;
   rubro: string;
   userEmail: string;
+  isImpersonating?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [quickSaleOpen, setQuickSaleOpen] = useState(false);
@@ -118,7 +122,22 @@ export function AppShell({
   }, [speedDial]);
 
   return (
-    <div className="min-h-screen lg:grid lg:grid-cols-[264px_1fr]">
+    <div className="min-h-screen">
+      {isImpersonating && (
+        <div className="sticky top-0 z-50 flex items-center justify-center gap-2.5 bg-gold-500 px-4 py-2 text-sm font-semibold text-ink">
+          <ShieldAlert className="h-4 w-4" aria-hidden="true" />
+          Estás viendo esta cuenta como administrador.
+          <form action={stopImpersonatingAction}>
+            <button
+              type="submit"
+              className="ml-1 rounded-lg bg-ink/10 px-2.5 py-1 text-xs font-bold hover:bg-ink/20"
+            >
+              Volver a admin
+            </button>
+          </form>
+        </div>
+      )}
+      <div className="lg:grid lg:grid-cols-[264px_1fr]">
       {/* Sidebar desktop */}
       <aside className="sticky top-0 hidden h-screen flex-col border-r border-line bg-surface p-4 lg:flex">
         <div className="py-2">
@@ -271,6 +290,7 @@ export function AppShell({
       </div>
 
       <QuickSaleModal open={quickSaleOpen} onClose={() => setQuickSaleOpen(false)} />
+      </div>
     </div>
   );
 }

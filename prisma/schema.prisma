@@ -19,6 +19,8 @@ model Business {
   recompraDays  Int      @default(45)
   // Gasto acumulado para marcar VIP
   vipMinSpend   Float    @default(50000)
+  // Si está en false, los usuarios del negocio no pueden iniciar sesión
+  active        Boolean  @default(true)
   createdAt     DateTime @default(now())
 
   customers  Customer[]
@@ -29,12 +31,15 @@ model Business {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
+  id           String    @id @default(cuid())
+  email        String    @unique
   passwordHash String
   name         String?
   businessId   String
-  createdAt    DateTime @default(now())
+  // owner | superadmin
+  role         String    @default("owner")
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
 
   business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
   sessions Session[]
@@ -48,6 +53,9 @@ model Session {
   userId    String
   expiresAt DateTime
   createdAt DateTime @default(now())
+  // Si un superadmin "entró como" este usuario, acá queda el token de su
+  // propia sesión para poder volver al panel de admin.
+  impersonatorToken String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

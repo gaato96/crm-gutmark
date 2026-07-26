@@ -135,8 +135,8 @@ export function CustomersList({
               </div>
 
               <div className="hidden text-right sm:block">
-                <div className="text-sm font-semibold text-ink">{money(c.totalSpent)}</div>
-                <div className="text-xs text-ink-muted">{c.purchaseCount} compras</div>
+                <div className="text-sm font-semibold tabular-nums text-ink">{money(c.totalSpent)}</div>
+                <div className="text-xs tabular-nums text-ink-muted">{c.purchaseCount} compras</div>
               </div>
 
               <div className="hidden w-24 justify-end sm:flex">

@@ -2,7 +2,14 @@
 
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { hashPassword, verifyPassword, createSession, destroySession } from "@/lib/auth";
+import {
+  hashPassword,
+  verifyPassword,
+  createSession,
+  destroySession,
+  touchLastLogin,
+} from "@/lib/auth";
+import { createDefaultTemplates } from "@/lib/default-templates";
 
 export interface AuthState {
   error?: string;
@@ -41,40 +48,8 @@ export async function register(
     },
   });
 
-  // Plantillas por defecto para el negocio nuevo
-  await db.template.createMany({
-    data: [
-      {
-        businessId: business.id,
-        type: "birthday",
-        channel: "whatsapp",
-        subject: "",
-        body: "¡Hola {nombre}! 🎂 De parte de {negocio} te deseamos un muy feliz cumpleaños. Como regalo, tenés un beneficio especial en tu próxima compra esta semana. ¡Te esperamos! 💚",
-      },
-      {
-        businessId: business.id,
-        type: "birthday",
-        channel: "email",
-        subject: "🎂 ¡Feliz cumpleaños, {nombre}!",
-        body: "¡Hola {nombre}!\n\nEn {negocio} queremos desearte un muy feliz cumpleaños. Para celebrarlo, te regalamos un beneficio especial en tu próxima compra durante esta semana.\n\n¡Te esperamos!\nEquipo de {negocio}",
-      },
-      {
-        businessId: business.id,
-        type: "winback",
-        channel: "whatsapp",
-        subject: "",
-        body: "¡Hola {nombre}! 👋 Hace un tiempo que no te vemos por {negocio} y te extrañamos. Si venís esta semana, tenés un beneficio especial esperándote. 😊",
-      },
-      {
-        businessId: business.id,
-        type: "winback",
-        channel: "email",
-        subject: "Te extrañamos en {negocio} 💚",
-        body: "¡Hola {nombre}!\n\nHace un tiempo que no pasás por {negocio}. Tenemos un beneficio especial reservado para vos si volvés esta semana.\n\n¡Nos encantaría verte de nuevo!\nEquipo de {negocio}",
-      },
-    ],
-  });
-
+  await createDefaultTemplates(business.id);
+  await touchLastLogin(user.id);
   await createSession(user.id);
   redirect("/dashboard");
 }
@@ -85,13 +60,17 @@ export async function login(_prev: AuthState, formData: FormData): Promise<AuthS
 
   if (!email || !password) return { error: "Completá email y contraseña." };
 
-  const user = await db.user.findUnique({ where: { email } });
+  const user = await db.user.findUnique({ where: { email }, include: { business: true } });
   if (!user || !(await verifyPassword(password, user.passwordHash))) {
     return { error: "Email o contraseña incorrectos." };
   }
+  if (!user.business.active && user.role !== "superadmin") {
+    return { error: "Esta cuenta fue desactivada. Contactanos si creés que es un error." };
+  }
 
+  await touchLastLogin(user.id);
   await createSession(user.id);
-  redirect("/dashboard");
+  redirect(user.role === "superadmin" ? "/admin" : "/dashboard");
 }
 
 export async function logout() {

@@ -15,6 +15,7 @@ export default async function AppLayout({
       businessName={session.business.name}
       rubro={session.business.rubro}
       userEmail={session.email}
+      isImpersonating={session.isImpersonating}
     >
       {children}
     </AppShell>

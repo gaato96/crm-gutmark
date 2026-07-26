@@ -276,11 +276,35 @@ async function main() {
       email: "demo@perfumeriabella.com",
       name: "Dueña de Perfumería Bella",
       passwordHash: await bcrypt.hash("demo1234", 10),
+      role: "owner",
+    },
+  });
+
+  console.log("🛡️  Creando cuenta de superadmin...");
+  const adminBiz = await db.business.upsert({
+    where: { id: "gutmark-admin-home" },
+    update: {},
+    create: {
+      id: "gutmark-admin-home",
+      name: "GUTMARK (interno)",
+      rubro: "Administración",
+    },
+  });
+  await db.user.upsert({
+    where: { email: "agencia.gutmark@gmail.com" },
+    update: { role: "superadmin" },
+    create: {
+      businessId: adminBiz.id,
+      email: "agencia.gutmark@gmail.com",
+      name: "GUTMARK Admin",
+      passwordHash: await bcrypt.hash("GutmarkAdmin2026!", 10),
+      role: "superadmin",
     },
   });
 
   console.log("✅ Seed completado.");
   console.log("   Login demo: demo@perfumeriabella.com / demo1234");
+  console.log("   Login superadmin: agencia.gutmark@gmail.com / GutmarkAdmin2026!");
 }
 
 main()
