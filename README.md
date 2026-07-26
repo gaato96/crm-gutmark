@@ -3,7 +3,7 @@
 > Plataforma de fidelización post-venta para PYMES.
 > **"Vendé más sin conseguir un solo cliente nuevo."**
 
-CRM centrado en el cliente existente: base de datos, segmentación automática, recordatorios de cumpleaños y recompra, y campañas por email + WhatsApp manual.
+CRM centrado en el cliente existente: base de datos, segmentación automática, recordatorios de cumpleaños y recompra, y campañas por email + WhatsApp manual. Incluye landing pública de conversión.
 
 ---
 
@@ -55,9 +55,10 @@ También podés crear un negocio nuevo desde **Registrarse**.
 
 ```
 app/
+  page.tsx              Landing pública de conversión (CTAs a WhatsApp)
   (auth)/               Login y registro (layout con panel de marca, sin sesión)
   (app)/                Rutas protegidas (guard de sesión + shell)
-    page.tsx            Dashboard (KPIs + oportunidades del día)
+    dashboard/           Dashboard (KPIs + oportunidades del día)
     clientes/           Lista, alta, edición, ficha, importar y exportar CSV
     segmentos/          Clientes agrupados automáticamente
     recordatorios/      "Hoy tenés que…" (cumpleaños / recompra / reactivar)
@@ -65,18 +66,31 @@ app/
     configuracion/      Datos del negocio y reglas de segmentación
   actions.ts            Server Actions (crear/editar/compras/config/import)
   auth-actions.ts       register / login / logout
-components/             UI reutilizable (shell, tarjetas, formularios)
+components/
+  landing/              Reveal (scroll-in) y tarjeta de fidelidad (signature visual)
+  ...                   UI reutilizable (shell, tarjetas, formularios)
 lib/
   auth.ts               Hash de contraseña + sesiones en cookie
   segmentation.ts       Reglas de VIP / frecuente / inactivo / recompra
   queries.ts            Acceso a datos por negocio (aislado por sesión)
   csv.ts                Parser CSV + mapeo de columnas + fechas flexibles
   build-message.ts      Render de plantillas con variables {nombre} {negocio}
-  messages.ts           Links wa.me y mailto
+  messages.ts           Links wa.me y mailto (incluye contacto del negocio)
 prisma/
   schema.prisma         Modelo de datos (Business, User, Session, Customer…)
   seed.ts               Datos demo + usuario demo
 ```
+
+## Diseño
+
+- **Tipografía**: Calistoga (display, títulos) + Inter (cuerpo) + JetBrains Mono
+  (labels/eyebrows), cargadas vía `next/font/google` en `app/layout.tsx`.
+- **Landing** (`app/page.tsx`): construida con [ui-ux-pro-max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill)
+  como referencia de sistema de diseño, adaptando la paleta genérica sugerida a
+  la identidad de marca ya establecida (verde + dorado). Elemento distintivo:
+  una tarjeta de fidelidad con sellos (`components/landing/loyalty-card.tsx`).
+- Los CTA de la landing van a WhatsApp (`lib/messages.ts` → `businessWhatsappLink`)
+  para pedir acceso — el alta de negocios es manual/personal, no autoservicio.
 
 ## Módulos del MVP
 
