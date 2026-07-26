@@ -8,7 +8,7 @@ export default function NotFound() {
         <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-2xl bg-surface-2 text-ink-faint">
           <SearchX className="h-8 w-8" />
         </div>
-        <h1 className="text-xl font-bold text-ink">No encontramos esta página</h1>
+        <h1 className="font-display text-2xl text-ink">No encontramos esta página</h1>
         <p className="mt-1 text-sm text-ink-muted">
           Puede que el cliente o la sección ya no existan.
         </p>

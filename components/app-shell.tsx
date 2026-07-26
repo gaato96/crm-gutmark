@@ -24,7 +24,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { QuickSaleModal } from "@/components/quick-sale-modal";
 
 const NAV = [
-  { href: "/", label: "Inicio", icon: LayoutDashboard, exact: true },
+  { href: "/dashboard", label: "Inicio", icon: LayoutDashboard, exact: true },
   { href: "/clientes", label: "Clientes", icon: Users },
   { href: "/segmentos", label: "Segmentos", icon: Target },
   { href: "/recordatorios", label: "Recordatorios", icon: BellRing },
@@ -64,7 +64,7 @@ function Brand() {
         <Sparkles className="h-5 w-5" strokeWidth={2.4} />
       </div>
       <div className="leading-tight">
-        <div className="text-sm font-bold text-ink">GUTMARK</div>
+        <div className="font-display text-base leading-none text-ink">GUTMARK</div>
         <div className="text-[11px] font-medium text-brand-600 dark:text-brand-400">
           Fideliza
         </div>
@@ -175,6 +175,7 @@ export function AppShell({
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div
+            aria-hidden="true"
             className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm"
             onClick={() => setOpen(false)}
           />

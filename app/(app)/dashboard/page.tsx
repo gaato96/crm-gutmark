@@ -165,7 +165,7 @@ export default async function DashboardPage() {
                     </div>
                     <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-surface-2">
                       <div
-                        className={`h-full rounded-full ${m.dot} transition-all group-hover:opacity-80`}
+                        className={`h-full rounded-full ${m.dot} transition-opacity group-hover:opacity-80`}
                         style={{ width: `${(count / maxSeg) * 100}%` }}
                       />
                     </div>

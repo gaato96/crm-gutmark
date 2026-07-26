@@ -101,7 +101,7 @@ export default async function ClienteDetailPage({
             <Avatar name={customer.name} size="lg" />
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-xl font-bold text-ink">{customer.name}</h1>
+                <h1 className="font-display text-2xl text-ink">{customer.name}</h1>
                 {vip && (
                   <span className="badge bg-gold-500/15 text-gold-700 ring-gold-500/25 dark:text-gold-300">
                     <Crown className="h-3 w-3" /> VIP

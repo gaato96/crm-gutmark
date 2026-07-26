@@ -36,7 +36,7 @@ export async function createCustomer(formData: FormData) {
   });
 
   revalidatePath("/clientes");
-  revalidatePath("/");
+  revalidatePath("/dashboard");
   redirect(`/clientes/${customer.id}`);
 }
 
@@ -58,14 +58,14 @@ export async function updateCustomer(id: string, formData: FormData) {
 
   revalidatePath("/clientes");
   revalidatePath(`/clientes/${id}`);
-  revalidatePath("/");
+  revalidatePath("/dashboard");
   redirect(`/clientes/${id}`);
 }
 
 export async function deleteCustomer(id: string) {
   await db.customer.delete({ where: { id } });
   revalidatePath("/clientes");
-  revalidatePath("/");
+  revalidatePath("/dashboard");
   redirect("/clientes");
 }
 
@@ -96,7 +96,7 @@ export async function addPurchase(customerId: string, formData: FormData) {
 
   revalidatePath(`/clientes/${customerId}`);
   revalidatePath("/clientes");
-  revalidatePath("/");
+  revalidatePath("/dashboard");
 }
 
 export async function logContact(
@@ -125,7 +125,7 @@ export async function updateBusiness(formData: FormData) {
     },
   });
   revalidatePath("/configuracion");
-  revalidatePath("/");
+  revalidatePath("/dashboard");
   revalidatePath("/segmentos");
 }
 
@@ -198,7 +198,7 @@ export async function importCustomers(
   }
 
   revalidatePath("/clientes");
-  revalidatePath("/");
+  revalidatePath("/dashboard");
   revalidatePath("/segmentos");
   return { created, skipped };
 }
@@ -271,7 +271,7 @@ export async function quickSale(
 
   revalidatePath(`/clientes/${customerId}`);
   revalidatePath("/clientes");
-  revalidatePath("/");
+  revalidatePath("/dashboard");
   revalidatePath("/segmentos");
   revalidatePath("/recordatorios");
 
@@ -313,7 +313,7 @@ export async function quickNewCustomerSale(
   });
 
   revalidatePath("/clientes");
-  revalidatePath("/");
+  revalidatePath("/dashboard");
   revalidatePath("/segmentos");
 
   return { customerId: customer.id, customerName: customer.name };

@@ -129,7 +129,7 @@ export function ImportCustomers() {
         <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-2xl bg-brand-500/10 text-brand-600">
           <CheckCircle2 className="h-8 w-8" />
         </div>
-        <h2 className="text-xl font-bold text-ink">¡Importación completa!</h2>
+        <h2 className="font-display text-2xl text-ink">¡Importación completa!</h2>
         <p className="mt-2 text-sm text-ink-muted">
           Se agregaron <span className="font-bold text-brand-700 dark:text-brand-400">{result.created}</span> clientes.
           {result.skipped > 0 && (

@@ -27,7 +27,7 @@ export function DeleteCustomerButton({
 
       {open && (
         <div className="fixed inset-0 z-50 grid place-items-center p-4">
-          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setOpen(false)} />
+          <div aria-hidden="true" className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setOpen(false)} />
           <div className="relative w-full max-w-sm rounded-2xl bg-surface p-6 shadow-pop animate-fade-in">
             <div className="mb-3 grid h-11 w-11 place-items-center rounded-xl bg-rose-500/10 text-rose-500">
               <AlertTriangle className="h-6 w-6" />

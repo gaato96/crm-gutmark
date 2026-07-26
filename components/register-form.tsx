@@ -11,7 +11,7 @@ export function RegisterForm() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-ink">Creá tu negocio</h1>
+      <h1 className="font-display text-3xl text-ink">Creá tu negocio</h1>
       <p className="mt-1 text-sm text-ink-muted">
         Empezá gratis a fidelizar a tus clientes en minutos.
       </p>

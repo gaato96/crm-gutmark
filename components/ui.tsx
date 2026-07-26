@@ -14,7 +14,7 @@ export function PageHeader({
   return (
     <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-ink">{title}</h1>
+        <h1 className="font-display text-[1.75rem] leading-tight tracking-tight text-ink sm:text-3xl">{title}</h1>
         {subtitle && <p className="mt-1 text-sm text-ink-muted">{subtitle}</p>}
       </div>
       {action && <div className="flex shrink-0 gap-2">{action}</div>}
@@ -90,7 +90,7 @@ export function Pill({
 export function SectionTitle({ children, hint }: { children: ReactNode; hint?: string }) {
   return (
     <div className="mb-3 flex items-baseline justify-between">
-      <h2 className="text-sm font-bold uppercase tracking-wide text-ink-muted">{children}</h2>
+      <h2 className="font-mono text-xs font-bold uppercase tracking-[0.1em] text-ink-muted">{children}</h2>
       {hint && <span className="text-xs text-ink-muted">{hint}</span>}
     </div>
   );

@@ -195,6 +195,7 @@ export function QuickSaleModal({
   return (
     <div className="fixed inset-0 z-[60] flex items-start justify-center px-4 pt-[10vh] sm:items-center sm:pt-0">
       <div
+        aria-hidden="true"
         className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm animate-fade-in"
         onClick={handleClose}
       />
@@ -241,7 +242,7 @@ export function QuickSaleModal({
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={onSearchKeyDown}
                 placeholder="Buscar cliente por nombre o teléfono…"
-                className="w-full rounded-lg border-0 bg-transparent py-2 pl-8 pr-2 text-sm text-ink placeholder:text-ink-faint focus:outline-none"
+                className="w-full rounded-lg border-0 bg-transparent py-2 pl-8 pr-2 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500/40"
               />
             </div>
 

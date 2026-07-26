@@ -27,7 +27,7 @@ export function StatCard({
   };
   return (
     <div
-      className={`card group relative overflow-hidden p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-pop ${glows[tone]}`}
+      className={`card group relative overflow-hidden p-5 transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-pop ${glows[tone]}`}
     >
       <div className="flex items-start justify-between">
         <div className="text-sm font-medium text-ink-muted">{label}</div>

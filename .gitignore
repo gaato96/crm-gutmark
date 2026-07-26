@@ -12,3 +12,8 @@ next-env.d.ts
 *.tsbuildinfo
 
 .vercel
+
+# Artefactos locales del instalador de skills (herramientas de desarrollo, no del producto)
+.agents/
+.claude/skills/
+skills-lock.json

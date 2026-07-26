@@ -11,7 +11,7 @@ export function LoginForm() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-ink">Ingresá a tu cuenta</h1>
+      <h1 className="font-display text-3xl text-ink">Ingresá a tu cuenta</h1>
       <p className="mt-1 text-sm text-ink-muted">Gestioná tus clientes y campañas.</p>
 
       <form action={action} className="mt-6 space-y-4">
