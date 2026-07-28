@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Calistoga, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import { RegisterServiceWorker } from "@/components/register-sw";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 const calistoga = Calistoga({
@@ -14,16 +13,12 @@ const jetbrainsMono = JetBrains_Mono({
   variable: "--font-mono",
 });
 
+// El manifest y las meta apple-web-app se declaran solo en app/(app)/layout.tsx:
+// la app instalable es el panel, no esta landing pública (ver Fase 4).
 export const metadata: Metadata = {
   title: "GUTMARK Fideliza — Hacé volver a tus clientes",
   description:
     "Plataforma de fidelización post-venta para PYMES. Conocé, cuidá y hacé volver a tus clientes.",
-  manifest: "/manifest.webmanifest",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "black-translucent",
-    title: "Fideliza",
-  },
 };
 
 export const viewport: Viewport = {
@@ -56,13 +51,9 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        <meta name="apple-mobile-web-app-capable" content="yes" />
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body>
-        {children}
-        <RegisterServiceWorker />
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

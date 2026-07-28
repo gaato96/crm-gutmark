@@ -23,10 +23,12 @@ import {
   ageTurning,
 } from "@/lib/segmentation";
 import { renderTemplate } from "@/lib/messages";
+import { pointsBalance } from "@/lib/points";
 import { Avatar, SegmentBadge, Pill } from "@/components/ui";
 import { AddPurchaseForm } from "@/components/add-purchase-form";
 import { QuickContact } from "@/components/quick-contact";
 import { DeleteCustomerButton } from "@/components/delete-customer-button";
+import { PointsCard } from "@/components/points-card";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +48,21 @@ export default async function ClienteDetailPage({
   if (!customer) notFound();
 
   const templates = await db.template.findMany({ where: { businessId: biz.id } });
+
+  const pointsEnabled = biz.modules.includes("puntos");
+  let pointsHistory: { id: string; points: number; reason: string; note: string | null; createdAt: Date }[] = [];
+  let pointsBalanceValue = 0;
+  if (pointsEnabled) {
+    [pointsHistory, pointsBalanceValue] = await Promise.all([
+      db.pointsEntry.findMany({
+        where: { customerId: customer.id },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        select: { id: true, points: true, reason: true, note: true, createdAt: true },
+      }),
+      pointsBalance(customer.id),
+    ]);
+  }
 
   const purchaseCount = customer.purchases.length;
   const totalSpent = customer.purchases.reduce((s, p) => s + p.amount, 0);
@@ -210,6 +227,13 @@ export default async function ClienteDetailPage({
 
         {/* Acciones */}
         <div className="space-y-5">
+          {pointsEnabled && (
+            <PointsCard
+              customerId={customer.id}
+              balance={pointsBalanceValue}
+              history={pointsHistory.map((h) => ({ ...h, createdAt: h.createdAt.toISOString() }))}
+            />
+          )}
           <AddPurchaseForm customerId={customer.id} />
           <QuickContact
             phone={customer.phone}

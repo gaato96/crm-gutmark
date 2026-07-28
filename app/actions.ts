@@ -3,6 +3,7 @@
 import { db } from "@/lib/db";
 import { getCurrentBusiness } from "@/lib/queries";
 import { parseFlexibleDate } from "@/lib/csv";
+import { awardPointsForPurchase } from "@/lib/points";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -75,7 +76,7 @@ export async function addPurchase(customerId: string, formData: FormData) {
   if (!amount || amount <= 0) throw new Error("El monto debe ser mayor a 0");
   const date = parseDate(formData.get("date")) ?? new Date();
 
-  await db.purchase.create({
+  const purchase = await db.purchase.create({
     data: {
       businessId: biz.id,
       customerId,
@@ -84,6 +85,7 @@ export async function addPurchase(customerId: string, formData: FormData) {
       description: str(formData.get("description")),
     },
   });
+  await awardPointsForPurchase({ businessId: biz.id, customerId, purchaseId: purchase.id, amount });
 
   // Actualizar última compra si esta es más reciente
   const customer = await db.customer.findUnique({ where: { id: customerId } });
@@ -255,7 +257,7 @@ export async function quickSale(
   if (!customer) throw new Error("Cliente no encontrado");
 
   const date = new Date();
-  await db.purchase.create({
+  const purchase = await db.purchase.create({
     data: {
       businessId: biz.id,
       customerId,
@@ -264,6 +266,7 @@ export async function quickSale(
       description: description?.trim() || null,
     },
   });
+  await awardPointsForPurchase({ businessId: biz.id, customerId, purchaseId: purchase.id, amount });
 
   if (!customer.lastPurchaseAt || date > customer.lastPurchaseAt) {
     await db.customer.update({ where: { id: customerId }, data: { lastPurchaseAt: date } });
@@ -310,6 +313,13 @@ export async function quickNewCustomerSale(
         },
       },
     },
+    include: { purchases: true },
+  });
+  await awardPointsForPurchase({
+    businessId: biz.id,
+    customerId: customer.id,
+    purchaseId: customer.purchases[0].id,
+    amount: input.amount,
   });
 
   revalidatePath("/clientes");

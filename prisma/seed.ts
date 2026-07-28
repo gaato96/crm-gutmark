@@ -1,11 +1,42 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { MODULE_SEED } from "../lib/modules";
 
 const db = new PrismaClient();
 
 const DAY = 1000 * 60 * 60 * 24;
 const now = new Date();
 const daysAgo = (n: number) => new Date(now.getTime() - n * DAY);
+
+const DEMO_BUSINESS_NAME = "Perfumería Bella";
+const ADMIN_BUSINESS_ID = "gutmark-admin-home";
+
+// Este seed borra TODO (ver db:seed/db:reset en CLAUDE.md). Es seguro en un
+// entorno de desarrollo recién levantado, pero sería catastrófico correrlo
+// contra una base con negocios reales ya dados de alta. Si aparece cualquier
+// negocio que no sea el demo ni el interno del superadmin, asumimos que hay
+// clientes reales y abortamos — a menos que se fuerce explícitamente con
+// ALLOW_SEED=true (uso exclusivo para depuración puntual, nunca en CI/CD).
+async function assertSafeToWipe() {
+  if (process.env.ALLOW_SEED === "true") return;
+
+  const others = await db.business.findMany({
+    where: { id: { not: ADMIN_BUSINESS_ID }, name: { not: DEMO_BUSINESS_NAME } },
+    select: { id: true, name: true },
+  });
+
+  if (others.length > 0) {
+    console.error(
+      `✋ Se encontraron ${others.length} negocio(s) que no son el demo ni el interno:\n` +
+        others.map((b) => `   - ${b.name} (${b.id})`).join("\n") +
+        "\n\nEste comando borra TODOS los negocios, usuarios y clientes antes de " +
+        "reseedear — probablemente estás apuntando a una base con datos reales. " +
+        "Si estás seguro de que querés borrar todo, volvé a correrlo con " +
+        "ALLOW_SEED=true."
+    );
+    process.exit(1);
+  }
+}
 
 // Cumpleaños relativo a hoy (mismo mes/día ajustado), con un año de nacimiento dado
 function birthdayInDays(offsetDays: number, birthYear: number): Date {
@@ -17,6 +48,8 @@ function birthdayFixed(month: number, day: number, birthYear: number): Date {
 }
 
 async function main() {
+  await assertSafeToWipe();
+
   console.log("🌱 Limpiando datos anteriores...");
   await db.session.deleteMany();
   await db.user.deleteMany();
@@ -282,12 +315,14 @@ async function main() {
 
   console.log("🛡️  Creando cuenta de superadmin...");
   const adminBiz = await db.business.upsert({
-    where: { id: "gutmark-admin-home" },
+    where: { id: ADMIN_BUSINESS_ID },
     update: {},
     create: {
-      id: "gutmark-admin-home",
+      id: ADMIN_BUSINESS_ID,
       name: "GUTMARK (interno)",
       rubro: "Administración",
+      // No es un cliente real: no debe figurar como deudor en /admin.
+      billingExempt: true,
     },
   });
   await db.user.upsert({
@@ -300,6 +335,33 @@ async function main() {
       passwordHash: await bcrypt.hash("GutmarkAdmin2026!", 10),
       role: "superadmin",
     },
+  });
+
+  console.log("🧩 Cargando catálogo de módulos y precios de plataforma...");
+  for (const m of MODULE_SEED) {
+    await db.module.upsert({
+      where: { code: m.code },
+      create: {
+        code: m.code,
+        name: m.name,
+        description: m.description,
+        monthlyPrice: m.monthlyPrice,
+        sortOrder: m.sortOrder,
+      },
+      update: {},
+    });
+  }
+  await db.platformSetting.upsert({
+    where: { id: "singleton" },
+    create: { id: "singleton", basePlanPrice: 15000, currency: "ARS", dueDay: 10 },
+    update: {},
+  });
+  // Habilitamos "puntos" en el negocio demo para poder probar el módulo
+  // (y su gating de NAV/rutas) sin tener que activarlo a mano desde /admin.
+  await db.businessModule.upsert({
+    where: { businessId_moduleCode: { businessId: biz.id, moduleCode: "puntos" } },
+    create: { businessId: biz.id, moduleCode: "puntos", enabled: true },
+    update: { enabled: true },
   });
 
   console.log("✅ Seed completado.");

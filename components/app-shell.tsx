@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard,
   Users,
@@ -10,6 +11,7 @@ import {
   BellRing,
   Send,
   Settings,
+  Blocks,
   Menu,
   X,
   Sparkles,
@@ -24,21 +26,43 @@ import { logout } from "@/app/auth-actions";
 import { stopImpersonatingAction } from "@/app/admin-actions";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { QuickSaleModal } from "@/components/quick-sale-modal";
+import { MODULE_NAV } from "@/lib/modules";
 
-const NAV = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  exact?: boolean;
+}
+
+// Ítems fijos del plan base, siempre presentes. Los módulos contratados se
+// insertan entre estos dos grupos (ver AppShell).
+const BASE_NAV_START: NavItem[] = [
   { href: "/dashboard", label: "Inicio", icon: LayoutDashboard, exact: true },
   { href: "/clientes", label: "Clientes", icon: Users },
   { href: "/segmentos", label: "Segmentos", icon: Target },
   { href: "/recordatorios", label: "Recordatorios", icon: BellRing },
   { href: "/campanas", label: "Campañas", icon: Send },
+];
+const BASE_NAV_END: NavItem[] = [
+  { href: "/modulos", label: "Módulos", icon: Blocks },
   { href: "/configuracion", label: "Configuración", icon: Settings },
 ];
 
-function NavItems({ onNavigate }: { onNavigate?: () => void }) {
+function buildNavItems(modules: string[]): NavItem[] {
+  const active = MODULE_NAV.filter((m) => modules.includes(m.code)).map((m) => ({
+    href: m.href,
+    label: m.label,
+    icon: m.icon,
+  }));
+  return [...BASE_NAV_START, ...active, ...BASE_NAV_END];
+}
+
+function NavItems({ items, onNavigate }: { items: NavItem[]; onNavigate?: () => void }) {
   const pathname = usePathname();
   return (
     <nav className="flex flex-col gap-0.5">
-      {NAV.map((item) => {
+      {items.map((item) => {
         const active = item.exact
           ? pathname === item.href
           : pathname.startsWith(item.href);
@@ -81,17 +105,20 @@ export function AppShell({
   rubro,
   userEmail,
   isImpersonating,
+  modules,
 }: {
   children: React.ReactNode;
   businessName: string;
   rubro: string;
   userEmail: string;
   isImpersonating?: boolean;
+  modules: string[];
 }) {
   const [open, setOpen] = useState(false);
   const [quickSaleOpen, setQuickSaleOpen] = useState(false);
   const [speedDial, setSpeedDial] = useState(false);
   const speedDialRef = useRef<HTMLDivElement>(null);
+  const navItems = buildNavItems(modules);
 
   // Atajo de teclado: "n" abre Nueva venta (si no estás escribiendo en un campo)
   useEffect(() => {
@@ -169,7 +196,7 @@ export function AppShell({
         </div>
 
         <div className="mt-6 flex-1 overflow-y-auto">
-          <NavItems />
+          <NavItems items={navItems} />
         </div>
 
         <BusinessCard businessName={businessName} rubro={rubro} userEmail={userEmail} />
@@ -238,7 +265,7 @@ export function AppShell({
             </div>
 
             <div className="mt-6 flex-1 overflow-y-auto">
-              <NavItems onNavigate={() => setOpen(false)} />
+              <NavItems items={navItems} onNavigate={() => setOpen(false)} />
             </div>
             <BusinessCard businessName={businessName} rubro={rubro} userEmail={userEmail} />
           </aside>

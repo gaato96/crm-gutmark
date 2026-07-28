@@ -21,13 +21,22 @@ model Business {
   vipMinSpend   Float    @default(50000)
   // Si está en false, los usuarios del negocio no pueden iniciar sesión
   active        Boolean  @default(true)
+  // Negocios internos (ej. la cuenta del superadmin) o de cortesía: no
+  // figuran como deudores aunque no tengan pagos registrados.
+  billingExempt Boolean  @default(false)
+  // Módulo Puntos/beneficios: ARS gastados para ganar 1 punto. Solo tiene
+  // efecto si el negocio tiene el módulo "puntos" activo (ver lib/points.ts).
+  pointsPerAmount Float  @default(1000)
   createdAt     DateTime @default(now())
 
-  customers  Customer[]
-  purchases  Purchase[]
-  templates  Template[]
-  contacts   ContactLog[]
-  users      User[]
+  customers     Customer[]
+  purchases     Purchase[]
+  templates     Template[]
+  contacts      ContactLog[]
+  users         User[]
+  modules       BusinessModule[]
+  payments      Payment[]
+  pointsEntries PointsEntry[]
 }
 
 model User {
@@ -74,9 +83,10 @@ model Customer {
   lastPurchaseAt DateTime?
   createdAt      DateTime  @default(now())
 
-  business  Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  purchases Purchase[]
-  contacts  ContactLog[]
+  business      Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  purchases     Purchase[]
+  contacts      ContactLog[]
+  pointsEntries PointsEntry[]
 
   @@index([businessId])
 }
@@ -89,8 +99,9 @@ model Purchase {
   amount      Float
   description String?
 
-  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  business      Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customer      Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  pointsEntries PointsEntry[]
 
   @@index([businessId])
   @@index([customerId])
@@ -124,6 +135,95 @@ model ContactLog {
 
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([customerId])
+}
+
+// --- Módulos opcionales de pago -------------------------------------------
+
+model Module {
+  // Código estable (stock, pos, caja, reportes, puntos, catalogo, turnos,
+  // cuenta-corriente, gastos). Se usa como clave natural: matchea 1:1 con
+  // el union type ModuleCode de lib/modules.ts.
+  code         String   @id
+  name         String
+  description  String   @default("")
+  monthlyPrice Float    @default(0)
+  // Si se ofrece hoy para contratar. No afecta a quien ya lo tiene activo.
+  available    Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  businesses BusinessModule[]
+}
+
+model BusinessModule {
+  id            String   @id @default(cuid())
+  businessId    String
+  moduleCode    String
+  // Lo único que gatea el acceso real al módulo (ver lib/module-guard.ts).
+  enabled       Boolean  @default(true)
+  // null = usar Module.monthlyPrice
+  priceOverride Float?
+  enabledAt     DateTime @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  module   Module   @relation(fields: [moduleCode], references: [code], onDelete: Cascade)
+
+  @@unique([businessId, moduleCode])
+  @@index([businessId])
+}
+
+model PlatformSetting {
+  id                String   @id @default("singleton")
+  basePlanPrice     Float    @default(0)
+  currency          String   @default("ARS")
+  // Día del mes en que se considera vencido el pago si no hay uno registrado.
+  dueDay            Int      @default(10)
+  // Si está en false, el owner no ve precios en /modulos (solo el catálogo).
+  showPricesToOwner Boolean  @default(true)
+  updatedAt         DateTime @updatedAt
+}
+
+// Registro manual de cobros (transferencia, efectivo, Mercado Pago manual).
+// No hay integración de pasarela: esto es solo un registro de estado de cuenta.
+model Payment {
+  id          String   @id @default(cuid())
+  businessId  String
+  amount      Float
+  periodYear  Int
+  periodMonth Int // 1-12
+  method      String   @default("")
+  notes       String?
+  paidAt      DateTime @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, periodYear, periodMonth])
+  @@index([businessId])
+}
+
+// --- Módulo: Puntos / beneficios --------------------------------------------
+
+// Un movimiento por cada ganancia o canje de puntos. El saldo de un cliente
+// es la suma de sus entradas (ganados = positivo, canjeados = negativo) — no
+// se guarda un balance aparte, para no poder desincronizarse del historial.
+model PointsEntry {
+  id         String   @id @default(cuid())
+  businessId String
+  customerId String
+  points     Int
+  // "compra" (ganados automáticamente) | "canje" | "ajuste" (manual)
+  reason     String
+  note       String?
+  // Compra que generó estos puntos, si `reason` es "compra".
+  purchaseId String?
+  createdAt  DateTime @default(now())
+
+  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customer Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  purchase Purchase? @relation(fields: [purchaseId], references: [id], onDelete: SetNull)
 
   @@index([businessId])
   @@index([customerId])

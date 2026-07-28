@@ -81,6 +81,20 @@ export async function touchLastLogin(userId: string): Promise<void> {
   await db.user.update({ where: { id: userId }, data: { lastLoginAt: new Date() } });
 }
 
+export async function getSessionToken(): Promise<string | null> {
+  const store = await cookies();
+  return store.get(COOKIE)?.value ?? null;
+}
+
+// Cierra todas las demás sesiones del usuario (otros dispositivos/navegadores),
+// conservando la actual. Se usa después de un cambio de contraseña.
+export async function revokeOtherSessions(userId: string, keepToken: string): Promise<number> {
+  const result = await db.session.deleteMany({
+    where: { userId, NOT: { token: keepToken } },
+  });
+  return result.count;
+}
+
 export interface SessionUser {
   id: string;
   email: string;
@@ -95,6 +109,8 @@ export interface SessionUser {
     recompraDays: number;
     vipMinSpend: number;
     active: boolean;
+    // Códigos de módulo activos para este negocio (ver lib/modules.ts).
+    modules: string[];
   };
 }
 
@@ -105,7 +121,17 @@ export async function getSessionUser(): Promise<SessionUser | null> {
 
   const session = await db.session.findUnique({
     where: { token },
-    include: { user: { include: { business: true } } },
+    include: {
+      user: {
+        include: {
+          business: {
+            include: {
+              modules: { where: { enabled: true }, select: { moduleCode: true } },
+            },
+          },
+        },
+      },
+    },
   });
 
   if (!session || session.expiresAt < new Date()) return null;
@@ -129,6 +155,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
       recompraDays: user.business.recompraDays,
       vipMinSpend: user.business.vipMinSpend,
       active: user.business.active,
+      modules: user.business.modules.map((m) => m.moduleCode),
     },
   };
 }

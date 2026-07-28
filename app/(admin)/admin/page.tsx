@@ -11,31 +11,50 @@ import {
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { formatMoney, formatDate } from "@/lib/format";
+import { getPlatformSettings, businessMonthlyTotal, billingStatus, type BillingStatus } from "@/lib/platform";
 import { PageHeader, EmptyState } from "@/components/ui";
 import { ImpersonateButton, ToggleActiveButton } from "@/components/admin-actions-buttons";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminPage() {
-  const businesses = await db.business.findMany({
-    orderBy: { createdAt: "desc" },
-    include: {
-      _count: { select: { customers: true } },
-      users: {
-        where: { role: "owner" },
-        orderBy: { createdAt: "asc" },
-        take: 1,
-        select: { email: true, name: true, lastLoginAt: true },
-      },
-      purchases: { select: { amount: true } },
-    },
-  });
+const STATUS_META: Record<BillingStatus, { label: string; cls: string }> = {
+  "al-dia": { label: "Al día", cls: "bg-brand-500/15 text-brand-700 ring-brand-500/25 dark:text-brand-300" },
+  pendiente: { label: "Pendiente", cls: "bg-gold-500/15 text-gold-700 ring-gold-500/25 dark:text-gold-300" },
+  vencido: { label: "Vencido", cls: "bg-rose-500/15 text-rose-600 ring-rose-500/25" },
+  exento: { label: "Exento", cls: "bg-surface-3 text-ink-muted ring-line" },
+};
 
-  const totalRevenue = businesses.reduce(
-    (s, b) => s + b.purchases.reduce((s2, p) => s2 + p.amount, 0),
+export default async function AdminPage() {
+  const now = new Date();
+  const [businesses, revenueByBusiness, settings] = await Promise.all([
+    db.business.findMany({
+      orderBy: { createdAt: "desc" },
+      include: {
+        _count: { select: { customers: true } },
+        users: {
+          where: { role: "owner" },
+          orderBy: { createdAt: "asc" },
+          take: 1,
+          select: { email: true, name: true, lastLoginAt: true },
+        },
+        modules: { where: { enabled: true }, include: { module: true } },
+        payments: {
+          where: { periodYear: now.getFullYear(), periodMonth: now.getMonth() + 1 },
+          select: { id: true },
+        },
+      },
+    }),
+    db.purchase.groupBy({ by: ["businessId"], _sum: { amount: true } }),
+    getPlatformSettings(),
+  ]);
+
+  const revenueMap = new Map(revenueByBusiness.map((r) => [r.businessId, r._sum.amount ?? 0]));
+  const totalRevenue = revenueByBusiness.reduce((s, r) => s + (r._sum.amount ?? 0), 0);
+  const activeCount = businesses.filter((b) => b.active).length;
+  const mrr = businesses.reduce(
+    (s, b) => s + businessMonthlyTotal(settings.basePlanPrice, b.modules),
     0
   );
-  const activeCount = businesses.filter((b) => b.active).length;
 
   return (
     <div className="animate-fade-in">
@@ -49,7 +68,7 @@ export default async function AdminPage() {
         }
       />
 
-      <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
+      <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div className="card p-5">
           <div className="text-sm text-ink-muted">Negocios totales</div>
           <div className="mt-2 text-2xl font-bold tabular-nums text-ink">
@@ -62,7 +81,13 @@ export default async function AdminPage() {
             {activeCount}
           </div>
         </div>
-        <div className="card p-5 col-span-2 sm:col-span-1">
+        <div className="card p-5">
+          <div className="text-sm text-ink-muted">MRR (plan + módulos)</div>
+          <div className="mt-2 text-2xl font-bold tabular-nums text-ink">
+            {formatMoney(mrr)}
+          </div>
+        </div>
+        <div className="card p-5">
           <div className="text-sm text-ink-muted">Facturado (todos)</div>
           <div className="mt-2 text-2xl font-bold tabular-nums text-ink">
             {formatMoney(totalRevenue)}
@@ -89,7 +114,9 @@ export default async function AdminPage() {
                 <tr className="border-b border-line-soft bg-surface-2/60 text-left">
                   <th className="px-5 py-3 font-semibold text-ink-soft">Negocio</th>
                   <th className="px-5 py-3 font-semibold text-ink-soft">Dueño</th>
-                  <th className="px-5 py-3 font-semibold text-ink-soft">Clientes</th>
+                  <th className="px-5 py-3 font-semibold text-ink-soft">Módulos</th>
+                  <th className="px-5 py-3 font-semibold text-ink-soft">$/mes</th>
+                  <th className="px-5 py-3 font-semibold text-ink-soft">Pago</th>
                   <th className="px-5 py-3 font-semibold text-ink-soft">Último ingreso</th>
                   <th className="px-5 py-3 font-semibold text-ink-soft">Estado</th>
                   <th className="px-5 py-3" />
@@ -98,20 +125,48 @@ export default async function AdminPage() {
               <tbody>
                 {businesses.map((b) => {
                   const owner = b.users[0];
+                  const total = businessMonthlyTotal(settings.basePlanPrice, b.modules);
+                  const status = billingStatus({
+                    billingExempt: b.billingExempt,
+                    hasPaidCurrentPeriod: b.payments.length > 0,
+                    dueDay: settings.dueDay,
+                  });
                   return (
-                    <tr key={b.id} className="border-b border-line-soft last:border-0">
+                    <tr key={b.id} className="border-b border-line-soft last:border-0 hover:bg-surface-2/40">
                       <td className="px-5 py-3.5">
-                        <div className="font-semibold text-ink">{b.name}</div>
-                        <div className="text-xs text-ink-muted">{b.rubro}</div>
+                        <Link href={`/admin/negocios/${b.id}`} className="hover:underline">
+                          <div className="font-semibold text-ink">{b.name}</div>
+                          <div className="text-xs text-ink-muted">{b.rubro}</div>
+                        </Link>
                       </td>
                       <td className="px-5 py-3.5">
                         <div className="text-ink-soft">{owner?.name || "—"}</div>
                         <div className="text-xs text-ink-muted">{owner?.email ?? "sin usuario"}</div>
+                        <div className="mt-0.5 inline-flex items-center gap-1 text-xs text-ink-faint">
+                          <Users className="h-3 w-3" aria-hidden="true" />
+                          <span className="tabular-nums">{b._count.customers}</span>
+                        </div>
                       </td>
                       <td className="px-5 py-3.5">
-                        <span className="inline-flex items-center gap-1.5 text-ink-soft">
-                          <Users className="h-3.5 w-3.5 text-ink-faint" aria-hidden="true" />
-                          <span className="tabular-nums">{b._count.customers}</span>
+                        {b.modules.length === 0 ? (
+                          <span className="text-xs text-ink-faint">—</span>
+                        ) : (
+                          <div className="flex flex-wrap gap-1">
+                            {b.modules.map((m) => (
+                              <span key={m.moduleCode} className="badge bg-surface-3 text-ink-soft ring-line">
+                                {m.module.name}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-5 py-3.5 tabular-nums text-ink-soft">
+                        {formatMoney(total)}
+                        <div className="text-xs text-ink-faint">{formatMoney(revenueMap.get(b.id) ?? 0)} facturado</div>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <span className={`badge ${STATUS_META[status].cls}`}>
+                          {STATUS_META[status].label}
                         </span>
                       </td>
                       <td className="px-5 py-3.5 text-ink-muted">
