@@ -4,10 +4,38 @@ Este archivo proporciona orientación a Claude Code (claude.ai/code) cuando trab
 
 ## Qué es esto
 
-GUTMARK Fideliza — un CRM de fidelización post-venta para PYMEs argentinas (negocios pequeños:
+Vuelvo — un CRM de fidelización post-venta para PYMEs argentinas (negocios pequeños:
 perfumerías, peluquerías, veterinarias, gimnasios, tiendas de mascotas, etc.). La propuesta:
 "vendé más sin conseguir un solo cliente nuevo" — ayuda a un negocio a conocer sus clientes
 existentes, nunca olvidar un cumpleaños, y traer de vuelta a los clientes inactivos.
+Slogan: "El sistema que hace que tus clientes vuelvan a comprar".
+
+### Identidad de marca
+
+El nombre y el logo son "Vuelvo" (antes "GUTMARK Fideliza") — la marca es
+deliberadamente una sola palabra, sin sufijo tipo "CRM" o "App" en el wordmark.
+El ícono (`public/logo.png`, 1024×1024) y el lockup horizontal
+(`public/logo-v2.png`, ícono + wordmark) son *raster* generados por IA, no SVG
+a mano — no hay paths vectoriales del mark en ningún lado del repo.
+
+`components/logo.tsx` es el único lugar que sabe qué archivo usar para el
+ícono. `<LogoMark>` (solo ícono) y `<Logo>` (ícono + texto "Vuelvo") se usan en
+sidebar, topbar mobile, drawer, header de `/admin`, panel de `(auth)`, nav y
+footer de la landing, y la tarjeta de fidelidad — así que cambiar de logo (o
+sacarle el fondo) es editar ese único archivo, no perseguir cada uso. El ícono
+ya trae su propio fondo verde (`#022c22`) y funciona como badge autocontenido
+en cualquier superficie sin necesitar transparencia; `logo-v2.png` en cambio
+tiene fondo blanco fijo, así que **no** se usa en UI en línea (chocaría contra
+superficies oscuras) — solo como imagen de Open Graph/Twitter Card en
+`app/layout.tsx`, donde un fondo sólido es lo esperado.
+
+`scripts/generate-icons.cjs` (`npm run icons:generate`) ya no rasteriza un SVG
+propio: recorta y redondea `public/logo.png` con `sharp` para producir
+`app/icon.png`, `app/apple-icon.png` y todo `public/icons/`. El maskable
+(`icon-512-maskable.png`) sale sin esquinas redondeadas a propósito — el
+sistema operativo aplica su propia máscara sobre el lienzo completo. Si el
+logo cambia, correr `npm run icons:generate` de nuevo regenera los seis
+archivos.
 
 ## Comandos
 
@@ -76,7 +104,7 @@ de otro modo estarían expuestas. `scripts/verify-security.cjs` checkea que el l
 
 `User.role` es `"owner"` (default, atado a un negocio) o `"superadmin"` (puede manejar cada
 negocio via `/admin`). La propia fila `User` de un superadmin aún apunta a un negocio placeholder
-nominal (`GUTMARK (interno)`, creado por seed, `billingExempt: true`) puramente para satisfacer
+nominal (`Vuelvo (interno)`, creado por seed, `billingExempt: true`) puramente para satisfacer
 el FK requerido — de otro modo no se usa.
 
 ### Auth e suplantación (`lib/auth.ts`)

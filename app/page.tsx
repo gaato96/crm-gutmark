@@ -10,7 +10,6 @@ import {
   Puzzle,
   Send,
   ShieldCheck,
-  Sparkles,
   Users,
 } from "lucide-react";
 import { getSessionUser } from "@/lib/auth";
@@ -24,9 +23,9 @@ import { WordScrub } from "@/components/landing/word-scrub";
 import { StepFlow } from "@/components/landing/step-flow";
 import { RubroMarquee } from "@/components/landing/rubro-marquee";
 import { MagneticCta } from "@/components/landing/magnetic-cta";
+import { Logo } from "@/components/logo";
 
-const CTA_MESSAGE =
-  "¡Hola! Quiero pedir acceso a GUTMARK Fideliza para mi negocio.";
+const CTA_MESSAGE = "¡Hola! Quiero pedir acceso a Vuelvo para mi negocio.";
 
 // Un solo texto por intención en toda la página: el botón de WhatsApp dice
 // siempre "Pedir acceso", nunca "Escribinos" ni "Empezar".
@@ -127,17 +126,7 @@ function Nav() {
   return (
     <header className="glass sticky top-0 z-40 border-b">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 sm:px-8">
-        <div className="flex items-center gap-2.5">
-          <div className="grid h-9 w-9 place-items-center rounded-xl bg-brand-600 text-white shadow-sm shadow-brand-600/30">
-            <Sparkles aria-hidden="true" className="h-5 w-5" strokeWidth={2.4} />
-          </div>
-          <div className="leading-tight">
-            <div className="text-sm font-bold text-ink">GUTMARK</div>
-            <div className="text-[11px] font-medium text-brand-600 dark:text-brand-400">
-              Fideliza
-            </div>
-          </div>
-        </div>
+        <Logo size="sm" />
 
         <nav aria-label="Secciones" className="hidden items-center gap-7 md:flex">
           <a
@@ -641,14 +630,9 @@ function Footer() {
     <footer className="border-t border-line py-10">
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-5 text-center sm:flex-row sm:justify-between sm:px-8 sm:text-left">
         <div className="flex items-center gap-2.5">
-          <div className="grid h-8 w-8 place-items-center rounded-lg bg-brand-600 text-white">
-            <Sparkles aria-hidden="true" className="h-4 w-4" />
-          </div>
-          <div className="leading-tight">
-            <div className="text-sm font-bold text-ink">GUTMARK Fideliza</div>
-            <div className="text-xs text-ink-muted">
-              Fidelización para PYMES argentinas
-            </div>
+          <Logo size="sm" />
+          <div className="text-xs text-ink-muted">
+            Fidelización para PYMES argentinas
           </div>
         </div>
         <div className="flex items-center gap-5 text-sm">
@@ -669,7 +653,7 @@ function Footer() {
         </div>
       </div>
       <p className="mt-6 text-center text-xs text-ink-faint">
-        © {new Date().getFullYear()} GUTMARK Fideliza
+        © {new Date().getFullYear()} Vuelvo
       </p>
     </footer>
   );

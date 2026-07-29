@@ -125,7 +125,7 @@ export default async function ModulosPage({
                 <p className="mt-1 text-sm text-ink-muted">{m.description}</p>
                 <a
                   href={businessWhatsappLink(
-                    `¡Hola! Soy ${biz.name}. Quiero sumar el módulo "${m.name}" a mi cuenta de GUTMARK Fideliza.`
+                    `¡Hola! Soy ${biz.name}. Quiero sumar el módulo "${m.name}" a mi cuenta de Vuelvo.`
                   )}
                   target="_blank"
                   rel="noopener noreferrer"

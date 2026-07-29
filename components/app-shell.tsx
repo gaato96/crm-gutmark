@@ -14,7 +14,6 @@ import {
   Blocks,
   Menu,
   X,
-  Sparkles,
   LogOut,
   ShoppingBag,
   UserPlus,
@@ -26,6 +25,7 @@ import { logout } from "@/app/auth-actions";
 import { stopImpersonatingAction } from "@/app/admin-actions";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { QuickSaleModal } from "@/components/quick-sale-modal";
+import { Logo } from "@/components/logo";
 import { MODULE_NAV } from "@/lib/modules";
 
 interface NavItem {
@@ -84,19 +84,7 @@ function NavItems({ items, onNavigate }: { items: NavItem[]; onNavigate?: () => 
 }
 
 function Brand() {
-  return (
-    <div className="flex items-center gap-2.5 px-2">
-      <div className="grid h-9 w-9 place-items-center rounded-xl bg-brand-600 text-white shadow-sm shadow-brand-600/30">
-        <Sparkles className="h-5 w-5" strokeWidth={2.4} />
-      </div>
-      <div className="leading-tight">
-        <div className="font-display text-base leading-none text-ink">GUTMARK</div>
-        <div className="text-[11px] font-medium text-brand-600 dark:text-brand-400">
-          Fideliza
-        </div>
-      </div>
-    </div>
-  );
+  return <Logo className="px-2" />;
 }
 
 export function AppShell({

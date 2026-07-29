@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Fideliza",
+    title: "Vuelvo",
   },
   // Next solo emite "mobile-web-app-capable" (sin prefijo); muchas versiones
   // de iOS Safari todavía requieren la variante "apple-" para el modo

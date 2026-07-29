@@ -12,10 +12,10 @@ import type { MetadataRoute } from "next";
 function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",
-    name: "GUTMARK Fideliza",
-    short_name: "Fideliza",
+    name: "Vuelvo",
+    short_name: "Vuelvo",
     description:
-      "Plataforma de fidelización post-venta para PYMES. Conocé, cuidá y hacé volver a tus clientes.",
+      "El sistema que hace que tus clientes vuelvan a comprar. Conocé, cuidá y hacé volver a los clientes de tu PYME.",
     start_url: "/dashboard",
     scope: "/",
     display: "standalone",

@@ -16,9 +16,19 @@ const jetbrainsMono = JetBrains_Mono({
 // El manifest y las meta apple-web-app se declaran solo en app/(app)/layout.tsx:
 // la app instalable es el panel, no esta landing pública (ver Fase 4).
 export const metadata: Metadata = {
-  title: "GUTMARK Fideliza | Hacé volver a tus clientes",
+  title: "Vuelvo | El sistema que hace que tus clientes vuelvan a comprar",
   description:
-    "Plataforma de fidelización post-venta para PYMES. Conocé, cuidá y hacé volver a tus clientes.",
+    "El sistema que hace que tus clientes vuelvan a comprar. Conocé, cuidá y hacé volver a los clientes de tu PYME.",
+  // Usa el lockup horizontal (ícono + wordmark), pensado para tarjetas de
+  // preview de redes/mensajería — no para UI en línea, donde su fondo blanco
+  // fijo chocaría con superficies oscuras.
+  openGraph: {
+    images: [{ url: "/logo-v2.png", width: 2064, height: 512, alt: "Vuelvo" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/logo-v2.png"],
+  },
 };
 
 export const viewport: Viewport = {

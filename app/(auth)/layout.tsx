@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
-import { Sparkles } from "lucide-react";
 import { getSessionUser } from "@/lib/auth";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Logo } from "@/components/logo";
 
 export default async function AuthLayout({
   children,
@@ -25,15 +25,7 @@ export default async function AuthLayout({
             backgroundSize: "28px 28px",
           }}
         />
-        <div className="relative flex items-center gap-2.5">
-          <div className="grid h-10 w-10 place-items-center rounded-xl bg-white/15">
-            <Sparkles className="h-5 w-5" />
-          </div>
-          <div className="leading-tight">
-            <div className="font-bold">GUTMARK</div>
-            <div className="text-xs text-brand-100">Fideliza</div>
-          </div>
-        </div>
+        <Logo tone="onBrand" size="lg" className="relative" />
         <div className="relative">
           <h2 className="text-3xl font-bold leading-tight">
             Vendé más sin conseguir
@@ -46,7 +38,7 @@ export default async function AuthLayout({
           </p>
         </div>
         <div className="relative text-sm text-brand-200">
-          © {new Date().getFullYear()} GUTMARK · Fidelización para PYMES
+          © {new Date().getFullYear()} Vuelvo · Fidelización para PYMES
         </div>
       </div>
 

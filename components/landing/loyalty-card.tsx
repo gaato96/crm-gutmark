@@ -1,4 +1,5 @@
-import { Sparkles, Star } from "lucide-react";
+import { Star } from "lucide-react";
+import { LogoMark } from "@/components/logo";
 
 const STAMPS = 10;
 const FILLED = 7;
@@ -21,10 +22,8 @@ export function LoyaltyCard() {
 
       <div className="relative flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <div className="grid h-7 w-7 place-items-center rounded-lg bg-white/15">
-            <Sparkles aria-hidden="true" className="h-3.5 w-3.5 text-white" />
-          </div>
-          <span className="font-display text-base text-white">GUTMARK</span>
+          <LogoMark size={28} />
+          <span className="font-display text-base text-white">Vuelvo</span>
         </div>
         <span className="truncate rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-brand-100">
           Perfumería Bella

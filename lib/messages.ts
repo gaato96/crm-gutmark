@@ -31,7 +31,7 @@ export function mailtoLink(
   )}&body=${encodeURIComponent(body)}`;
 }
 
-// Número de WhatsApp del negocio (GUTMARK) para pedidos de acceso desde la landing.
+// Número de WhatsApp del negocio (Vuelvo) para pedidos de acceso desde la landing.
 // +54 381 5976357 en formato wa.me: los celulares argentinos llevan un "9" después
 // del código de país (54) para que el link abra el chat correcto.
 export const WHATSAPP_BUSINESS_NUMBER = "5493815976357";
