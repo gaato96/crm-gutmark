@@ -80,11 +80,30 @@ const config: Config = {
           from: { opacity: "0", transform: "translateY(100%)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
+        // La pista de la cinta de rubros lleva el contenido duplicado, así que
+        // desplazar el 50% deja la segunda copia justo donde estaba la primera.
+        marquee: {
+          from: { transform: "translate3d(0,0,0)" },
+          to: { transform: "translate3d(-50%,0,0)" },
+        },
+        // Deriva lenta de las manchas de color del hero. Dos ritmos distintos
+        // y primos entre sí para que el fondo nunca se repita a ojo.
+        "drift-a": {
+          "0%, 100%": { transform: "translate3d(0,0,0) scale(1)" },
+          "50%": { transform: "translate3d(6%, -8%, 0) scale(1.12)" },
+        },
+        "drift-b": {
+          "0%, 100%": { transform: "translate3d(0,0,0) scale(1.06)" },
+          "50%": { transform: "translate3d(-7%, 6%, 0) scale(1)" },
+        },
       },
       animation: {
         "fade-in": "fade-in 0.3s cubic-bezier(0.16,1,0.3,1)",
         "scale-in": "scale-in 0.2s cubic-bezier(0.16,1,0.3,1)",
         "slide-up": "slide-up 0.28s cubic-bezier(0.16,1,0.3,1)",
+        marquee: "marquee 46s linear infinite",
+        "drift-a": "drift-a 19s ease-in-out infinite",
+        "drift-b": "drift-b 26s ease-in-out infinite",
       },
     },
   },

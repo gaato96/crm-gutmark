@@ -16,7 +16,7 @@ const jetbrainsMono = JetBrains_Mono({
 // El manifest y las meta apple-web-app se declaran solo en app/(app)/layout.tsx:
 // la app instalable es el panel, no esta landing pública (ver Fase 4).
 export const metadata: Metadata = {
-  title: "GUTMARK Fideliza — Hacé volver a tus clientes",
+  title: "GUTMARK Fideliza | Hacé volver a tus clientes",
   description:
     "Plataforma de fidelización post-venta para PYMES. Conocé, cuidá y hacé volver a tus clientes.",
 };

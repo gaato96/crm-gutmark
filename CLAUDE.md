@@ -171,6 +171,61 @@ Tipografía: Calistoga (display/headings, `font-display`) + Inter (body, default
 JetBrains Mono (`font-mono`, usada para eyebrow labels pequeños uppercase), todas via
 `next/font/google` en `app/layout.tsx`.
 
+### Landing pública: GSAP, fotos remotas y contraste de botones
+
+`app/page.tsx` es la única página con motion de scroll y con imágenes remotas.
+El panel no usa ninguna de las dos cosas, así que todo eso vive fuera de `(app)`.
+
+El motion es GSAP + ScrollTrigger, registrados una sola vez en
+`components/landing/gsap-setup.ts`; el resto de los componentes de motion importan
+desde ahí. Cada uno es un client-leaf (`"use client"`) que recibe los hijos ya
+renderizados por el Server Component padre y los ubica con atributos `data-*`
+(`data-anim`, `data-step`), así la landing sigue siendo server-rendered y el
+envoltorio client no conoce su contenido. **Todo el motion vive dentro de un
+`gsap.matchMedia("(prefers-reduced-motion: no-preference)")`**: con movimiento
+reducido las animaciones nunca se crean y el marcado queda en su estado final
+visible, sin necesidad de un camino alternativo. Las animaciones CSS
+(`animate-marquee` y compañía) necesitan su propio corte, que está al final de
+`app/globals.css`.
+
+La cinta de rubros es CSS puro, sin JS: la pista lleva el contenido duplicado y
+se desplaza `-50%`. La separación entre ítems va como `padding-right` de cada
+uno y **no** como `gap` del flex: con `gap` el ancho total es `2·copia + gap` y
+el corte del bucle no cae justo, así que se ve un salto en cada vuelta.
+
+**El hero es la única banda que se queda oscura en los dos temas.** Su fondo es
+`public/hero.mp4` y sobre un video no se puede garantizar contraste con tokens
+que cambian de valor según el tema, así que el scrim y los colores del texto
+quedan fijos y el contraste se calcula una sola vez. Dentro del hero **no uses
+`text-ink` ni `bg-surface`**: en modo claro serían texto oscuro sobre negro. El
+botón secundario también es propio del hero por el mismo motivo. Lo único que
+sigue al tema es el fundido inferior, que va hacia `canvas` para que el corte
+con la sección siguiente no se note.
+
+El scrim son dos capas y cambia de forma según el ancho: en mobile es plano
+(el texto ocupa todo el ancho, un degradado horizontal dejaría el final de cada
+renglón sobre la zona clara) y en `lg:` es direccional (el texto vive en la
+mitad izquierda, así que la derecha se abre y deja ver el video). Los peores
+casos medidos, suponiendo un cuadro blanco del video: 9:1 mobile, 10:1 desktop.
+Si tocás las opacidades, rehacé esa cuenta.
+
+`components/landing/hero-video.tsx` no hace autoplay a ciegas: se frena con
+`prefers-reduced-motion`, con `saveData`, y se pausa fuera de pantalla o con la
+pestaña oculta. El flag `onScreen` arranca en `true` a propósito, para que si el
+IntersectionObserver no llegara a disparar el video no quede pausado para
+siempre en el primer cambio de pestaña.
+
+Las fotos salen de Unsplash vía `lib/landing-media.ts` (archivo puro, lo importan
+server y client). El host está declarado en `images.remotePatterns` de
+`next.config.mjs`; si algún día se agrega otro origen hay que sumarlo ahí o
+`next/image` tira error en build.
+
+`.btn-primary` usa `brand-700` y no `brand-600`, y `.btn-gold` usa texto
+`brand-950` sobre `gold-400` en vez de blanco: las combinaciones anteriores daban
+3.77:1 y 2.15:1, por debajo del 4.5:1 que pide WCAG AA. Los hover oscurecen en
+lugar de aclarar para que todos los estados pasen. Esto afecta a toda la app, no
+solo a la landing, así que no lo revuelvas para "recuperar" el verde original.
+
 ### PWA: panel instalable, no el sitio de marketing
 
 Solo `app/(app)/` es instalable como PWA — el landing público (`app/page.tsx`) y
