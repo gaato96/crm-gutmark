@@ -296,3 +296,16 @@ instancia Postgres Supabase también está en `sa-east-1`; apuntando serverless 
 región diferente previamente causó 5-9s page loads de cross-continent connection setup en
 cada Lambda frío. Si deploy latency regresa, checkea `vercel.json` región vs. DB región
 antes que cualquier otra cosa.
+
+### Página oculta de estrategia de marketing
+
+`app/panel-mkt-9f3e7ab2/page.tsx` es una ruta de lectura exclusiva del dueño del proyecto,
+sin link desde ningún lado del sistema. El control de acceso es únicamente el slug aleatorio
+de la URL más `robots: noindex` (no aparece en buscadores) — no requiere `getSessionUser()`
+ni ningún login, a propósito, para poder abrirla desde el celular con solo el link guardado.
+Renderiza (via `marked`) los `.md` que viven en `docs/marketing/` (plan de marketing,
+prospección, precios, mensajes en frío), generados con las skills `/prospecting`,
+`/marketing-plan`, `/pricing` y `/cold-email` a partir del contexto de
+`.agents/product-marketing.md` (ese archivo está gitignoreado — vive solo local, no en el
+repo). Si se agregan o renombran documentos en `docs/marketing/`, actualizar el array
+`DOCUMENTS` en ese archivo.
