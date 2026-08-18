@@ -10,7 +10,7 @@ import {
   createSession,
   stopImpersonating,
 } from "@/lib/auth";
-import { createDefaultTemplates } from "@/lib/default-templates";
+import { createDefaultCampaigns } from "@/lib/default-campaigns";
 import { isModuleCode, MODULE_SEED } from "@/lib/modules";
 
 export interface AdminFormState {
@@ -53,7 +53,7 @@ export async function createBusiness(
       role: "owner",
     },
   });
-  await createDefaultTemplates(business.id);
+  await createDefaultCampaigns(business.id);
 
   revalidatePath("/admin");
   redirect("/admin");

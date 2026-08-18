@@ -14,6 +14,7 @@ export function ReminderCard({
   email,
   hint,
   reason,
+  campaignId,
   whatsappBody,
   emailSubject,
   emailBody,
@@ -24,6 +25,8 @@ export function ReminderCard({
   email: string | null;
   hint: string;
   reason: string;
+  // Campaña que originó el recordatorio, para dejarlo asentado en ContactLog.
+  campaignId?: string;
   whatsappBody: string;
   emailSubject: string;
   emailBody: string;
@@ -43,7 +46,7 @@ export function ReminderCard({
   async function markDone() {
     setBusy(true);
     try {
-      await logContact(id, reason, "manual");
+      await logContact(id, reason, "manual", campaignId);
       setDone(true);
     } finally {
       setBusy(false);

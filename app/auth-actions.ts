@@ -13,7 +13,7 @@ import {
   getSessionToken,
   revokeOtherSessions,
 } from "@/lib/auth";
-import { createDefaultTemplates } from "@/lib/default-templates";
+import { createDefaultCampaigns } from "@/lib/default-campaigns";
 
 export interface AuthState {
   error?: string;
@@ -58,7 +58,7 @@ export async function register(
     },
   });
 
-  await createDefaultTemplates(business.id);
+  await createDefaultCampaigns(business.id);
   await touchLastLogin(user.id);
   await createSession(user.id);
   redirect("/dashboard");

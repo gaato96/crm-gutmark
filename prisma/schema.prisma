@@ -32,6 +32,7 @@ model Business {
   customers     Customer[]
   purchases     Purchase[]
   templates     Template[]
+  campaigns     Campaign[]
   contacts      ContactLog[]
   users         User[]
   modules       BusinessModule[]
@@ -107,6 +108,9 @@ model Purchase {
   @@index([customerId])
 }
 
+// OBSOLETO: lo reemplazó `Campaign`, que junta el disparador y los dos canales
+// en una sola fila. Se mantiene hasta confirmar que todos los negocios pasaron
+// por scripts/migrate-templates.cjs; después se borra el modelo y la tabla.
 model Template {
   id         String   @id @default(cuid())
   businessId String
@@ -123,6 +127,45 @@ model Template {
   @@index([businessId])
 }
 
+// Campaña: un disparador (a quién) más el mensaje de cada canal (qué decirle).
+// Las dos que vienen de fábrica (cumpleaños y recompra) llevan `builtin`; el
+// negocio puede crear las suyas y el disparador se evalúa al leer, sin cron —
+// ver lib/campaigns.ts.
+model Campaign {
+  id          String  @id @default(cuid())
+  businessId  String
+  name        String
+  description String  @default("")
+  active      Boolean @default(true)
+  // "birthday" | "winback" para las de fábrica; null si la creó el negocio.
+  // Las de fábrica se pueden desactivar y editar, pero no borrar: el resto de
+  // la app (recordatorios, ficha de cliente) las busca por este código.
+  builtin     String?
+
+  // Disparador. Ver TRIGGER_META en lib/campaigns.ts para qué campo usa cada
+  // tipo; los que no aplican quedan en null.
+  triggerType String
+  triggerDays Int?
+  segment     String?
+  minSpend    Float?
+  // Para los disparadores por tiempo: no incluir a quien ya se dio por perdido.
+  // El mensaje de "hace poco que no venís" no aplica a un cliente inactivo, que
+  // tiene su propia campaña de reactivación.
+  excludeInactive Boolean @default(false)
+
+  whatsappBody String @default("")
+  emailSubject String @default("")
+  emailBody    String @default("")
+
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  business Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  contacts ContactLog[]
+
+  @@index([businessId])
+}
+
 model ContactLog {
   id         String   @id @default(cuid())
   businessId String
@@ -131,13 +174,18 @@ model ContactLog {
   reason     String
   // email | whatsapp
   channel    String
+  // Campaña que originó el contacto, si salió de una. Queda en null si la
+  // campaña se borra: el historial de "a quién contacté" sobrevive igual.
+  campaignId String?
   createdAt  DateTime @default(now())
 
-  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customer Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  campaign Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
 
   @@index([businessId])
   @@index([customerId])
+  @@index([campaignId])
 }
 
 // --- Módulos opcionales de pago -------------------------------------------

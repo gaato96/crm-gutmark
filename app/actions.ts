@@ -42,8 +42,19 @@ export async function createCustomer(formData: FormData) {
 }
 
 export async function updateCustomer(id: string, formData: FormData) {
+  const biz = await getCurrentBusiness();
   const name = str(formData.get("name"));
   if (!name) throw new Error("El nombre es obligatorio");
+
+  // Un Server Action es un endpoint POST direccionable: sin este chequeo,
+  // cualquier sesión válida podría editar el cliente de otro negocio pasando
+  // su id. `updateMany` con businessId no alcanza porque después redirigimos
+  // a la ficha, así que confirmamos la pertenencia primero.
+  const owned = await db.customer.findFirst({
+    where: { id, businessId: biz.id },
+    select: { id: true },
+  });
+  if (!owned) throw new Error("Cliente no encontrado");
 
   await db.customer.update({
     where: { id },
@@ -64,7 +75,10 @@ export async function updateCustomer(id: string, formData: FormData) {
 }
 
 export async function deleteCustomer(id: string) {
-  await db.customer.delete({ where: { id } });
+  const biz = await getCurrentBusiness();
+  // deleteMany + businessId: si el id es de otro negocio no borra nada, en
+  // lugar de borrarlo. Un `delete` por id suelto sería un IDOR destructivo.
+  await db.customer.deleteMany({ where: { id, businessId: biz.id } });
   revalidatePath("/clientes");
   revalidatePath("/dashboard");
   redirect("/clientes");
@@ -75,6 +89,15 @@ export async function addPurchase(customerId: string, formData: FormData) {
   const amount = parseFloat((formData.get("amount") ?? "0").toString());
   if (!amount || amount <= 0) throw new Error("El monto debe ser mayor a 0");
   const date = parseDate(formData.get("date")) ?? new Date();
+
+  // Igual que en updateCustomer: el customerId llega del cliente y hay que
+  // confirmar que es de este negocio antes de escribirle nada. quickSale ya lo
+  // hacía; esta ruta se había quedado sin el chequeo.
+  const owned = await db.customer.findFirst({
+    where: { id: customerId, businessId: biz.id },
+    select: { id: true },
+  });
+  if (!owned) throw new Error("Cliente no encontrado");
 
   const purchase = await db.purchase.create({
     data: {
@@ -104,11 +127,31 @@ export async function addPurchase(customerId: string, formData: FormData) {
 export async function logContact(
   customerId: string,
   reason: string,
-  channel: string
+  channel: string,
+  campaignId?: string
 ) {
   const biz = await getCurrentBusiness();
+
+  const owned = await db.customer.findFirst({
+    where: { id: customerId, businessId: biz.id },
+    select: { id: true },
+  });
+  if (!owned) throw new Error("Cliente no encontrado");
+
+  // La campaña también se valida: si no es de este negocio, se registra el
+  // contacto sin asociarlo en vez de fallar — lo importante es no perder el
+  // registro de que ya se contactó a esa persona.
+  let linkedCampaignId: string | null = null;
+  if (campaignId) {
+    const campaign = await db.campaign.findFirst({
+      where: { id: campaignId, businessId: biz.id },
+      select: { id: true },
+    });
+    linkedCampaignId = campaign?.id ?? null;
+  }
+
   await db.contactLog.create({
-    data: { businessId: biz.id, customerId, reason, channel },
+    data: { businessId: biz.id, customerId, reason, channel, campaignId: linkedCampaignId },
   });
   revalidatePath("/recordatorios");
   revalidatePath(`/clientes/${customerId}`);
@@ -129,17 +172,6 @@ export async function updateBusiness(formData: FormData) {
   revalidatePath("/configuracion");
   revalidatePath("/dashboard");
   revalidatePath("/segmentos");
-}
-
-export async function saveTemplate(id: string, formData: FormData) {
-  await db.template.update({
-    where: { id },
-    data: {
-      subject: (formData.get("subject") ?? "").toString(),
-      body: (formData.get("body") ?? "").toString(),
-    },
-  });
-  revalidatePath("/campanas");
 }
 
 export interface ImportRow {

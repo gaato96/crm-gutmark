@@ -14,6 +14,8 @@ import {
   getEnrichedCustomers,
   buildDashboard,
   toConfig,
+  getCampaigns,
+  ruleDefaults,
 } from "@/lib/queries";
 import { formatMoney } from "@/lib/format";
 import { SEGMENT_META, Segment } from "@/lib/segmentation";
@@ -34,7 +36,12 @@ export default async function DashboardPage() {
   const biz = await getCurrentBusiness();
   const cfg = toConfig(biz);
   const customers = await getEnrichedCustomers(biz.id, cfg);
-  const stats = buildDashboard(customers);
+  const campaigns = await getCampaigns(biz.id);
+  const stats = buildDashboard(
+    customers,
+    campaigns.filter((c) => c.active),
+    ruleDefaults(biz)
+  );
 
   const now = new Date();
   const since30 = new Date(now.getTime() - 30 * DAY);

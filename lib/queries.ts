@@ -11,6 +11,8 @@ import {
   birthdayThisMonth,
 } from "./segmentation";
 import { daysSince } from "./format";
+import { matchesCampaign, CampaignRule, RuleDefaults } from "./campaigns";
+import type { Campaign } from "@prisma/client";
 
 export interface EnrichedCustomer {
   id: string;
@@ -98,6 +100,28 @@ export async function getEnrichedCustomers(
   });
 }
 
+// Las campañas del negocio, en el orden en que se muestran. Único lugar que
+// las lee: /campanas, /recordatorios y el dashboard pasan por acá para que las
+// tres pantallas cuenten exactamente la misma audiencia.
+export async function getCampaigns(businessId: string): Promise<Campaign[]> {
+  return db.campaign.findMany({
+    where: { businessId },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+  });
+}
+
+export function ruleDefaults(biz: { recompraDays: number }): RuleDefaults {
+  return { recompraDays: biz.recompraDays };
+}
+
+export function campaignRecipients(
+  campaign: CampaignRule,
+  customers: EnrichedCustomer[],
+  defaults: RuleDefaults
+): EnrichedCustomer[] {
+  return customers.filter((c) => matchesCampaign(c, campaign, defaults));
+}
+
 export interface DashboardStats {
   totalCustomers: number;
   activeCustomers: number;
@@ -112,7 +136,11 @@ export interface DashboardStats {
   segmentCounts: Record<Segment, number>;
 }
 
-export function buildDashboard(customers: EnrichedCustomer[]): DashboardStats {
+export function buildDashboard(
+  customers: EnrichedCustomer[],
+  campaigns: CampaignRule[],
+  defaults: RuleDefaults
+): DashboardStats {
   const totalCustomers = customers.length;
   const inactiveCustomers = customers.filter((c) => c.segment === "inactivo").length;
   const vipCustomers = customers.filter((c) => c.isVip).length;
@@ -141,9 +169,17 @@ export function buildDashboard(customers: EnrichedCustomer[]): DashboardStats {
         )
       : null;
 
-  const pendingReminders =
-    customers.filter((c) => c.birthdayInDays !== null && c.birthdayInDays <= 7).length +
-    customers.filter((c) => c.needsWinback && c.segment !== "inactivo").length;
+  // Clientes alcanzados por al menos una campaña activa, contados una sola vez.
+  // Antes eran dos filtros hardcodeados que sumaban por separado: quien cumplía
+  // años y además debía recompra se contaba dos veces, y el número no coincidía
+  // con lo que después mostraba /recordatorios.
+  const reached = new Set<string>();
+  for (const campaign of campaigns) {
+    for (const c of customers) {
+      if (matchesCampaign(c, campaign, defaults)) reached.add(c.id);
+    }
+  }
+  const pendingReminders = reached.size;
 
   return {
     totalCustomers,

@@ -63,6 +63,7 @@ npm run build        # prisma generate && next build (lo que ejecuta Vercel)
 npm run db:push      # pushea prisma/schema.prisma a la base de datos (sin archivos de migración — schema-driven)
 npm run db:seed      # borra + reseed datos demo (ver nota de peligro abajo)
 npm run db:reset     # db push --force-reset + db:seed
+npm run db:migrate-campaigns   # consolida Template (viejo) en Campaign; idempotente, no borra nada
 npm run icons:generate    # regenera íconos PWA + og.png desde public/logo.svg via sharp
 node scripts/pdf-to-svg.cjs   # regenera public/logo*.svg desde el PDF del manual de marca
 ```
@@ -146,11 +147,19 @@ también loguea fuera en cualquier otro dispositivo/navegador.
 
 ### Todo escribe via Server Actions
 
-`app/actions.ts` (customer/purchase/template/business CRUD + CSV import + venta rápida),
+`app/actions.ts` (customer/purchase/business CRUD + CSV import + venta rápida),
+`app/campaign-actions.ts` (CRUD de campañas), `app/points-actions.ts` (módulo Puntos),
 `app/auth-actions.ts` (register/login/logout), `app/admin-actions.ts` (solo superadmin). No hay
 capa REST/API para mutaciones — solo `app/(app)/clientes/export/route.ts` existe como
 Route Handler plain, porque descarga de CSV necesita headers `Response` raw en lugar de
 server action.
+
+⚠️ **Un Server Action es un endpoint POST direccionable por su ID.** Cualquier acción que
+reciba un `id` del cliente tiene que confirmar la pertenencia contra el negocio de la
+sesión (`findFirst({ where: { id, businessId } })`, o `updateMany`/`deleteMany` con el
+`businessId` en el where) — no alcanza con que la UI solo muestre lo propio. `updateCustomer`,
+`deleteCustomer`, `addPurchase` y `logContact` no lo hacían y permitían tocar datos de otro
+negocio pasando el id a mano.
 
 ### Segmentación es computada, no guardada
 
@@ -159,6 +168,43 @@ server action.
 `vipMinSpend` más historial de compras del customer — no hay columna `segment` en ningún lado.
 `getEnrichedCustomers()` de `lib/queries.ts` es el único lugar que joinea Customer + Purchase y
 corre esta clasificación; reúsalo en lugar de re-derivar segmentos en otros lados.
+
+### Campañas: disparador guardado, audiencia calculada al leer
+
+Una `Campaign` junta **a quién le llega** (el disparador) y **qué le dice** (cuerpo de
+WhatsApp + asunto y cuerpo de email) en una sola fila. Reemplazó a `Template`, que
+guardaba una fila por tipo × canal y no tenía disparador propio — los tres filtros
+("cumple esta semana", "vencieron la recompra", "inactivos") estaban escritos a mano y
+duplicados en `/campanas`, `/recordatorios` y `buildDashboard`. `Template` sigue en el
+schema hasta confirmar que todos los negocios pasaron por `npm run db:migrate-campaigns`
+(idempotente, respeta el texto que el negocio ya había escrito); después se borra.
+
+**No hay cron.** Igual que el segmento, la audiencia no se materializa: se calcula en
+cada lectura con `matchesCampaign()` de `lib/campaigns.ts`. Ese archivo es **puro** a
+propósito — sin `server-only`, sin Prisma — porque `components/campaign-editor.tsx` es
+client y necesita `TRIGGER_META` para armar el formulario. `lib/queries.ts` expone
+`getCampaigns()` / `campaignRecipients()` / `ruleDefaults()`, y las tres pantallas pasan
+por ahí: si alguna vuelve a filtrar clientes por su cuenta, los números dejan de coincidir
+entre sí (que es exactamente el bug que había — el dashboard sumaba cumpleaños + recompra
+por separado y contaba dos veces a quien caía en ambas).
+
+`triggerDays` en `null` **no** significa cero: significa "usar el default". La campaña de
+recompra de fábrica lo deja en null a propósito para seguir el `recompraDays` de
+Configuración en vez de duplicar el valor. `excludeInactive` existe porque el mensaje de
+"hace poco que no venís" no aplica a alguien que ya se dio por perdido.
+
+Las campañas con `builtin` (`birthday`, `winback`) se editan en el texto pero **no en el
+disparador**, y no se borran: el resto de la app las busca por ese código. Ojo con esto:
+el editor deshabilita esos controles, y **un control deshabilitado no viaja en el
+FormData**, así que `updateCampaign` parsea el texto y el disparador por separado
+(`parseText` / `parseTrigger`) — pedir el disparador siempre haría imposible guardar una
+campaña de fábrica. El server tampoco debería confiar en un disparador mandado por el
+cliente para una campaña cuyo disparador no se puede cambiar.
+
+Las variables de `renderTemplate` (`lib/messages.ts`) se resuelven por diccionario con una
+regex, no con `replaceAll` literal: una variable mal escrita queda **visible** en el
+mensaje (`{nombree}`) en vez de desaparecer, así el negocio ve el error antes de
+mandárselo a un cliente. `{puntos}` solo trae dato real si el módulo Puntos está activo.
 
 ### Módulos de complemento pagos
 

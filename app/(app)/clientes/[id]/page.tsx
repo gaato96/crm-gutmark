@@ -13,7 +13,7 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import { db } from "@/lib/db";
-import { getCurrentBusiness, toConfig } from "@/lib/queries";
+import { getCurrentBusiness, toConfig, getCampaigns, ruleDefaults } from "@/lib/queries";
 import { formatMoney, formatDate, daysSince } from "@/lib/format";
 import {
   computeSegment,
@@ -22,7 +22,8 @@ import {
   daysToBirthday,
   ageTurning,
 } from "@/lib/segmentation";
-import { renderTemplate } from "@/lib/messages";
+import { matchesCampaign } from "@/lib/campaigns";
+import { buildCampaignMessage } from "@/lib/build-message";
 import { pointsBalance } from "@/lib/points";
 import { Avatar, SegmentBadge, Pill } from "@/components/ui";
 import { AddPurchaseForm } from "@/components/add-purchase-form";
@@ -47,7 +48,7 @@ export default async function ClienteDetailPage({
   });
   if (!customer) notFound();
 
-  const templates = await db.template.findMany({ where: { businessId: biz.id } });
+  const campaigns = await getCampaigns(biz.id);
 
   const pointsEnabled = biz.modules.includes("puntos");
   let pointsHistory: { id: string; points: number; reason: string; note: string | null; createdAt: Date }[] = [];
@@ -80,27 +81,42 @@ export default async function ClienteDetailPage({
   const bdayIn = daysToBirthday(customer.birthdate);
   const tags = customer.tags ? customer.tags.split(",").map((t) => t.trim()).filter(Boolean) : [];
 
-  // Determinar mensaje sugerido según contexto
-  const vars = { nombre: customer.name, negocio: biz.name };
-  const pick = (type: string, channel: string) =>
-    templates.find((t) => t.type === type && t.channel === channel);
+  // Mensaje sugerido: la primera campaña activa que hoy alcanzaría a este
+  // cliente, evaluada con el mismo motor que /campanas y /recordatorios. Antes
+  // era un if/else propio sobre las plantillas, que podía sugerir algo distinto
+  // de lo que decía el recordatorio para la misma persona.
+  const daysSinceLast = daysSince(customer.lastPurchaseAt);
+  const target = {
+    segment,
+    birthdayInDays: bdayIn,
+    daysSinceLast,
+    createdAt: customer.createdAt,
+    totalSpent,
+  };
+  const suggested =
+    campaigns.find((c) => c.active && matchesCampaign(target, c, ruleDefaults(biz))) ?? null;
 
-  let reason = "Agradecer y fidelizar";
-  let waTpl = pick("winback", "whatsapp");
-  let emTpl = pick("winback", "email");
+  const reason = suggested
+    ? suggested.triggerType === "birthday" && bdayIn !== null
+      ? bdayIn === 0
+        ? "¡Cumple hoy! 🎂"
+        : `Cumpleaños en ${bdayIn} días`
+      : suggested.name
+    : "Agradecer y fidelizar";
 
-  if (bdayIn !== null && bdayIn <= 7) {
-    reason = bdayIn === 0 ? "¡Cumple hoy! 🎂" : `Cumpleaños en ${bdayIn} días`;
-    waTpl = pick("birthday", "whatsapp") ?? waTpl;
-    emTpl = pick("birthday", "email") ?? emTpl;
-  } else if (winback) {
-    reason = `Sin comprar hace ${daysSince(customer.lastPurchaseAt)} días`;
-  }
-
-  const genericWa = `¡Hola ${vars.nombre.split(" ")[0]}! Gracias por elegir ${biz.name}. Cualquier cosa que necesites, escribinos. 💚`;
-  const whatsappBody = waTpl ? renderTemplate(waTpl.body, vars) : genericWa;
-  const emailSubject = emTpl ? renderTemplate(emTpl.subject, vars) : `Un mensaje de ${biz.name}`;
-  const emailBody = emTpl ? renderTemplate(emTpl.body, vars) : genericWa;
+  // Sin campaña que aplique, buildCampaignMessage cae solo al texto genérico.
+  const { whatsappBody, emailSubject, emailBody } = buildCampaignMessage(
+    suggested ?? { whatsappBody: "", emailSubject: "", emailBody: "" },
+    {
+      name: customer.name,
+      lastPurchaseAt: customer.lastPurchaseAt,
+      daysSinceLast,
+      totalSpent,
+      birthdate: customer.birthdate,
+    },
+    biz.name,
+    pointsEnabled ? pointsBalanceValue : undefined
+  );
 
   return (
     <div className="animate-fade-in">

@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { MODULE_SEED } from "../lib/modules";
+import { CAMPAIGN_SEED } from "../lib/campaigns";
 
 const db = new PrismaClient();
 
@@ -55,6 +56,7 @@ async function main() {
   await db.user.deleteMany();
   await db.contactLog.deleteMany();
   await db.purchase.deleteMany();
+  await db.campaign.deleteMany();
   await db.template.deleteMany();
   await db.customer.deleteMany();
   await db.business.deleteMany();
@@ -268,38 +270,27 @@ async function main() {
     });
   }
 
-  console.log("✉️  Creando plantillas por defecto...");
-  await db.template.createMany({
-    data: [
-      {
-        businessId: biz.id,
-        type: "birthday",
-        channel: "whatsapp",
-        subject: "",
-        body: "¡Hola {nombre}! 🎂 De parte de todo el equipo de {negocio} te deseamos un muy feliz cumpleaños. Como regalo, tenés un 15% de descuento en tu próxima compra esta semana. ¡Te esperamos! 💚",
-      },
-      {
-        businessId: biz.id,
-        type: "birthday",
-        channel: "email",
-        subject: "🎂 ¡Feliz cumpleaños, {nombre}!",
-        body: "¡Hola {nombre}!\n\nEn {negocio} queremos desearte un muy feliz cumpleaños. Para celebrarlo, te regalamos un 15% de descuento en tu próxima compra durante esta semana.\n\n¡Te esperamos!\nEquipo de {negocio}",
-      },
-      {
-        businessId: biz.id,
-        type: "winback",
-        channel: "whatsapp",
-        subject: "",
-        body: "¡Hola {nombre}! 👋 Hace un tiempo que no te vemos por {negocio} y te extrañamos. Preparamos novedades que te van a encantar. Si venís esta semana, tenés un beneficio especial esperándote. 😊",
-      },
-      {
-        businessId: biz.id,
-        type: "winback",
-        channel: "email",
-        subject: "Te extrañamos en {negocio} 💚",
-        body: "¡Hola {nombre}!\n\nHace un tiempo que no pasás por {negocio}. Tenemos novedades y un beneficio especial reservado para vos si volvés esta semana.\n\n¡Nos encantaría verte de nuevo!\nEquipo de {negocio}",
-      },
-    ],
+  console.log("✉️  Creando campañas por defecto...");
+  await db.campaign.createMany({
+    data: CAMPAIGN_SEED.map((c) => ({ businessId: biz.id, ...c })),
+  });
+
+  // Una tercera campaña, creada "por el negocio", para que el demo muestre que
+  // no hay solo dos y se vea cómo queda un disparador propio.
+  await db.campaign.create({
+    data: {
+      businessId: biz.id,
+      name: "Gracias VIP",
+      description: "Un mensaje de agradecimiento a las mejores clientas.",
+      triggerType: "segment",
+      segment: "vip",
+      sortOrder: 2,
+      whatsappBody:
+        "¡Hola {nombre}! 👑 Queríamos agradecerte por elegirnos siempre. Llevás {total_gastado} con nosotros y eso para {negocio} significa muchísimo. Pasá cuando quieras: tenemos algo reservado para vos. 💚",
+      emailSubject: "Gracias por ser parte de {negocio}, {nombre}",
+      emailBody:
+        "¡Hola {nombre}!\n\nSos una de nuestras mejores clientas y queríamos agradecértelo. Tu última compra fue el {ultima_compra}.\n\nPasá cuando quieras, tenemos un detalle esperándote.\n\nEquipo de {negocio}",
+    },
   });
 
   console.log("🔐 Creando usuario demo...");

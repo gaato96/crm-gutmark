@@ -1,108 +1,89 @@
 import { Info } from "lucide-react";
-import { db } from "@/lib/db";
-import { getCurrentBusiness, getEnrichedCustomers, toConfig, EnrichedCustomer } from "@/lib/queries";
-import { buildMessage, MessageKind } from "@/lib/build-message";
-import { PageHeader, SectionTitle } from "@/components/ui";
-import { TemplateEditor, TemplateData } from "@/components/template-editor";
-import { CampaignComposer, Audience } from "@/components/campaign-composer";
+import {
+  getCurrentBusiness,
+  getEnrichedCustomers,
+  getCampaigns,
+  campaignRecipients,
+  ruleDefaults,
+  toConfig,
+} from "@/lib/queries";
+import { describeTrigger } from "@/lib/campaigns";
+import { buildCampaignMessage } from "@/lib/build-message";
+import { pointsBalancesByCustomer } from "@/lib/points";
+import { PageHeader } from "@/components/ui";
+import { CampaignsView } from "@/components/campaigns-view";
+import type { Audience } from "@/components/campaign-composer";
+import type { CampaignItem } from "@/components/campaign-editor";
 
 export const dynamic = "force-dynamic";
 
 export default async function CampanasPage() {
   const biz = await getCurrentBusiness();
   const cfg = toConfig(biz);
+  const defaults = ruleDefaults(biz);
   const customers = await getEnrichedCustomers(biz.id, cfg);
-  const templates = await db.template.findMany({
-    where: { businessId: biz.id },
-    orderBy: [{ type: "asc" }, { channel: "asc" }],
-  });
+  const campaigns = await getCampaigns(biz.id);
 
-  const toRecipients = (list: EnrichedCustomer[], kind: MessageKind) =>
-    list.map((c) => ({
-      id: c.id,
-      name: c.name,
-      phone: c.phone,
-      email: c.email,
-      ...buildMessage(kind, c.name, biz.name, templates),
+  // La variable {puntos} solo tiene sentido con el módulo activo; sin él ni
+  // siquiera consultamos la tabla.
+  const balances = biz.modules.includes("puntos")
+    ? await pointsBalancesByCustomer(biz.id)
+    : new Map<string, number>();
+
+  // Cada campaña activa es una audiencia. Antes las cuatro audiencias estaban
+  // escritas a mano acá; ahora salen de la misma evaluación que usa el resto
+  // de la app (ver lib/campaigns.ts).
+  const audiences: Audience[] = campaigns
+    .filter((c) => c.active)
+    .map((c) => ({
+      key: c.id,
+      campaignId: c.id,
+      label: c.name,
+      description: c.description || describeTrigger(c, defaults),
+      recipients: campaignRecipients(c, customers, defaults).map((cu) => ({
+        id: cu.id,
+        name: cu.name,
+        phone: cu.phone,
+        email: cu.email,
+        ...buildCampaignMessage(c, cu, biz.name, balances.get(cu.id)),
+      })),
     }));
 
-  const audiences: Audience[] = [
-    {
-      key: "birthday",
-      label: "🎂 Cumpleaños semana",
-      description: "Clientes que cumplen años en los próximos 7 días. Enviales el saludo con beneficio.",
-      recipients: toRecipients(
-        customers.filter((c) => c.birthdayInDays !== null && c.birthdayInDays <= 7),
-        "birthday"
-      ),
-    },
-    {
-      key: "winback",
-      label: "🔁 Recompra",
-      description: "Superaron el tiempo esperado sin volver. Invitalos con un incentivo.",
-      recipients: toRecipients(
-        customers.filter((c) => c.needsWinback && c.segment !== "inactivo"),
-        "winback"
-      ),
-    },
-    {
-      key: "inactivos",
-      label: "😴 Inactivos",
-      description: "Hace mucho que no compran. Reactivalos con una oferta especial.",
-      recipients: toRecipients(
-        customers.filter((c) => c.segment === "inactivo"),
-        "winback"
-      ),
-    },
-    {
-      key: "vip",
-      label: "👑 VIP",
-      description: "Tus mejores clientes. Un mensaje de agradecimiento fortalece la relación.",
-      recipients: toRecipients(
-        customers.filter((c) => c.isVip),
-        "generic"
-      ),
-    },
-  ];
-
-  const templateData: TemplateData[] = templates.map((t) => ({
-    id: t.id,
-    type: t.type,
-    channel: t.channel,
-    subject: t.subject,
-    body: t.body,
+  const items: CampaignItem[] = campaigns.map((c) => ({
+    id: c.id,
+    name: c.name,
+    description: c.description,
+    active: c.active,
+    builtin: c.builtin,
+    triggerType: c.triggerType,
+    triggerDays: c.triggerDays,
+    segment: c.segment,
+    minSpend: c.minSpend,
+    excludeInactive: c.excludeInactive,
+    whatsappBody: c.whatsappBody,
+    emailSubject: c.emailSubject,
+    emailBody: c.emailBody,
+    reach: campaignRecipients(c, customers, defaults).length,
+    triggerLabel: describeTrigger(c, defaults),
   }));
 
   return (
     <div className="animate-fade-in">
       <PageHeader
         title="Campañas"
-        subtitle="Elegí una audiencia y contactá a varios clientes con el mismo mensaje personalizado."
+        subtitle="Definí a quién contactar y con qué mensaje. Cada campaña arma su lista sola."
       />
 
-      {/* Generador de campaña */}
-      <div className="mb-4 flex items-start gap-3 rounded-xl border border-sky-500/20 bg-sky-500/10 p-4 text-sm text-sky-700 dark:text-sky-300">
+      <div className="mb-5 flex items-start gap-3 rounded-xl border border-sky-500/20 bg-sky-500/10 p-4 text-sm text-sky-700 dark:text-sky-300">
         <Info className="mt-0.5 h-4 w-4 shrink-0" />
         <p>
-          El envío por WhatsApp es <strong>manual</strong>: al tocar el botón se abre el chat con el
-          mensaje ya escrito, listo para enviar. El email abre tu app de correo. El envío
+          El envío por WhatsApp es <strong>manual</strong>: al tocar el botón se abre el chat con
+          el mensaje ya escrito, listo para enviar. El email abre tu app de correo. El envío
           automático masivo se puede activar más adelante.
         </p>
       </div>
 
-      <CampaignComposer audiences={audiences} />
-
-      {/* Plantillas */}
-      <div className="mt-10">
-        <SectionTitle hint="Se usan en recordatorios y campañas">
-          Plantillas de mensajes
-        </SectionTitle>
-        <div className="grid gap-4 lg:grid-cols-2">
-          {templateData.map((t) => (
-            <TemplateEditor key={t.id} template={t} />
-          ))}
-        </div>
-      </div>
+      <CampaignsView audiences={audiences} campaigns={items} />
     </div>
   );
 }
