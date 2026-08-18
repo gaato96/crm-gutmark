@@ -120,7 +120,7 @@ export default async function ClienteDetailPage({
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="font-display text-2xl text-ink">{customer.name}</h1>
                 {vip && (
-                  <span className="badge bg-gold-500/15 text-gold-700 ring-gold-500/25 dark:text-gold-300">
+                  <span className="badge bg-accent-500/15 text-accent-700 ring-accent-500/25 dark:text-accent-300">
                     <Crown className="h-3 w-3" /> VIP
                   </span>
                 )}

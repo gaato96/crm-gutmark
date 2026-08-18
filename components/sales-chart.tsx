@@ -61,8 +61,8 @@ export function SalesChart({ data }: { data: SalesPoint[] }) {
         <AreaChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
           <defs>
             <linearGradient id="salesFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#10b981" stopOpacity={0.35} />
-              <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
+              <stop offset="0%" stopColor="#00BE86" stopOpacity={0.35} />
+              <stop offset="100%" stopColor="#00BE86" stopOpacity={0} />
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-line" />
@@ -82,11 +82,11 @@ export function SalesChart({ data }: { data: SalesPoint[] }) {
             tickLine={false}
             width={44}
           />
-          <Tooltip content={<CustomTooltip />} cursor={{ stroke: "#10b981", strokeWidth: 1, strokeDasharray: "3 3" }} />
+          <Tooltip content={<CustomTooltip />} cursor={{ stroke: "#00BE86", strokeWidth: 1, strokeDasharray: "3 3" }} />
           <Area
             type="monotone"
             dataKey="total"
-            stroke="#059669"
+            stroke="#008860"
             strokeWidth={2.5}
             fill="url(#salesFill)"
             animationDuration={600}

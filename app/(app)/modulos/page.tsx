@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { getCurrentBusiness } from "@/lib/queries";
 import { formatMoney } from "@/lib/format";
 import { businessWhatsappLink } from "@/lib/messages";
-import { isModuleCode, MODULE_NAV } from "@/lib/modules";
+import { isModuleCode, isModuleImplemented, MODULE_NAV } from "@/lib/modules";
 import { PageHeader, EmptyState, SectionTitle } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
@@ -27,12 +27,17 @@ export default async function ModulosPage({
 
   const showPrices = settings?.showPricesToOwner ?? true;
   const active = modules.filter((m) => m.businesses[0]?.enabled);
-  const available = modules.filter((m) => m.available && !m.businesses[0]?.enabled);
+  const notActive = modules.filter((m) => m.available && !m.businesses[0]?.enabled);
+  // Solo se ofrece contratar lo que ya está construido; el resto se muestra
+  // como adelanto, sin CTA, para no vender una página que todavía no existe.
+  const available = notActive.filter((m) => isModuleImplemented(m.code));
+  const comingSoon = notActive.filter((m) => !isModuleImplemented(m.code));
 
   const bloqueadoInfo =
     bloqueado && isModuleCode(bloqueado) ? modules.find((m) => m.code === bloqueado) : null;
 
-  const hrefFor = (code: string) => MODULE_NAV.find((m) => m.code === code)?.href;
+  const hrefFor = (code: string) =>
+    MODULE_NAV.find((m) => m.code === code && m.implemented)?.href;
 
   const totalMensual = showPrices
     ? active.reduce((s, m) => s + (m.businesses[0]?.priceOverride ?? m.monthlyPrice), 0)
@@ -46,8 +51,8 @@ export default async function ModulosPage({
       />
 
       {bloqueadoInfo && (
-        <div className="mb-6 flex items-start gap-3 rounded-xl border border-gold-500/30 bg-gold-500/10 p-4 text-sm">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-gold-600" aria-hidden="true" />
+        <div className="mb-6 flex items-start gap-3 rounded-xl border border-accent-500/30 bg-accent-500/10 p-4 text-sm">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-accent-600" aria-hidden="true" />
           <p className="text-ink-soft">
             <span className="font-semibold text-ink">{bloqueadoInfo.name}</span> no está incluido
             en tu plan todavía. Pedilo por WhatsApp para activarlo.
@@ -84,10 +89,14 @@ export default async function ModulosPage({
                 </div>
                 <h3 className="mt-3 font-semibold text-ink">{m.name}</h3>
                 <p className="mt-1 text-sm text-ink-muted">{m.description}</p>
-                {href && (
+                {href ? (
                   <Link href={href} className="btn-secondary mt-4 w-full !py-2 text-sm">
                     Ir al módulo
                   </Link>
+                ) : (
+                  <p className="mt-4 rounded-xl bg-surface-2 px-3 py-2 text-center text-xs text-ink-muted">
+                    Lo estamos terminando. Te avisamos apenas esté listo.
+                  </p>
                 )}
               </div>
             );
@@ -125,7 +134,7 @@ export default async function ModulosPage({
                 <p className="mt-1 text-sm text-ink-muted">{m.description}</p>
                 <a
                   href={businessWhatsappLink(
-                    `¡Hola! Soy ${biz.name}. Quiero sumar el módulo "${m.name}" a mi cuenta de Vuelvo.`
+                    `¡Hola! Soy ${biz.name}. Quiero sumar el módulo "${m.name}" a mi cuenta de Vuelvo CRM.`
                   )}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -133,6 +142,21 @@ export default async function ModulosPage({
                 >
                   <MessageCircle className="h-4 w-4" aria-hidden="true" /> Pedir por WhatsApp
                 </a>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {comingSoon.length > 0 && (
+        <>
+          <SectionTitle hint="en desarrollo">Lo que viene</SectionTitle>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {comingSoon.map((m) => (
+              <div key={m.code} className="card p-5 opacity-70">
+                <span className="badge bg-surface-3 text-ink-muted ring-line">Próximamente</span>
+                <h3 className="mt-3 font-semibold text-ink">{m.name}</h3>
+                <p className="mt-1 text-sm text-ink-muted">{m.description}</p>
               </div>
             ))}
           </div>

@@ -44,11 +44,13 @@ export function initials(name: string): string {
 // Color estable a partir del nombre (para avatares). Basado en opacidad para funcionar
 // igual de bien en tema claro y oscuro.
 export function avatarColor(name: string): string {
+  // Sin `violet`: ahora chocaría con el acento de marca (accent-*), que ya está
+  // en la lista. Se reemplaza por fucsia, que se distingue de los dos.
   const palette = [
     "bg-brand-500/15 text-brand-700 dark:text-brand-300",
-    "bg-gold-500/15 text-gold-700 dark:text-gold-300",
+    "bg-accent-500/15 text-accent-700 dark:text-accent-300",
     "bg-sky-500/15 text-sky-700 dark:text-sky-300",
-    "bg-violet-500/15 text-violet-700 dark:text-violet-300",
+    "bg-fuchsia-500/15 text-fuchsia-700 dark:text-fuchsia-300",
     "bg-rose-500/15 text-rose-700 dark:text-rose-300",
     "bg-teal-500/15 text-teal-700 dark:text-teal-300",
   ];

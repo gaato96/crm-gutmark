@@ -40,11 +40,11 @@ export default async function MarketingDocsPage() {
     <div className="min-h-screen bg-canvas">
       <header className="sticky top-0 z-10 border-b border-line bg-surface/95 backdrop-blur">
         <div className="mx-auto max-w-3xl px-4 py-3">
-          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-faint">
+          <p className="font-display text-[10px] uppercase tracking-[0.14em] text-ink-faint">
             No indexado · no compartir el link
           </p>
           <h1 className="mt-1 font-display text-lg text-ink">
-            Estrategia de marketing — Vuelvo
+            Estrategia de marketing — Vuelvo CRM
           </h1>
           <nav className="mt-3 flex flex-wrap gap-2">
             {sections.map((s) => (
@@ -96,11 +96,12 @@ export default async function MarketingDocsPage() {
         .md-content strong { color: rgb(var(--ink)); font-weight: 700; }
         .md-content em { color: rgb(var(--ink-soft)); }
         .md-content blockquote {
-          margin: 1rem 0; padding: .5rem 1rem; border-left: 3px solid rgb(var(--brand-500, 16 185 129));
+          margin: 1rem 0; padding: .5rem 1rem; border-left: 3px solid #00BE86;
           background: rgb(var(--surface-2)); border-radius: .5rem; color: rgb(var(--ink-soft));
         }
         .md-content code {
-          font-family: var(--font-mono); font-size: .85em; background: rgb(var(--surface-2));
+          font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+          font-size: .85em; background: rgb(var(--surface-2));
           padding: .15em .4em; border-radius: .35em; color: rgb(var(--ink));
         }
         .md-content pre {
@@ -109,7 +110,7 @@ export default async function MarketingDocsPage() {
         }
         .md-content pre code { background: none; padding: 0; }
         .md-content hr { border: none; border-top: 1px solid rgb(var(--line)); margin: 2rem 0; }
-        .md-content a { color: rgb(var(--brand-600, 5 150 105)); text-decoration: underline; text-underline-offset: 2px; }
+        .md-content a { color: #006144; text-decoration: underline; text-underline-offset: 2px; }
         .md-content table {
           width: 100%; border-collapse: collapse; margin: 0 0 1.25rem; font-size: .85rem;
           display: block; overflow-x: auto; white-space: nowrap;

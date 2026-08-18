@@ -4,38 +4,55 @@ Este archivo proporciona orientación a Claude Code (claude.ai/code) cuando trab
 
 ## Qué es esto
 
-Vuelvo — un CRM de fidelización post-venta para PYMEs argentinas (negocios pequeños:
+Vuelvo CRM — un CRM de fidelización post-venta para PYMEs argentinas (negocios pequeños:
 perfumerías, peluquerías, veterinarias, gimnasios, tiendas de mascotas, etc.). La propuesta:
 "vendé más sin conseguir un solo cliente nuevo" — ayuda a un negocio a conocer sus clientes
 existentes, nunca olvidar un cumpleaños, y traer de vuelta a los clientes inactivos.
-Slogan: "El sistema que hace que tus clientes vuelvan a comprar".
+Claim: "Porque vender una vez no alcanza".
 
-### Identidad de marca
+### Identidad de marca (v2)
 
-El nombre y el logo son "Vuelvo" (antes "GUTMARK Fideliza") — la marca es
-deliberadamente una sola palabra, sin sufijo tipo "CRM" o "App" en el wordmark.
-El ícono (`public/logo.png`, 1024×1024) y el lockup horizontal
-(`public/logo-v2.png`, ícono + wordmark) son *raster* generados por IA, no SVG
-a mano — no hay paths vectoriales del mark en ningún lado del repo.
+La fuente de verdad es `docs/marca/Manual_de_Marca_Vuelvo_CRM.md`. Lo esencial:
 
-`components/logo.tsx` es el único lugar que sabe qué archivo usar para el
-ícono. `<LogoMark>` (solo ícono) y `<Logo>` (ícono + texto "Vuelvo") se usan en
-sidebar, topbar mobile, drawer, header de `/admin`, panel de `(auth)`, nav y
-footer de la landing, y la tarjeta de fidelidad — así que cambiar de logo (o
-sacarle el fondo) es editar ese único archivo, no perseguir cada uso. El ícono
-ya trae su propio fondo verde (`#022c22`) y funciona como badge autocontenido
-en cualquier superficie sin necesitar transparencia; `logo-v2.png` en cambio
-tiene fondo blanco fijo, así que **no** se usa en UI en línea (chocaría contra
-superficies oscuras) — solo como imagen de Open Graph/Twitter Card en
-`app/layout.tsx`, donde un fondo sólido es lo esperado.
+**Nombre.** "Vuelvo CRM", con "CRM" en menor jerarquía — es el descriptor de categoría,
+no parte del nombre hablado. Arquitectura de marca: GUTMARK (marca madre) → Vuelvo CRM
+(producto), que se expresa con "Desarrollado por GUTMARK" en landing y login (prop
+`byline` de `<Logo>`), no dentro del panel.
 
-`scripts/generate-icons.cjs` (`npm run icons:generate`) ya no rasteriza un SVG
-propio: recorta y redondea `public/logo.png` con `sharp` para producir
-`app/icon.png`, `app/apple-icon.png` y todo `public/icons/`. El maskable
-(`icon-512-maskable.png`) sale sin esquinas redondeadas a propósito — el
-sistema operativo aplica su propia máscara sobre el lienzo completo. Si el
-logo cambia, correr `npm run icons:generate` de nuevo regenera los seis
-archivos.
+**Logo.** `public/logo.svg` (badge violeta autocontenido) y `public/logo-mark.svg`
+(solo la marca, transparente, para superficies que ya son violetas). Son **vectoriales**,
+convertidos desde `docs/marca/LOGO VUELVO CRM.pdf` con `node scripts/pdf-to-svg.cjs` —
+un parser mínimo del content stream del PDF, no un conversor general. Si el logo cambia,
+volver a correr ese script y después `npm run icons:generate`.
+
+`components/logo.tsx` es el único lugar que sabe qué archivo usar. `<LogoMark>` (solo
+ícono, con `variant="plain"` para el sin-badge) y `<Logo>` (ícono + wordmark) se usan en
+sidebar, topbar mobile, drawer, header de `/admin`, panel de `(auth)`, nav y footer de la
+landing, y la tarjeta de fidelidad — cambiar de logo es editar ese archivo, no perseguir
+cada uso.
+
+**Paleta.** Verde `#00BE86` (`brand-500`) para acciones; violeta `#5B2EE5` (`accent-600`)
+para acentos y superficies de marca; blanco/neutros dominando (60-70% según el manual).
+La escala `gold` de la identidad anterior ya no existe: la reemplazó `accent`.
+
+⚠️ **El verde es brillante y no admite texto blanco.** Blanco sobre `#00BE86` da 2.41:1 y
+reprueba WCAG AA; con `brand-950` da 8.12:1. Por eso `.btn-primary` es verde con letra
+oscura. El violeta es al revés: `.btn-accent` es violeta con letra blanca (7.08:1). Para
+texto verde sobre fondo claro hay que usar `brand-700` (7.52:1) — `brand-600` se queda en
+4.48:1, apenas por debajo. El anillo de foco usa `brand-600` porque WCAG pide 3:1 para
+elementos no textuales.
+
+**Tipografía.** Montserrat (`font-display`: titulares, números, CTA, versalitas) +
+Poppins (`font-sans`: cuerpo e interfaz). El manual pide no mezclar más familias de marca;
+`font-mono` existe pero apunta a la monoespaciada **del sistema**, sin cargar webfont, y
+está solo para lo que necesita ancho fijo de verdad (pegar CSV, bloques de código,
+mostrar una contraseña).
+
+`scripts/generate-icons.cjs` (`npm run icons:generate`) rasteriza desde `logo.svg` para
+producir `app/icon.png`, `app/apple-icon.png`, todo `public/icons/` y `public/og.png`. El
+maskable se arma aparte (violeta a sangre + marca al 58%) porque el sistema operativo
+aplica su propia máscara y un badge ya redondeado quedaría recortado dos veces. El texto
+del OG usa fuentes del sistema, así que conviene mirarlo antes de commitear.
 
 ## Comandos
 
@@ -46,7 +63,8 @@ npm run build        # prisma generate && next build (lo que ejecuta Vercel)
 npm run db:push      # pushea prisma/schema.prisma a la base de datos (sin archivos de migración — schema-driven)
 npm run db:seed      # borra + reseed datos demo (ver nota de peligro abajo)
 npm run db:reset     # db push --force-reset + db:seed
-npm run icons:generate    # regenera iconos PWA de scripts/icon-source*.svg via sharp
+npm run icons:generate    # regenera íconos PWA + og.png desde public/logo.svg via sharp
+node scripts/pdf-to-svg.cjs   # regenera public/logo*.svg desde el PDF del manual de marca
 ```
 
 No hay suite de pruebas ni script de lint configurados en este proyecto.
@@ -195,9 +213,9 @@ en `app/layout.tsx` la aplica antes de paint para evitar flash. Cuando stylees a
 alcanza por semantic tokens (`bg-surface`, `text-ink-soft`, `border-line`) en lugar de
 grays Tailwind raw — la paleta raw (`slate-*`, `white`) no se adapta a dark mode.
 
-Tipografía: Calistoga (display/headings, `font-display`) + Inter (body, default sans) +
-JetBrains Mono (`font-mono`, usada para eyebrow labels pequeños uppercase), todas via
-`next/font/google` en `app/layout.tsx`.
+Tipografía: Montserrat (`font-display`) + Poppins (`font-sans`), via `next/font/google`
+en `app/layout.tsx`. Ver "Identidad de marca (v2)" arriba — `font-mono` no carga
+webfont, es la del sistema y solo para datos de ancho fijo.
 
 ### Landing pública: GSAP, fotos remotas y contraste de botones
 
@@ -234,8 +252,9 @@ El scrim son dos capas y cambia de forma según el ancho: en mobile es plano
 (el texto ocupa todo el ancho, un degradado horizontal dejaría el final de cada
 renglón sobre la zona clara) y en `lg:` es direccional (el texto vive en la
 mitad izquierda, así que la derecha se abre y deja ver el video). Los peores
-casos medidos, suponiendo un cuadro blanco del video: 9:1 mobile, 10:1 desktop.
-Si tocás las opacidades, rehacé esa cuenta.
+casos medidos sobre la base violeta (`accent-900`), suponiendo un cuadro blanco
+del video: 12.5:1 en el titular mobile, 19:1 en el titular desktop, 7.3:1 en la
+bajada. Si tocás las opacidades, rehacé esa cuenta.
 
 `components/landing/hero-video.tsx` no hace autoplay a ciegas: se frena con
 `prefers-reduced-motion`, con `saveData`, y se pausa fuera de pantalla o con la
@@ -248,11 +267,10 @@ server y client). El host está declarado en `images.remotePatterns` de
 `next.config.mjs`; si algún día se agrega otro origen hay que sumarlo ahí o
 `next/image` tira error en build.
 
-`.btn-primary` usa `brand-700` y no `brand-600`, y `.btn-gold` usa texto
-`brand-950` sobre `gold-400` en vez de blanco: las combinaciones anteriores daban
-3.77:1 y 2.15:1, por debajo del 4.5:1 que pide WCAG AA. Los hover oscurecen en
-lugar de aclarar para que todos los estados pasen. Esto afecta a toda la app, no
-solo a la landing, así que no lo revuelvas para "recuperar" el verde original.
+Los contrastes de botón están calculados y anotados en `app/globals.css` — ver
+"Identidad de marca (v2)" arriba para el resumen. Esto afecta a toda la app, no
+solo a la landing: **no pongas texto blanco sobre el verde de marca**, que es el
+error fácil de cometer viendo el manual sin hacer la cuenta.
 
 ### PWA: panel instalable, no el sitio de marketing
 

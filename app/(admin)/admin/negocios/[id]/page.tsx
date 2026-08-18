@@ -50,7 +50,7 @@ export default async function NegocioDetailPage({
 
   const statusMeta: Record<string, { label: string; cls: string }> = {
     "al-dia": { label: "Al día", cls: "bg-brand-500/15 text-brand-700 ring-brand-500/25 dark:text-brand-300" },
-    pendiente: { label: "Pendiente", cls: "bg-gold-500/15 text-gold-700 ring-gold-500/25 dark:text-gold-300" },
+    pendiente: { label: "Pendiente", cls: "bg-accent-500/15 text-accent-700 ring-accent-500/25 dark:text-accent-300" },
     vencido: { label: "Vencido", cls: "bg-rose-500/15 text-rose-600 ring-rose-500/25" },
     exento: { label: "Exento", cls: "bg-surface-3 text-ink-muted ring-line" },
   };
@@ -148,7 +148,7 @@ export default async function NegocioDetailPage({
               <span className="text-ink-soft">
                 {m.module.name}
                 {m.priceOverride !== null && (
-                  <span className="ml-1.5 text-xs text-gold-600">(precio especial)</span>
+                  <span className="ml-1.5 text-xs text-accent-600">(precio especial)</span>
                 )}
               </span>
               <span className="tabular-nums text-ink">

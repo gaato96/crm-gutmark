@@ -10,29 +10,42 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Marca (funciona en claro y oscuro)
+        // Verde de marca. El ancla es brand-500 = #00BE86, el valor exacto del
+        // manual; el resto de la escala se deriva de ahí.
+        //
+        // Ojo con el contraste: #00BE86 es un verde BRILLANTE. Con texto blanco
+        // da 2.41:1 y reprueba WCAG AA; con texto oscuro (brand-950) da 8.12:1.
+        // Por eso el botón primario es verde con letra oscura, no al revés.
+        // Para texto verde sobre fondo claro hay que bajar a brand-700 (7.52:1
+        // sobre blanco) — brand-600 se queda en 4.48:1, apenas por debajo.
         brand: {
-          50: "#ecfdf5",
-          100: "#d1fae5",
-          200: "#a7f3d0",
-          300: "#6ee7b7",
-          400: "#34d399",
-          500: "#10b981",
-          600: "#059669",
-          700: "#047857",
-          800: "#065f46",
-          900: "#064e3b",
-          950: "#022c22",
+          50: "#E7F9F4",
+          100: "#D0F3E9",
+          200: "#9FE7D2",
+          300: "#6EDABA",
+          400: "#3ACDA2",
+          500: "#00BE86",
+          600: "#008860",
+          700: "#006144",
+          800: "#003E2C",
+          900: "#001E15",
+          950: "#000F0B",
         },
-        gold: {
-          50: "#fffbeb",
-          100: "#fef3c7",
-          200: "#fde68a",
-          300: "#fcd34d",
-          400: "#fbbf24",
-          500: "#f59e0b",
-          600: "#d97706",
-          700: "#b45309",
+        // Violeta de acento. Ancla accent-600 = #5B2EE5, también del manual.
+        // A diferencia del verde, este SÍ funciona como fondo con texto blanco
+        // (7.08:1). Reemplaza a la escala `gold` de la identidad anterior.
+        accent: {
+          50: "#F2EFFD",
+          100: "#E6DFFB",
+          200: "#CCBEF7",
+          300: "#B29CF3",
+          400: "#977AEE",
+          500: "#7B56EA",
+          600: "#5B2EE5",
+          700: "#3C1E97",
+          800: "#261360",
+          900: "#12092E",
+          950: "#090517",
         },
         // Tokens semánticos (cambian con el tema via CSS vars)
         canvas: "rgb(var(--canvas) / <alpha-value>)",
@@ -53,14 +66,20 @@ const config: Config = {
         },
       },
       fontFamily: {
+        // Montserrat para titulares y Poppins para cuerpo, según el manual.
         sans: ["var(--font-sans)", "system-ui", "sans-serif"],
-        display: ["var(--font-display)", "Georgia", "serif"],
-        mono: ["var(--font-mono)", "ui-monospace", "monospace"],
+        display: ["var(--font-display)", "system-ui", "sans-serif"],
+        // El manual pide no mezclar familias de marca, y no se mezcla: esta no
+        // carga ninguna webfont, es la monoespaciada del sistema. Está para lo
+        // que necesita ancho fijo de verdad — pegar CSV, bloques de código,
+        // mostrar una contraseña — no para decorar. Las versalitas usan
+        // `font-display` con tracking.
+        mono: ["ui-monospace", "SFMono-Regular", "Menlo", "Consolas", "monospace"],
       },
       boxShadow: {
         card: "0 1px 2px 0 rgb(2 6 23 / 0.04), 0 8px 24px -12px rgb(2 6 23 / 0.12)",
         pop: "0 12px 40px -8px rgb(2 6 23 / 0.28)",
-        glow: "0 0 0 1px rgb(16 185 129 / 0.12), 0 8px 30px -6px rgb(16 185 129 / 0.25)",
+        glow: "0 0 0 1px rgb(0 190 134 / 0.12), 0 8px 30px -6px rgb(0 190 134 / 0.25)",
       },
       borderRadius: {
         xl: "0.9rem",

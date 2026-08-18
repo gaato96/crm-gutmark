@@ -17,7 +17,7 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }) {
     setDark(next);
     document.documentElement.classList.toggle("dark", next);
     try {
-      localStorage.setItem("gf-theme", next ? "dark" : "light");
+      localStorage.setItem("vuelvo-theme", next ? "dark" : "light");
     } catch {}
   }
 

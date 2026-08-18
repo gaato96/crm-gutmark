@@ -12,15 +12,17 @@ import type { MetadataRoute } from "next";
 function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",
-    name: "Vuelvo",
+    name: "Vuelvo CRM",
+    // Deliberadamente más corto que `name`: es lo que se ve bajo el ícono en
+    // la pantalla de inicio, donde el descriptor de categoría no entra.
     short_name: "Vuelvo",
     description:
-      "El sistema que hace que tus clientes vuelvan a comprar. Conocé, cuidá y hacé volver a los clientes de tu PYME.",
+      "El CRM para conocer mejor a tus clientes, fidelizarlos y hacer que vuelvan.",
     start_url: "/dashboard",
     scope: "/",
     display: "standalone",
-    background_color: "#f6f7fa",
-    theme_color: "#059669",
+    background_color: "#ffffff",
+    theme_color: "#5B2EE5",
     lang: "es-AR",
     icons: [
       {

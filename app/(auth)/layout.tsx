@@ -14,9 +14,12 @@ export default async function AuthLayout({
   return (
     <div className="grid min-h-screen bg-canvas lg:grid-cols-2">
       {/* Panel de marca */}
-      <div className="relative hidden flex-col justify-between overflow-hidden bg-brand-800 p-12 text-white lg:flex">
-        <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand-500/30 blur-3xl" />
-        <div className="absolute -bottom-32 -left-16 h-80 w-80 rounded-full bg-brand-600/40 blur-3xl" />
+      {/* Superficie violeta fija: no sigue el tema, así que el texto va blanco
+          siempre (15.6:1 sobre accent-800). El halo verde ata la marca sin
+          comprometer el contraste, porque está detrás del texto y difuminado. */}
+      <div className="relative hidden flex-col justify-between overflow-hidden bg-accent-800 p-12 text-white lg:flex">
+        <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand-500/25 blur-3xl" />
+        <div className="absolute -bottom-32 -left-16 h-80 w-80 rounded-full bg-accent-500/40 blur-3xl" />
         <div
           className="absolute inset-0 opacity-[0.07]"
           style={{
@@ -25,20 +28,20 @@ export default async function AuthLayout({
             backgroundSize: "28px 28px",
           }}
         />
-        <Logo tone="onBrand" size="lg" className="relative" />
+        <Logo tone="onBrand" size="lg" byline className="relative" />
         <div className="relative">
           <h2 className="text-3xl font-bold leading-tight">
             Vendé más sin conseguir
             <br />
             un solo cliente nuevo.
           </h2>
-          <p className="mt-4 max-w-md text-brand-100">
+          <p className="mt-4 max-w-md text-accent-100">
             Conocé, cuidá y hacé volver a tus clientes. Cumpleaños, recompra, segmentación y
             campañas, todo en un solo lugar.
           </p>
         </div>
-        <div className="relative text-sm text-brand-200">
-          © {new Date().getFullYear()} Vuelvo · Fidelización para PYMES
+        <div className="relative text-sm text-accent-200">
+          © {new Date().getFullYear()} Vuelvo CRM · Desarrollado por GUTMARK
         </div>
       </div>
 

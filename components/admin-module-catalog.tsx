@@ -5,6 +5,7 @@ import { AlertCircle, Check, Loader2, Pencil, RefreshCw } from "lucide-react";
 import { updateModule, syncModuleCatalog, AdminFormState } from "@/app/admin-actions";
 import { SubmitButton } from "./submit-button";
 import { formatMoney } from "@/lib/format";
+import { isModuleImplemented } from "@/lib/modules";
 
 export interface CatalogRow {
   code: string;
@@ -59,9 +60,19 @@ export function AdminModuleCatalog({ modules }: { modules: CatalogRow[] }) {
               ) : (
                 <tr key={m.code} className="border-b border-line-soft last:border-0">
                   <td className="px-5 py-3.5">
-                    <div className="font-semibold text-ink">{m.name}</div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-ink">{m.name}</span>
+                      {!isModuleImplemented(m.code) && (
+                        <span
+                          className="badge bg-surface-3 text-ink-muted ring-line"
+                          title="Sin página construida: activarlo no le da acceso a nada al negocio."
+                        >
+                          Sin construir
+                        </span>
+                      )}
+                    </div>
                     <div className="text-xs text-ink-muted">{m.description}</div>
-                    <div className="mt-0.5 font-mono text-[0.7rem] uppercase tracking-wide text-ink-faint">
+                    <div className="mt-0.5 font-display text-[0.7rem] uppercase tracking-wide text-ink-faint">
                       {m.code}
                     </div>
                   </td>

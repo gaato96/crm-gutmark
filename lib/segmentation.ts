@@ -2,14 +2,18 @@ import { daysSince } from "./format";
 
 export type Segment = "vip" | "frecuente" | "ocasional" | "nuevo" | "inactivo";
 
+// Cinco segmentos, cinco tonos distinguibles entre sí. Los dos primeros usan
+// los colores de marca (verde para el cliente sano, violeta para el VIP) y los
+// otros son colores de dato, no de marca — están para diferenciar, no para
+// significar. "nuevo" NO puede ser violeta: chocaría con VIP.
 export const SEGMENT_META: Record<
   Segment,
   { label: string; className: string; dot: string; description: string }
 > = {
   vip: {
     label: "VIP",
-    className: "bg-gold-500/15 text-gold-700 ring-gold-500/25 dark:text-gold-300",
-    dot: "bg-gold-500",
+    className: "bg-accent-500/15 text-accent-700 ring-accent-500/25 dark:text-accent-300",
+    dot: "bg-accent-500",
     description: "Tus mejores clientes por gasto acumulado",
   },
   frecuente: {
@@ -25,9 +29,11 @@ export const SEGMENT_META: Record<
     description: "Activos pero con pocas compras",
   },
   nuevo: {
+    // amber-800 y no amber-700: sobre el propio fondo del badge (amber al 15%)
+    // el 700 se queda en 4.48:1, justo por debajo de AA. El 800 da 6.32:1.
     label: "Nuevo",
-    className: "bg-violet-500/15 text-violet-700 ring-violet-500/25 dark:text-violet-300",
-    dot: "bg-violet-500",
+    className: "bg-amber-500/15 text-amber-800 ring-amber-500/25 dark:text-amber-300",
+    dot: "bg-amber-500",
     description: "Se sumaron hace poco",
   },
   inactivo: {

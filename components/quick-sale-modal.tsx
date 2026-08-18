@@ -282,7 +282,7 @@ export function QuickSaleModal({
                 onClick={() => setStage("new-customer")}
                 className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-surface-2"
               >
-                <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gold-500/15 text-gold-600">
+                <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-accent-500/15 text-accent-600">
                   <UserPlus className="h-4 w-4" />
                 </div>
                 <span className="text-sm font-semibold text-ink">

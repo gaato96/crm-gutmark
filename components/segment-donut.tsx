@@ -3,12 +3,15 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { SEGMENT_META, Segment } from "@/lib/segmentation";
 
+// Recharts pinta sobre canvas, así que no puede leer las clases de Tailwind:
+// estos hex duplican a mano los `dot` de SEGMENT_META. Si cambia uno, cambiar
+// el otro — no hay nada que los mantenga sincronizados.
 const COLORS: Record<Segment, string> = {
-  vip: "#f59e0b",
-  frecuente: "#10b981",
-  ocasional: "#0ea5e9",
-  nuevo: "#8b5cf6",
-  inactivo: "#94a3b8",
+  vip: "#5B2EE5", // accent-600
+  frecuente: "#00BE86", // brand-500
+  ocasional: "#0ea5e9", // sky-500
+  nuevo: "#f59e0b", // amber-500
+  inactivo: "#94a3b8", // slate-400
 };
 
 function CustomTooltip({

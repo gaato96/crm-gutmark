@@ -72,12 +72,12 @@ export function Pill({
   tone = "slate",
 }: {
   children: ReactNode;
-  tone?: "slate" | "brand" | "gold" | "rose";
+  tone?: "slate" | "brand" | "accent" | "rose";
 }) {
   const tones = {
     slate: "bg-surface-2 text-ink-soft",
     brand: "bg-brand-500/10 text-brand-700 dark:text-brand-400",
-    gold: "bg-gold-500/10 text-gold-700 dark:text-gold-400",
+    accent: "bg-accent-500/10 text-accent-700 dark:text-accent-400",
     rose: "bg-rose-500/10 text-rose-600",
   };
   return (
@@ -90,7 +90,7 @@ export function Pill({
 export function SectionTitle({ children, hint }: { children: ReactNode; hint?: string }) {
   return (
     <div className="mb-3 flex items-baseline justify-between">
-      <h2 className="font-mono text-xs font-bold uppercase tracking-[0.1em] text-ink-muted">{children}</h2>
+      <h2 className="font-display text-xs font-bold uppercase tracking-[0.1em] text-ink-muted">{children}</h2>
       {hint && <span className="text-xs text-ink-muted">{hint}</span>}
     </div>
   );

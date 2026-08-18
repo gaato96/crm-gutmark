@@ -5,7 +5,10 @@
 // un CRM con datos por sesión/negocio, así que cachear esas respuestas podría
 // mostrar datos viejos o, peor, de otro usuario en un dispositivo compartido.
 
-const CACHE = "gf-static-v1";
+// Al cambiar este nombre, el `activate` borra las cachés viejas y los usuarios
+// que ya tenían la PWA instalada dejan de ver los íconos de la marca anterior.
+// Subirle la versión es obligatorio en cada rebranding de assets estáticos.
+const CACHE = "vuelvo-static-v2";
 const STATIC_PATTERNS = [/\/_next\/static\//, /\/icons\//, /\.(?:png|jpg|jpeg|svg|webp|woff2?)$/];
 
 self.addEventListener("install", (event) => {

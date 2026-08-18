@@ -134,7 +134,7 @@ export default async function DashboardPage() {
         <StatCard
           label="Clientes VIP"
           value={stats.vipCustomers.toString()}
-          tone="gold"
+          tone="accent"
           icon={<Crown className="h-5 w-5" aria-hidden="true" />}
           hint={`Gastan más de ${formatMoney(cfg.vipMinSpend)}`}
         />
@@ -180,7 +180,7 @@ export default async function DashboardPage() {
               <OpportunityBlock
                 title="Cumpleaños"
                 icon={<Cake className="h-4 w-4" aria-hidden="true" />}
-                tone="gold"
+                tone="accent"
                 empty="Sin cumpleaños esta semana"
                 items={birthdaysSoon.slice(0, 3).map((c) => ({
                   id: c.id,
@@ -293,12 +293,12 @@ function OpportunityBlock({
 }: {
   title: string;
   icon: React.ReactNode;
-  tone: "gold" | "brand";
+  tone: "accent" | "brand";
   items: { id: string; name: string; hint: string }[];
   empty: string;
   total: number;
 }) {
-  const toneCls = tone === "gold" ? "bg-gold-500/10 text-gold-600" : "bg-brand-500/10 text-brand-600";
+  const toneCls = tone === "accent" ? "bg-accent-500/10 text-accent-600" : "bg-brand-500/10 text-brand-600";
   return (
     <div className="rounded-xl border border-line/70 p-4">
       <div className="mb-3 flex items-center gap-2">

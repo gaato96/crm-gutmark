@@ -319,7 +319,7 @@ async function main() {
     update: {},
     create: {
       id: ADMIN_BUSINESS_ID,
-      name: "Vuelvo (interno)",
+      name: "Vuelvo CRM (interno)",
       rubro: "Administración",
       // No es un cliente real: no debe figurar como deudor en /admin.
       billingExempt: true,
@@ -331,7 +331,7 @@ async function main() {
     create: {
       businessId: adminBiz.id,
       email: "agencia.gutmark@gmail.com",
-      name: "Vuelvo Admin",
+      name: "Vuelvo CRM Admin",
       passwordHash: await bcrypt.hash("GutmarkAdmin2026!", 10),
       role: "superadmin",
     },

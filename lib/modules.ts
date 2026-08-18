@@ -38,22 +38,46 @@ export function isModuleCode(v: string): v is ModuleCode {
 
 // Ítems de navegación por módulo (href + label + ícono), resueltos del
 // lado del cliente contra la lista de códigos activos del negocio.
-export const MODULE_NAV: { code: ModuleCode; href: string; label: string; icon: LucideIcon }[] = [
-  { code: "pos", href: "/pos", label: "Punto de venta", icon: ScanBarcode },
-  { code: "caja", href: "/caja", label: "Caja", icon: Wallet },
-  { code: "stock", href: "/stock", label: "Stock", icon: Package },
-  { code: "catalogo", href: "/catalogo", label: "Catálogo", icon: LayoutGrid },
-  { code: "turnos", href: "/turnos", label: "Turnos", icon: CalendarClock },
-  { code: "cuenta-corriente", href: "/cuenta-corriente", label: "Cuenta corriente", icon: BookUser },
-  { code: "gastos", href: "/gastos", label: "Gastos", icon: Receipt },
-  { code: "puntos", href: "/puntos", label: "Puntos", icon: Gift },
-  { code: "reportes", href: "/reportes", label: "Reportes", icon: BarChart3 },
+//
+// `implemented` marca si la ruta existe de verdad. El catálogo lista los nueve
+// módulos, pero solo los implementados tienen página detrás; sin este flag,
+// activarle a un negocio un módulo no construido le mete un link en el sidebar
+// que termina en 404. Al construir un módulo, poner el flag en `true` — es el
+// único lugar donde hay que tocarlo (nav, /modulos y /admin/modulos lo leen).
+export const MODULE_NAV: {
+  code: ModuleCode;
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  implemented: boolean;
+}[] = [
+  { code: "pos", href: "/pos", label: "Punto de venta", icon: ScanBarcode, implemented: false },
+  { code: "caja", href: "/caja", label: "Caja", icon: Wallet, implemented: false },
+  { code: "stock", href: "/stock", label: "Stock", icon: Package, implemented: false },
+  { code: "catalogo", href: "/catalogo", label: "Catálogo", icon: LayoutGrid, implemented: false },
+  { code: "turnos", href: "/turnos", label: "Turnos", icon: CalendarClock, implemented: false },
+  { code: "cuenta-corriente", href: "/cuenta-corriente", label: "Cuenta corriente", icon: BookUser, implemented: false },
+  { code: "gastos", href: "/gastos", label: "Gastos", icon: Receipt, implemented: false },
+  { code: "puntos", href: "/puntos", label: "Puntos", icon: Gift, implemented: true },
+  { code: "reportes", href: "/reportes", label: "Reportes", icon: BarChart3, implemented: false },
 ];
+
+// ¿El módulo tiene página construida? Lo usan el sidebar (para no mostrar un
+// link roto), /modulos (para decir "Próximamente") y /admin/modulos (para que
+// el superadmin sepa qué es vendible hoy).
+export function isModuleImplemented(code: string): boolean {
+  return MODULE_NAV.some((m) => m.code === code && m.implemented);
+}
 
 // Semilla del catálogo: la usan prisma/seed.ts y la acción "Sincronizar
 // catálogo" del superadmin. Los precios son sugeridos — el superadmin los
 // puede editar libremente desde /admin/modulos sin que un re-seed los pise
 // (ver lib/default-templates.ts-style upsert en admin-actions.ts).
+//
+// Valores alineados con docs/marketing/precios.md v2, que los reescaló sobre
+// un plan base de $39.900. Si se cambia el plan base, revisar ese documento
+// antes de tocar estos números: la escala relativa entre módulos es
+// deliberada (Puntos es el más barato a propósito, como puerta de entrada).
 export const MODULE_SEED: {
   code: ModuleCode;
   name: string;
@@ -65,63 +89,63 @@ export const MODULE_SEED: {
     code: "puntos",
     name: "Puntos / beneficios",
     description: "Programa de puntos o sellos por compra, con canje de premios.",
-    monthlyPrice: 4000,
+    monthlyPrice: 9900,
     sortOrder: 10,
   },
   {
     code: "stock",
     name: "Stock / Inventario",
     description: "Catálogo de productos, control de stock y precios.",
-    monthlyPrice: 8000,
+    monthlyPrice: 21900,
     sortOrder: 20,
   },
   {
     code: "pos",
     name: "Punto de venta (POS)",
     description: "Vendé productos del stock y descontá inventario automáticamente.",
-    monthlyPrice: 10000,
+    monthlyPrice: 26900,
     sortOrder: 30,
   },
   {
     code: "caja",
     name: "Caja",
     description: "Apertura, cierre y arqueo de caja diario.",
-    monthlyPrice: 6000,
+    monthlyPrice: 14900,
     sortOrder: 40,
   },
   {
     code: "gastos",
     name: "Gastos y rentabilidad",
     description: "Registro de gastos y margen real del negocio.",
-    monthlyPrice: 5000,
+    monthlyPrice: 12900,
     sortOrder: 50,
   },
   {
     code: "cuenta-corriente",
     name: "Cuenta corriente",
     description: "Fiado por cliente, pagos parciales y recordatorio de deuda.",
-    monthlyPrice: 5000,
+    monthlyPrice: 12900,
     sortOrder: 60,
   },
   {
     code: "turnos",
     name: "Turnos / Reservas",
     description: "Agenda con link público para que el cliente reserve solo.",
-    monthlyPrice: 7000,
+    monthlyPrice: 17900,
     sortOrder: 70,
   },
   {
     code: "catalogo",
     name: "Catálogo digital",
     description: "Vidriera visual de productos, tipo scroll, para compartir con clientes.",
-    monthlyPrice: 6000,
+    monthlyPrice: 14900,
     sortOrder: 80,
   },
   {
     code: "reportes",
     name: "Reportes",
     description: "Reportes avanzados de ventas, caja y rentabilidad.",
-    monthlyPrice: 6000,
+    monthlyPrice: 14900,
     sortOrder: 90,
   },
 ];

@@ -70,7 +70,7 @@ export function ReminderCard({
             <Link href={`/clientes/${id}`} className="truncate font-semibold text-ink hover:underline">
               {name}
             </Link>
-            <span className="shrink-0 text-xs font-semibold text-gold-600">{hint}</span>
+            <span className="shrink-0 text-xs font-semibold text-accent-600">{hint}</span>
           </div>
           <p className="mt-2 line-clamp-3 whitespace-pre-line rounded-lg bg-surface-2 p-2.5 text-xs text-ink-soft">
             {whatsappBody}

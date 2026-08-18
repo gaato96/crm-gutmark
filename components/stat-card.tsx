@@ -37,19 +37,19 @@ export function StatCard({
   value: string;
   icon: ReactNode;
   hint?: string;
-  tone?: "brand" | "gold" | "sky" | "slate";
+  tone?: "brand" | "accent" | "sky" | "slate";
   delta?: number;
   deltaLabel?: string;
 }) {
   const tones = {
     brand: "bg-brand-500/10 text-brand-600 dark:text-brand-400",
-    gold: "bg-gold-500/10 text-gold-600 dark:text-gold-400",
+    accent: "bg-accent-500/10 text-accent-600 dark:text-accent-400",
     sky: "bg-sky-500/10 text-sky-600 dark:text-sky-400",
     slate: "bg-surface-3 text-ink-muted",
   };
   const glows = {
     brand: "group-hover:shadow-brand-500/10",
-    gold: "group-hover:shadow-gold-500/10",
+    accent: "group-hover:shadow-accent-500/10",
     sky: "group-hover:shadow-sky-500/10",
     slate: "",
   };

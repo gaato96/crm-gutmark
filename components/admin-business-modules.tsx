@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Loader2 } from "lucide-react";
 import { setBusinessModule, setBusinessModulePrice } from "@/app/admin-actions";
 import { formatMoney } from "@/lib/format";
+import { isModuleImplemented } from "@/lib/modules";
 
 export interface CatalogModule {
   code: string;
@@ -79,6 +80,11 @@ function ModuleRow({
         <div className="font-semibold text-ink">{m.name}</div>
         {!m.available && (
           <div className="text-xs text-ink-muted">No disponible en catálogo</div>
+        )}
+        {!isModuleImplemented(m.code) && (
+          <div className="text-xs text-ink-muted">
+            Sin construir — activarlo se cobra pero no habilita ninguna pantalla.
+          </div>
         )}
       </td>
       <td className="px-5 py-3.5 tabular-nums text-ink-soft">{formatMoney(m.monthlyPrice)}</td>

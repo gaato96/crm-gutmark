@@ -3,10 +3,13 @@
 @tailwind utilities;
 
 :root {
-  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  /* Ojo: --font-sans y --font-display las inyecta next/font desde
+     app/layout.tsx, en la clase del <html>. No redeclararlas acá — antes
+     había un "--font-sans: Inter" que pisaba la variable de la fuente real. */
 
-  /* Tema claro */
-  --canvas: 246 247 250;
+  /* Tema claro. El manual pide predominio de blanco/neutros, así que el
+     lienzo es casi blanco y el color de marca queda para acciones y acentos. */
+  --canvas: 249 250 252;
   --surface: 255 255 255;
   --surface-2: 241 244 248;
   --surface-3: 226 232 240;
@@ -15,7 +18,12 @@
   --ink: 15 23 42;
   --ink-soft: 51 65 85;
   --ink-muted: 100 116 139;
-  --ink-faint: 148 163 184;
+  /* Era 148 163 184, que sobre este lienzo daba 2.46:1 — por debajo incluso
+     del 3:1 que WCAG pide para íconos y bordes, y este token se usa sobre todo
+     para íconos. 125 139 158 llega a 3.32:1 y sigue leyéndose claramente más
+     tenue que --ink-muted (4.56:1), así que la jerarquía se mantiene.
+     Para texto de contenido real usar --ink-muted, no este. */
+  --ink-faint: 125 139 158;
 
   color-scheme: light;
 }
@@ -47,7 +55,7 @@ body {
 }
 
 ::selection {
-  background: rgb(16 185 129 / 0.25);
+  background: rgb(0 190 134 / 0.25);
 }
 
 /* Scrollbar */
@@ -71,14 +79,18 @@ body {
     @apply rounded-2xl border border-line bg-surface shadow-card;
   }
 
+  /* El anillo de foco usa brand-600 y no brand-500: WCAG pide 3:1 para
+     elementos no textuales, y brand-500 sobre blanco se queda en 2.41:1.
+     brand-600 llega a 4.48:1. */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition duration-150 [touch-action:manipulation] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98];
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition duration-150 [touch-action:manipulation] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98];
   }
-  /* brand-700 y no brand-600: blanco sobre brand-600 da 3.77:1 y no llega al
-     4.5:1 que pide WCAG AA para texto normal. Sobre brand-700 da 5.55:1.
-     El hover oscurece en vez de aclarar para que todos los estados pasen. */
+  /* El verde de marca (#00BE86) es brillante: con texto blanco da 2.41:1 y
+     reprueba AA. Con brand-950 encima da 8.12:1. Por eso el botón primario es
+     verde con letra oscura — que además es como lo pide el manual, con el
+     verde como color de acción. El hover oscurece el fondo y sube el ratio. */
   .btn-primary {
-    @apply btn bg-brand-700 text-white hover:bg-brand-800 shadow-sm shadow-brand-700/25;
+    @apply btn bg-brand-500 text-brand-950 hover:bg-brand-400 shadow-sm shadow-brand-500/25;
   }
   .btn-secondary {
     @apply btn bg-surface text-ink-soft ring-1 ring-inset ring-line hover:bg-surface-2;
@@ -86,14 +98,14 @@ body {
   .btn-ghost {
     @apply btn text-ink-soft hover:bg-surface-2;
   }
-  /* Texto oscuro sobre el dorado: en blanco daba 2.15:1, ilegible. Con
-     brand-950 encima de gold-400 son 8.6:1 y además ata el botón a la marca. */
-  .btn-gold {
-    @apply btn bg-gold-400 text-brand-950 hover:bg-gold-300 shadow-sm shadow-gold-500/25;
+  /* Al revés que el verde: el violeta es oscuro, así que acá sí va texto
+     blanco (7.08:1). Es el botón de acento — segundo en jerarquía. */
+  .btn-accent {
+    @apply btn bg-accent-600 text-white hover:bg-accent-700 shadow-sm shadow-accent-600/25;
   }
 
   .input {
-    @apply w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-faint transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20;
+    @apply w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-faint transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/25;
   }
   .label {
     @apply mb-1.5 block text-sm font-medium text-ink-soft;

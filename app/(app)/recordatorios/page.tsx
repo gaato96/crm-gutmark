@@ -61,7 +61,7 @@ export default async function RecordatoriosPage() {
           <section>
             <SectionHeader
               icon={<Cake className="h-4 w-4" />}
-              tone="gold"
+              tone="accent"
               title="Cumpleaños esta semana"
               count={birthdays.length}
             />
@@ -174,12 +174,12 @@ function SectionHeader({
   count,
 }: {
   icon: React.ReactNode;
-  tone: "gold" | "brand" | "slate";
+  tone: "accent" | "brand" | "slate";
   title: string;
   count: number;
 }) {
   const tones = {
-    gold: "bg-gold-500/10 text-gold-600",
+    accent: "bg-accent-500/10 text-accent-600",
     brand: "bg-brand-500/10 text-brand-600",
     slate: "bg-surface-2 text-ink-muted",
   };

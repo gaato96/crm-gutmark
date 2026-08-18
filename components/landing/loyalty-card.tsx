@@ -17,20 +17,22 @@ const FILLED = 7;
  */
 export function LoyaltyCard() {
   return (
-    <div className="grain relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-700 via-brand-800 to-brand-950 p-5 shadow-pop ring-1 ring-white/10">
-      <div className="pointer-events-none absolute -right-8 -top-12 h-36 w-36 rounded-full bg-gold-400/20 blur-3xl" />
+    <div className="grain relative overflow-hidden rounded-3xl bg-gradient-to-br from-accent-600 via-accent-700 to-accent-900 p-5 shadow-pop ring-1 ring-white/10">
+      <div className="pointer-events-none absolute -right-8 -top-12 h-36 w-36 rounded-full bg-accent-400/20 blur-3xl" />
 
       <div className="relative flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <LogoMark size={28} />
-          <span className="font-display text-base text-white">Vuelvo</span>
+          <LogoMark size={28} variant="plain" />
+          <span className="font-display text-base font-bold text-white">
+            Vuelvo <span className="font-semibold text-white/70">CRM</span>
+          </span>
         </div>
-        <span className="truncate rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-brand-100">
+        <span className="truncate rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-accent-100">
           Perfumería Bella
         </span>
       </div>
 
-      <p className="relative mt-4 text-[11px] font-medium text-brand-200">
+      <p className="relative mt-4 text-[11px] font-medium text-accent-200">
         Tarjeta de Valentina López
       </p>
 
@@ -43,7 +45,7 @@ export function LoyaltyCard() {
               key={i}
               className={`grid aspect-square place-items-center rounded-full border ${
                 filled
-                  ? "border-gold-400/40 bg-gold-400/90 shadow-[0_0_12px_-2px_rgba(251,191,36,0.6)]"
+                  ? "border-accent-400/40 bg-accent-400/90 shadow-[0_0_12px_-2px_rgba(151,122,238,0.6)]"
                   : isNext
                   ? "border-dashed border-white/50 bg-white/5"
                   : "border-white/15 bg-white/5"
@@ -52,7 +54,7 @@ export function LoyaltyCard() {
               {filled && (
                 <Star
                   aria-hidden="true"
-                  className="h-3 w-3 fill-brand-900 text-brand-900"
+                  className="h-3 w-3 fill-accent-900 text-accent-900"
                 />
               )}
             </div>
@@ -65,11 +67,11 @@ export function LoyaltyCard() {
           <div className="text-xs font-bold tabular-nums text-white">
             {FILLED} de {STAMPS} compras
           </div>
-          <div className="truncate text-[11px] text-brand-200">
+          <div className="truncate text-[11px] text-accent-200">
             Próximo premio: 15% OFF
           </div>
         </div>
-        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white text-xs font-bold tabular-nums text-brand-700">
+        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white text-xs font-bold tabular-nums text-accent-700">
           {Math.round((FILLED / STAMPS) * 100)}%
         </div>
       </div>

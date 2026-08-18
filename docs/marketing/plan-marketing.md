@@ -106,7 +106,9 @@ comercial, o no va a pasar.
 
 - ✅ Producto completo y desplegado: base de clientes, segmentación automática,
   recordatorios, campañas, importación/exportación CSV, venta rápida.
-- ✅ Nueve módulos pagos construidos y activables por negocio.
+- ✅ Infraestructura completa de módulos pagos: catálogo de nueve, activación y
+  precio por negocio, control de acceso. **Un módulo construido (Puntos)**; los
+  otros ocho están en el catálogo pero todavía no tienen pantalla.
 - ✅ Panel de superadministración con gestión de módulos, precios por negocio y
   registro de pagos.
 - ✅ Landing pública con copy trabajado, motion GSAP y accesibilidad cuidada.
@@ -293,6 +295,11 @@ Un negocio que activa un segundo módulo casi no se da de baja: ya integró el
 producto a su operación. Ofrecer el módulo correcto en el momento correcto es
 retención, no solo ingreso.
 
+> **Ojo con el calendario:** hoy el único módulo vendible es Puntos, así que
+> "el segundo módulo" todavía no existe. Esta palanca no se puede usar hasta
+> que se construya al menos uno más — por eso conviene tener Catálogo o Turnos
+> listo antes del mes 4, que es cuando el plan cuenta con este ingreso.
+
 **Soporte por WhatsApp con respuesta el mismo día.**
 En este segmento el soporte personal es diferencial competitivo, no costo. "Te
 contestamos nosotros, no un bot" ya está prometido en la web — hay que cumplirlo.
@@ -410,7 +417,7 @@ pregunta concreta produce nombres; la genérica produce "voy a pensar".
 | 22 | Grabar el primer testimonio en video | Referidos | 1 video |
 | 23 | Lanzar el programa de referidos con los clientes activos | Referidos | Activo |
 | 24 | Cerrar el primer acuerdo con un proveedor | Adquisición | 1 acuerdo |
-| 25 | Ofrecer el segundo módulo a quienes ya usan el base hace 60 días | Ingresos | 3 activaciones |
+| 25 | Ofrecer **Puntos** (único módulo construido) a quienes usan el base hace 60 días | Ingresos | 3 activaciones |
 | 26 | Rehacer la landing con prueba social real | Adquisición | Publicado |
 | 27 | **Llegar a 15 negocios pagos** | Ingresos | **15 clientes** |
 

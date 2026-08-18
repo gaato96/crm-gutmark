@@ -1,39 +1,44 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Calistoga, JetBrains_Mono } from "next/font/google";
+import { Montserrat, Poppins } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
-const calistoga = Calistoga({
+// Las dos familias del manual de marca, y solo esas: Montserrat para titulares,
+// números y CTA; Poppins para cuerpo e interfaz. El manual pide explícitamente
+// no mezclar más familias, así que no hay una tercera para monoespaciado — las
+// versalitas de la landing usan Montserrat con tracking amplio.
+const poppins = Poppins({
   subsets: ["latin"],
-  weight: "400",
-  variable: "--font-display",
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-sans",
 });
-const jetbrainsMono = JetBrains_Mono({
+const montserrat = Montserrat({
   subsets: ["latin"],
-  variable: "--font-mono",
+  weight: ["600", "700", "800"],
+  variable: "--font-display",
 });
 
 // El manifest y las meta apple-web-app se declaran solo en app/(app)/layout.tsx:
 // la app instalable es el panel, no esta landing pública (ver Fase 4).
 export const metadata: Metadata = {
-  title: "Vuelvo | El sistema que hace que tus clientes vuelvan a comprar",
+  title: "Vuelvo CRM | Porque vender una vez no alcanza",
   description:
-    "El sistema que hace que tus clientes vuelvan a comprar. Conocé, cuidá y hacé volver a los clientes de tu PYME.",
-  // Usa el lockup horizontal (ícono + wordmark), pensado para tarjetas de
-  // preview de redes/mensajería — no para UI en línea, donde su fondo blanco
-  // fijo chocaría con superficies oscuras.
+    "El CRM para conocer mejor a tus clientes, fidelizarlos y hacer que vuelvan. Organizá tu cartera, hacé seguimiento y generá recompra.",
+  // Tarjeta de preview para redes y mensajería, generada por
+  // scripts/generate-icons.cjs junto con los íconos. No se usa en UI en línea.
   openGraph: {
-    images: [{ url: "/logo-v2.png", width: 2064, height: 512, alt: "Vuelvo" }],
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Vuelvo CRM" }],
   },
   twitter: {
     card: "summary_large_image",
-    images: ["/logo-v2.png"],
+    images: ["/og.png"],
   },
 };
 
+// Estos dos valores duplican a mano --canvas de cada tema en globals.css.
+// Si cambia la paleta, hay que sincronizarlos: no hay nada que los ate.
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f6f7fa" },
+    { media: "(prefers-color-scheme: light)", color: "#f9fafc" },
     { media: "(prefers-color-scheme: dark)", color: "#080b10" },
   ],
 };
@@ -42,7 +47,7 @@ export const viewport: Viewport = {
 const themeScript = `
 (function () {
   try {
-    var t = localStorage.getItem('gf-theme');
+    var t = localStorage.getItem('vuelvo-theme');
     if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     if (t === 'dark') document.documentElement.classList.add('dark');
   } catch (e) {}
@@ -57,7 +62,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${inter.variable} ${calistoga.variable} ${jetbrainsMono.variable}`}
+      className={`${poppins.variable} ${montserrat.variable}`}
       suppressHydrationWarning
     >
       <head>

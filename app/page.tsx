@@ -25,7 +25,7 @@ import { RubroMarquee } from "@/components/landing/rubro-marquee";
 import { MagneticCta } from "@/components/landing/magnetic-cta";
 import { Logo } from "@/components/logo";
 
-const CTA_MESSAGE = "¡Hola! Quiero pedir acceso a Vuelvo para mi negocio.";
+const CTA_MESSAGE = "¡Hola! Quiero pedir acceso a Vuelvo CRM para mi negocio.";
 
 // Un solo texto por intención en toda la página: el botón de WhatsApp dice
 // siempre "Pedir acceso", nunca "Escribinos" ni "Empezar".
@@ -70,7 +70,7 @@ const STEPS = [
 ];
 
 const SEGMENTS = [
-  { name: "VIP", tone: "bg-gold-500/15 text-gold-700 dark:text-gold-300" },
+  { name: "VIP", tone: "bg-accent-500/15 text-accent-700 dark:text-accent-300" },
   { name: "Frecuente", tone: "bg-brand-500/15 text-brand-700 dark:text-brand-300" },
   { name: "Ocasional", tone: "bg-surface-3 text-ink-soft" },
   { name: "Nuevo", tone: "bg-brand-500/10 text-brand-600 dark:text-brand-400" },
@@ -179,7 +179,7 @@ function Nav() {
 function Hero() {
   return (
     <HeroStage>
-      <section className="relative flex min-h-[calc(100dvh-4rem)] items-center overflow-hidden bg-brand-950">
+      <section className="relative flex min-h-[calc(100dvh-4rem)] items-center overflow-hidden bg-accent-900">
         {/* Capa 1: el video. Va detrás de todo y no aporta significado. */}
         <HeroVideo
           src="/hero.mp4"
@@ -190,24 +190,25 @@ function Hero() {
             video, así ningún cuadro claro se come el titular. */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-brand-950/45"
+          className="pointer-events-none absolute inset-0 bg-accent-900/45"
         />
 
         {/* Capa 3, mobile: scrim parejo. Acá el texto ocupa todo el ancho, así
             que un degradado horizontal dejaría el final de cada renglón sobre
             la parte más clara. Con el peor cuadro posible del video (un píxel
-            blanco) esto da 9:1 en el titular y 8:1 en la bajada. */}
+            blanco) esto da 12.5:1 en el titular y 7.3:1 en la bajada. */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-brand-950/70 lg:hidden"
+          className="pointer-events-none absolute inset-0 bg-accent-900/72 lg:hidden"
         />
 
         {/* Capa 3, desktop: scrim direccional. El texto vive en la mitad
-            izquierda, que queda casi opaca (peor caso 10:1), y hacia la derecha
-            baja a ~56% para que el video se vea de verdad. */}
+            izquierda, que queda opaca (19:1 en el titular, 11:1 en la bajada),
+            y hacia la derecha baja al 20% para que el video se vea de verdad —
+            ahí solo va la tarjeta, que no es texto. */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 hidden bg-gradient-to-r from-brand-950 via-brand-950/80 to-brand-950/20 lg:block"
+          className="pointer-events-none absolute inset-0 hidden bg-gradient-to-r from-accent-900 via-accent-900/80 to-accent-900/20 lg:block"
         />
 
         {/* Capa 4: fundido inferior hacia el color de fondo del tema activo. */}
@@ -215,14 +216,15 @@ function Hero() {
           aria-hidden="true"
           className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-canvas"
         />
-        {/* Capa 5: luz de marca a la deriva. Le mete verde y dorado propios al
-            video, que viene con su propio color, y unifica la paleta. */}
+        {/* Capa 5: luz de marca a la deriva. Le mete el verde y el violeta de
+            la marca al video, que viene con su propio color, y unifica la
+            paleta. */}
         <div
           aria-hidden="true"
           className="grain pointer-events-none absolute inset-0 overflow-hidden"
         >
           <div className="animate-drift-a absolute -left-40 -top-40 h-[30rem] w-[30rem] rounded-full bg-brand-400/20 blur-3xl" />
-          <div className="animate-drift-b absolute -right-32 top-40 h-[24rem] w-[24rem] rounded-full bg-gold-400/[0.14] blur-3xl" />
+          <div className="animate-drift-b absolute -right-32 top-40 h-[24rem] w-[24rem] rounded-full bg-accent-400/[0.18] blur-3xl" />
           <div className="animate-drift-b absolute -bottom-32 left-1/3 h-72 w-72 rounded-full bg-brand-300/10 blur-3xl [animation-duration:32s]" />
         </div>
 
@@ -230,7 +232,7 @@ function Hero() {
           <div>
             <span
               data-anim="hero-item"
-              className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-200 ring-1 ring-inset ring-white/15 backdrop-blur"
+              className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-accent-200 ring-1 ring-inset ring-white/15 backdrop-blur"
             >
               <HeartHandshake aria-hidden="true" className="h-3.5 w-3.5" />
               Fidelización para PYMES
@@ -246,7 +248,7 @@ function Hero() {
 
             <p
               data-anim="hero-item"
-              className="mt-6 max-w-xl text-lg leading-relaxed text-brand-100"
+              className="mt-6 max-w-xl text-lg leading-relaxed text-accent-100"
             >
               Conocé a los clientes que ya tenés, acordate de todos, y hacelos
               volver antes de que se olviden de vos.
@@ -258,7 +260,7 @@ function Hero() {
             >
               <MagneticCta
                 href={businessWhatsappLink(CTA_MESSAGE)}
-                className="btn-gold justify-center whitespace-nowrap !px-7 !py-3.5 text-base"
+                className="btn-accent justify-center whitespace-nowrap !px-7 !py-3.5 text-base"
               >
                 <MessageCircle aria-hidden="true" className="h-5 w-5" />
                 {CTA_LABEL}
@@ -288,7 +290,7 @@ function Hero() {
                 del scrim es la parte más clara del hero. */}
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute -inset-8 rounded-[3rem] bg-brand-950/50 blur-2xl"
+              className="pointer-events-none absolute -inset-8 rounded-[3rem] bg-accent-900/60 blur-2xl"
             />
 
             <div data-anim="hero-photo" className="relative">
@@ -297,7 +299,7 @@ function Hero() {
               {/* Aviso de cumpleaños, montado en la esquina superior. Es el
                   gancho del producto: el dato que el negocio hoy se pierde. */}
               <div className="absolute -right-3 -top-5 flex items-center gap-2.5 rounded-2xl bg-white/95 px-3 py-2 shadow-pop ring-1 ring-black/5 backdrop-blur sm:-right-6">
-                <div className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-gold-500/20 text-gold-700">
+                <div className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-accent-500/20 text-accent-700">
                   <Cake aria-hidden="true" className="h-3.5 w-3.5" />
                 </div>
                 <div className="leading-tight">
@@ -419,7 +421,7 @@ function WhatsInside() {
       className="mx-auto max-w-6xl scroll-mt-20 px-5 py-24 sm:px-8 sm:py-32"
     >
       <Reveal className="max-w-2xl">
-        <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-600 dark:text-brand-400">
+        <span className="font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-600 dark:text-brand-400">
           Qué incluye
         </span>
         <h2 className="mt-3 text-balance font-display text-3xl leading-tight text-ink sm:text-4xl">
@@ -458,9 +460,9 @@ function WhatsInside() {
         {/* Mensajes: la única celda alta. La burbuja es un objeto real de
             WhatsApp, no una captura del panel simulada con divs. */}
         <Reveal className="sm:row-span-2">
-          <div className="card grain relative flex h-full flex-col justify-between overflow-hidden bg-gradient-to-br from-brand-700 to-brand-900 p-6">
+          <div className="card grain relative flex h-full flex-col justify-between overflow-hidden bg-gradient-to-br from-accent-600 to-accent-800 p-6">
             <div className="relative">
-              <div className="flex items-center gap-2 text-brand-100">
+              <div className="flex items-center gap-2 text-accent-100">
                 <Send aria-hidden="true" className="h-4 w-4" />
                 <span className="text-sm font-semibold">Mensajes listos</span>
               </div>
@@ -474,7 +476,7 @@ function WhatsInside() {
                 </div>
               </div>
             </div>
-            <p className="relative mt-6 text-xs leading-relaxed text-brand-200">
+            <p className="relative mt-6 text-xs leading-relaxed text-accent-200">
               Sale redactado y con el nombre puesto. Vos lo revisás y lo mandás.
             </p>
           </div>
@@ -483,7 +485,7 @@ function WhatsInside() {
         {/* Recordatorios */}
         <Reveal>
           <div className="card flex h-full flex-col justify-between p-6">
-            <div className="grid h-11 w-11 place-items-center rounded-xl bg-gold-500/15 text-gold-600 dark:text-gold-400">
+            <div className="grid h-11 w-11 place-items-center rounded-xl bg-accent-500/15 text-accent-600 dark:text-accent-400">
               <Cake aria-hidden="true" className="h-5 w-5" />
             </div>
             <div className="mt-6">
@@ -523,19 +525,25 @@ function WhatsInside() {
                 <h3 className="font-bold text-ink">
                   Sumá módulos cuando los necesites
                 </h3>
+                {/* Solo se nombra lo que ya está construido. Los módulos en
+                    desarrollo se anuncian como futuros, no como disponibles. */}
                 <p className="mt-1.5 max-w-lg text-sm leading-relaxed text-ink-muted">
-                  Puntos y beneficios, stock, punto de venta, caja, turnos,
-                  catálogo digital. Se activan de a uno y solo pagás los que uses.
+                  Hoy podés sumar Puntos y beneficios: sellos y premios por compra,
+                  sin tarjetas de cartón que se pierden. Vamos sumando más — turnos,
+                  catálogo y stock están en camino.
                 </p>
               </div>
             </div>
             <div className="flex flex-wrap gap-2 sm:shrink-0">
-              {["Puntos", "Stock", "Caja", "Turnos", "Reportes"].map((m) => (
+              <span className="rounded-full border border-line bg-surface-2 px-3 py-1 text-xs font-semibold text-ink-soft">
+                Puntos
+              </span>
+              {["Turnos", "Catálogo", "Stock"].map((m) => (
                 <span
                   key={m}
-                  className="rounded-full border border-line bg-surface-2 px-3 py-1 text-xs font-semibold text-ink-soft"
+                  className="rounded-full border border-dashed border-line px-3 py-1 text-xs font-semibold text-ink-faint"
                 >
-                  {m}
+                  {m} · pronto
                 </span>
               ))}
             </div>
@@ -555,13 +563,13 @@ function TrustSection() {
             TODO: cuando exista la imagen de marca generada, va de fondo acá
             con un `bg-gradient-to-r from-brand-950/85` encima para el contraste. */}
         <Reveal>
-          <div className="grain relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-brand-800 via-brand-900 to-brand-950 px-7 py-14 sm:px-12 sm:py-16">
-            <div className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-gold-400/15 blur-3xl" />
+          <div className="grain relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-accent-700 via-accent-800 to-accent-900 px-7 py-14 sm:px-12 sm:py-16">
+            <div className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-accent-400/15 blur-3xl" />
             <div className="relative flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
               <h2 className="max-w-lg text-balance font-display text-3xl leading-tight text-white sm:text-4xl">
                 Simple de usar, serio para confiar
               </h2>
-              <p className="max-w-xs text-sm leading-relaxed text-brand-200">
+              <p className="max-w-xs text-sm leading-relaxed text-accent-200">
                 Lo construimos para negocios que atienden de verdad, con la
                 cartera de clientes como el activo más valioso que tienen.
               </p>
@@ -593,27 +601,27 @@ function FinalCta() {
   return (
     <section className="mx-auto max-w-6xl px-5 py-24 sm:px-8 sm:py-32">
       <Reveal>
-        <div className="grain relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-brand-700 via-brand-800 to-brand-950 px-6 py-16 text-center shadow-pop sm:px-12 sm:py-24">
-          <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-gold-400/20 blur-3xl" />
+        <div className="grain relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-accent-600 via-accent-700 to-accent-900 px-6 py-16 text-center shadow-pop sm:px-12 sm:py-24">
+          <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-accent-400/20 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-24 -left-16 h-64 w-64 rounded-full bg-brand-400/15 blur-3xl" />
 
           <div className="relative">
             <h2 className="mx-auto max-w-2xl text-balance font-display text-3xl leading-tight text-white sm:text-[2.75rem]">
               Empezá a fidelizar esta semana
             </h2>
-            <p className="mx-auto mt-5 max-w-md leading-relaxed text-brand-100">
+            <p className="mx-auto mt-5 max-w-md leading-relaxed text-accent-100">
               Escribinos por WhatsApp y dejamos tu cuenta andando con tu cartera
               cargada.
             </p>
             <div className="mt-9 flex flex-col items-center gap-4">
               <MagneticCta
                 href={businessWhatsappLink(CTA_MESSAGE)}
-                className="btn-gold whitespace-nowrap !px-8 !py-4 text-base"
+                className="btn-accent whitespace-nowrap !px-8 !py-4 text-base"
               >
                 <MessageCircle aria-hidden="true" className="h-5 w-5" />
                 {CTA_LABEL}
               </MagneticCta>
-              <span className="inline-flex items-center gap-1.5 text-sm text-brand-200">
+              <span className="inline-flex items-center gap-1.5 text-sm text-accent-200">
                 <CheckCircle2 aria-hidden="true" className="h-4 w-4" />
                 Te contestamos nosotros, no un bot
               </span>
@@ -630,10 +638,7 @@ function Footer() {
     <footer className="border-t border-line py-10">
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-5 text-center sm:flex-row sm:justify-between sm:px-8 sm:text-left">
         <div className="flex items-center gap-2.5">
-          <Logo size="sm" />
-          <div className="text-xs text-ink-muted">
-            Fidelización para PYMES argentinas
-          </div>
+          <Logo size="sm" byline />
         </div>
         <div className="flex items-center gap-5 text-sm">
           <a
@@ -652,8 +657,8 @@ function Footer() {
           </Link>
         </div>
       </div>
-      <p className="mt-6 text-center text-xs text-ink-faint">
-        © {new Date().getFullYear()} Vuelvo
+      <p className="mt-6 text-center text-xs text-ink-muted">
+        © {new Date().getFullYear()} Vuelvo CRM · Desarrollado por GUTMARK
       </p>
     </footer>
   );

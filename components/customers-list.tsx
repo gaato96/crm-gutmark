@@ -126,7 +126,7 @@ export function CustomersList({
                 <div className="flex items-center gap-2">
                   <span className="truncate font-semibold text-ink">{c.name}</span>
                   {c.birthdayInDays !== null && c.birthdayInDays <= 7 && (
-                    <Cake className="h-3.5 w-3.5 shrink-0 text-gold-500" />
+                    <Cake className="h-3.5 w-3.5 shrink-0 text-accent-500" />
                   )}
                 </div>
                 <div className="truncate text-xs text-ink-muted">

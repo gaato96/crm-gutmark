@@ -49,8 +49,13 @@ const BASE_NAV_END: NavItem[] = [
   { href: "/configuracion", label: "Configuración", icon: Settings },
 ];
 
+// Solo entran al sidebar los módulos contratados QUE ADEMÁS estén construidos:
+// el catálogo se puede activar antes de que exista la página, y un link a una
+// ruta inexistente le da un 404 al negocio.
 function buildNavItems(modules: string[]): NavItem[] {
-  const active = MODULE_NAV.filter((m) => modules.includes(m.code)).map((m) => ({
+  const active = MODULE_NAV.filter(
+    (m) => m.implemented && modules.includes(m.code)
+  ).map((m) => ({
     href: m.href,
     label: m.label,
     icon: m.icon,
@@ -139,7 +144,7 @@ export function AppShell({
   return (
     <div className="min-h-screen">
       {isImpersonating && (
-        <div className="sticky top-0 z-50 flex items-center justify-center gap-2.5 bg-gold-500 px-4 py-2 text-sm font-semibold text-ink">
+        <div className="sticky top-0 z-50 flex items-center justify-center gap-2.5 bg-accent-500 px-4 py-2 text-sm font-semibold text-ink">
           <ShieldAlert className="h-4 w-4" aria-hidden="true" />
           Estás viendo esta cuenta como administrador.
           <form action={stopImpersonatingAction}>
