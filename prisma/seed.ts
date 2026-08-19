@@ -55,7 +55,9 @@ async function main() {
   await db.session.deleteMany();
   await db.user.deleteMany();
   await db.contactLog.deleteMany();
+  await db.purchaseItem.deleteMany();
   await db.purchase.deleteMany();
+  await db.service.deleteMany();
   await db.campaign.deleteMany();
   await db.template.deleteMany();
   await db.customer.deleteMany();
@@ -269,6 +271,19 @@ async function main() {
       },
     });
   }
+
+  console.log("✂️  Creando servicios con precio...");
+  // Recompra propia por servicio: es lo que hace que la campaña "escribile a
+  // los 15 días al que se hizo corte + barba" funcione sin configurar nada más.
+  const servicios = [
+    { name: "Perfume importado", price: 45000, category: "Perfumería", recompraDays: 90 },
+    { name: "Crema facial", price: 28000, category: "Cosmética", recompraDays: 45 },
+    { name: "Set de regalo", price: 62000, category: "Regalos", recompraDays: null },
+    { name: "Labial", price: 15000, category: "Cosmética", recompraDays: 60 },
+  ];
+  await db.service.createMany({
+    data: servicios.map((sv, i) => ({ businessId: biz.id, sortOrder: i, ...sv })),
+  });
 
   console.log("✉️  Creando campañas por defecto...");
   await db.campaign.createMany({

@@ -12,6 +12,7 @@ import {
   Send,
   Settings,
   Blocks,
+  Scissors,
   Menu,
   X,
   LogOut,
@@ -40,6 +41,7 @@ interface NavItem {
 const BASE_NAV_START: NavItem[] = [
   { href: "/dashboard", label: "Inicio", icon: LayoutDashboard, exact: true },
   { href: "/clientes", label: "Clientes", icon: Users },
+  { href: "/servicios", label: "Servicios", icon: Scissors },
   { href: "/segmentos", label: "Segmentos", icon: Target },
   { href: "/recordatorios", label: "Recordatorios", icon: BellRing },
   { href: "/campanas", label: "Campañas", icon: Send },

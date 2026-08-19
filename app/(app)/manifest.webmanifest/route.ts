@@ -8,7 +8,7 @@ import type { MetadataRoute } from "next";
 // entornos, y como no es el archivo especial, Next tampoco inyecta el
 // `<link rel="manifest">` solo — eso lo controla `app/(app)/layout.tsx` vía
 // `metadata.manifest`, que es lo que de verdad acota la instalabilidad al
-// panel (ver Fase 4 / CLAUDE.md).
+// panel (ver "PWA" en CLAUDE.md).
 function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",

@@ -13,7 +13,11 @@ import {
   Lock,
 } from "lucide-react";
 import { CampaignComposer, type Audience } from "./campaign-composer";
-import { CampaignEditor, type CampaignItem } from "./campaign-editor";
+import {
+  CampaignEditor,
+  type CampaignItem,
+  type CampaignService,
+} from "./campaign-editor";
 import {
   toggleCampaign,
   deleteCampaign,
@@ -25,9 +29,11 @@ type Tab = "enviar" | "campanas";
 export function CampaignsView({
   audiences,
   campaigns,
+  services,
 }: {
   audiences: Audience[];
   campaigns: CampaignItem[];
+  services: CampaignService[];
 }) {
   const [tab, setTab] = useState<Tab>("enviar");
   // null = cerrado, "new" = alta, un id = edición de esa campaña.
@@ -61,7 +67,11 @@ export function CampaignsView({
       ) : (
         <div>
           {editing && (
-            <CampaignEditor campaign={editingCampaign} onClose={closeEditor} />
+            <CampaignEditor
+              campaign={editingCampaign}
+              services={services}
+              onClose={closeEditor}
+            />
           )}
 
           {!editing && (

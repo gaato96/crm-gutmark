@@ -15,6 +15,7 @@ import {
   buildDashboard,
   toConfig,
   getCampaigns,
+  getServices,
   ruleDefaults,
 } from "@/lib/queries";
 import { formatMoney } from "@/lib/format";
@@ -40,7 +41,7 @@ export default async function DashboardPage() {
   const stats = buildDashboard(
     customers,
     campaigns.filter((c) => c.active),
-    ruleDefaults(biz)
+    ruleDefaults(biz, await getServices(biz.id))
   );
 
   const now = new Date();

@@ -12,6 +12,7 @@ import type { Segment } from "./segmentation";
 export const TRIGGER_TYPES = [
   "birthday",
   "days-since-purchase",
+  "service-recompra",
   "days-since-signup",
   "segment",
   "total-spent",
@@ -31,7 +32,7 @@ export const TRIGGER_META: Record<
   {
     label: string;
     help: string;
-    field: "days" | "segment" | "amount" | null;
+    field: "days" | "segment" | "amount" | "service" | null;
     daysLabel?: string;
     defaultDays?: number;
   }
@@ -49,6 +50,12 @@ export const TRIGGER_META: Record<
     field: "days",
     daysLabel: "Días sin comprar (o más)",
     defaultDays: 45,
+  },
+  "service-recompra": {
+    label: "Servicio + días desde esa compra",
+    help: "Para quienes compraron un servicio puntual y ya pasó el tiempo en que se espera que vuelvan. Es el disparador de 'al que se hizo corte + barba, escribile a los 15 días'.",
+    field: "service",
+    daysLabel: "Días desde ese servicio (o más)",
   },
   "days-since-signup": {
     label: "Antigüedad como cliente",
@@ -81,6 +88,7 @@ export interface CampaignRule {
   triggerDays: number | null;
   segment: string | null;
   minSpend: number | null;
+  serviceId: string | null;
   excludeInactive: boolean;
 }
 
@@ -92,6 +100,10 @@ export interface CampaignTarget {
   daysSinceLast: number | null;
   createdAt: Date;
   totalSpent: number;
+  // Días desde la última vez que compró cada servicio, por id de servicio. Un
+  // servicio ausente del diccionario significa "nunca lo compró", que no es lo
+  // mismo que "hace 0 días" — por eso es un Record y no un array.
+  daysSinceService?: Record<string, number>;
 }
 
 // Valores del negocio que sirven de default cuando la campaña no fija el suyo.
@@ -99,6 +111,14 @@ export interface CampaignTarget {
 // seguir el ajuste de Configuración en vez de duplicarlo.
 export interface RuleDefaults {
   recompraDays: number;
+  // Recompra esperada de cada servicio (Service.recompraDays). Se usa cuando la
+  // campaña no fija sus propios días: el negocio ya dijo "el corte se repite a
+  // los 15" al cargar el servicio, no tiene que repetirlo en cada campaña.
+  serviceRecompraDays?: Record<string, number | null>;
+  // Nombre de cada servicio, solo para describeTrigger. El motor no lo necesita
+  // para decidir a quién alcanza; es para que la tarjeta diga "Se hicieron
+  // Corte + Barba hace 15 días" en vez de mostrar un id.
+  serviceNames?: Record<string, string>;
 }
 
 export function matchesCampaign(
@@ -116,6 +136,18 @@ export function matchesCampaign(
     case "days-since-purchase": {
       const min = rule.triggerDays ?? defaults.recompraDays;
       return c.daysSinceLast !== null && c.daysSinceLast >= min;
+    }
+    case "service-recompra": {
+      if (!rule.serviceId) return false;
+      const since = c.daysSinceService?.[rule.serviceId];
+      // Nunca compró ese servicio: no entra. La campaña habla de volver a algo
+      // concreto, no tendría sentido mandársela a quien nunca lo probó.
+      if (since === undefined) return false;
+      const wait =
+        rule.triggerDays ??
+        defaults.serviceRecompraDays?.[rule.serviceId] ??
+        defaults.recompraDays;
+      return since >= wait;
     }
     case "days-since-signup": {
       const min = rule.triggerDays ?? TRIGGER_META["days-since-signup"].defaultDays!;
@@ -145,6 +177,16 @@ export function describeTrigger(rule: CampaignRule, defaults: RuleDefaults): str
     case "days-since-purchase": {
       const d = rule.triggerDays ?? defaults.recompraDays;
       const base = `Hace ${d} días o más que no compran`;
+      return rule.excludeInactive ? `${base} (sin los inactivos)` : base;
+    }
+    case "service-recompra": {
+      if (!rule.serviceId) return "Sin servicio elegido (no alcanza a nadie)";
+      const name = defaults.serviceNames?.[rule.serviceId] ?? "ese servicio";
+      const d =
+        rule.triggerDays ??
+        defaults.serviceRecompraDays?.[rule.serviceId] ??
+        defaults.recompraDays;
+      const base = `Se hicieron ${name} hace ${d} días o más`;
       return rule.excludeInactive ? `${base} (sin los inactivos)` : base;
     }
     case "days-since-signup": {

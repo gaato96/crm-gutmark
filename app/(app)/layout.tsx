@@ -5,7 +5,7 @@ import { AppShell } from "@/components/app-shell";
 import { RegisterServiceWorker } from "@/components/register-sw";
 
 // La app instalable (manifest + apple-web-app) es solo el panel: la landing
-// pública y el login no deben ofrecer "instalar como app" (ver Fase 4).
+// pública y el login no deben ofrecer "instalar como app" (ver "PWA" en CLAUDE.md).
 export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
   appleWebApp: {

@@ -18,7 +18,10 @@ import {
   quickNewCustomerSale,
   CustomerSearchResult,
 } from "@/app/actions";
+import { listServicesForSale, type SellableService } from "@/app/service-actions";
+import { DEFAULT_PAYMENT_METHOD } from "@/lib/sales";
 import { Avatar } from "@/components/ui";
+import { SaleItemsPicker, type PickedItem } from "@/components/sale-items-picker";
 
 type Stage = "pick" | "amount" | "new-customer" | "done";
 
@@ -44,6 +47,10 @@ export function QuickSaleModal({
   const [selected, setSelected] = useState<CustomerSearchResult | null>(null);
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
+  const [services, setServices] = useState<SellableService[]>([]);
+  const [items, setItems] = useState<PickedItem[]>([]);
+  const [discount, setDiscount] = useState(0);
+  const [paymentMethod, setPaymentMethod] = useState<string>(DEFAULT_PAYMENT_METHOD);
   const [newName, setNewName] = useState("");
   const [newPhone, setNewPhone] = useState("");
   const [doneMessage, setDoneMessage] = useState("");
@@ -63,6 +70,9 @@ export function QuickSaleModal({
     setSelected(null);
     setAmount("");
     setDescription("");
+    setItems([]);
+    setDiscount(0);
+    setPaymentMethod(DEFAULT_PAYMENT_METHOD);
     setNewName("");
     setNewPhone("");
     setError("");
@@ -96,6 +106,23 @@ export function QuickSaleModal({
       requestAnimationFrame(() => searchRef.current?.focus());
     }
   }, [open, stage]);
+
+  // El catálogo se trae una sola vez por apertura del modal. Si el negocio
+  // todavía no cargó servicios, la venta sigue siendo por monto suelto.
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    listServicesForSale()
+      .then((r) => {
+        if (!cancelled) setServices(r);
+      })
+      .catch(() => {
+        // Sin catálogo se vende igual: no vale la pena frenar el mostrador.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
 
   useEffect(() => {
     if (stage === "amount") {
@@ -138,15 +165,27 @@ export function QuickSaleModal({
   function submitAmount(e: React.FormEvent) {
     e.preventDefault();
     if (!selected) return;
-    const cents = Number(amount.replace(/[^\d]/g, ""));
-    if (!cents) {
-      setError("Ingresá un monto.");
+    const typed = Number(amount.replace(/[^\d]/g, ""));
+    if (items.length === 0 && !typed) {
+      setError("Elegí un servicio o ingresá un monto.");
       return;
     }
     setError("");
     startTransition(async () => {
       try {
-        const res = await quickSale(selected.id, cents, description);
+        const res = await quickSale({
+          customerId: selected.id,
+          items: items.map((i) => ({
+            serviceId: i.serviceId,
+            name: i.name,
+            unitPrice: i.unitPrice,
+            quantity: i.quantity,
+          })),
+          amount: typed || undefined,
+          discount,
+          paymentMethod,
+          description,
+        });
         setDoneMessage(`Venta registrada a ${res.customerName.split(" ")[0]}`);
         setStage("done");
         router.refresh();
@@ -158,13 +197,13 @@ export function QuickSaleModal({
 
   function submitNewCustomer(e: React.FormEvent) {
     e.preventDefault();
-    const cents = Number(amount.replace(/[^\d]/g, ""));
+    const typed = Number(amount.replace(/[^\d]/g, ""));
     if (!newName.trim()) {
       setError("Ingresá el nombre del cliente.");
       return;
     }
-    if (!cents) {
-      setError("Ingresá un monto.");
+    if (items.length === 0 && !typed) {
+      setError("Elegí un servicio o ingresá un monto.");
       return;
     }
     setError("");
@@ -173,7 +212,15 @@ export function QuickSaleModal({
         const res = await quickNewCustomerSale({
           name: newName,
           phone: newPhone,
-          amount: cents,
+          items: items.map((i) => ({
+            serviceId: i.serviceId,
+            name: i.name,
+            unitPrice: i.unitPrice,
+            quantity: i.quantity,
+          })),
+          amount: typed || undefined,
+          discount,
+          paymentMethod,
           description,
         });
         setDoneMessage(`${res.customerName.split(" ")[0]} agregado con su primera compra`);
@@ -306,20 +353,35 @@ export function QuickSaleModal({
               </div>
             </div>
 
-            <label className="label">Monto de la venta</label>
-            <div className="relative">
-              <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-ink-faint">
-                $
-              </span>
-              <input
-                ref={amountRef}
-                inputMode="numeric"
-                value={amount}
-                onChange={(e) => setAmount(money(e.target.value))}
-                placeholder="0"
-                className="input pl-7 text-lg font-bold tabular-nums"
-              />
-            </div>
+            <SaleItemsPicker
+              services={services}
+              items={items}
+              onItemsChange={setItems}
+              discount={discount}
+              onDiscountChange={setDiscount}
+              paymentMethod={paymentMethod}
+              onPaymentMethodChange={setPaymentMethod}
+              compact
+            />
+
+            {items.length === 0 && (
+              <>
+                <label className="label">Monto de la venta</label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-ink-faint">
+                    $
+                  </span>
+                  <input
+                    ref={amountRef}
+                    inputMode="numeric"
+                    value={amount}
+                    onChange={(e) => setAmount(money(e.target.value))}
+                    placeholder="0"
+                    className="input pl-7 text-lg font-bold tabular-nums"
+                  />
+                </div>
+              </>
+            )}
 
             <label className="label mt-3">Detalle (opcional)</label>
             <input
@@ -362,19 +424,36 @@ export function QuickSaleModal({
               />
             </div>
 
-            <label className="label mt-3">Monto de la venta</label>
-            <div className="relative">
-              <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-ink-faint">
-                $
-              </span>
-              <input
-                inputMode="numeric"
-                value={amount}
-                onChange={(e) => setAmount(money(e.target.value))}
-                placeholder="0"
-                className="input pl-7 text-lg font-bold tabular-nums"
+            <div className="mt-3">
+              <SaleItemsPicker
+                services={services}
+                items={items}
+                onItemsChange={setItems}
+                discount={discount}
+                onDiscountChange={setDiscount}
+                paymentMethod={paymentMethod}
+                onPaymentMethodChange={setPaymentMethod}
+                compact
               />
             </div>
+
+            {items.length === 0 && (
+              <>
+                <label className="label mt-3">Monto de la venta</label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-ink-faint">
+                    $
+                  </span>
+                  <input
+                    inputMode="numeric"
+                    value={amount}
+                    onChange={(e) => setAmount(money(e.target.value))}
+                    placeholder="0"
+                    className="input pl-7 text-lg font-bold tabular-nums"
+                  />
+                </div>
+              </>
+            )}
 
             {error && <p className="mt-3 text-sm font-medium text-rose-600">{error}</p>}
 

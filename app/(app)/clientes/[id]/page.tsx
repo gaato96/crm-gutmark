@@ -13,7 +13,13 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import { db } from "@/lib/db";
-import { getCurrentBusiness, toConfig, getCampaigns, ruleDefaults } from "@/lib/queries";
+import {
+  getCurrentBusiness,
+  toConfig,
+  getCampaigns,
+  getServices,
+  ruleDefaults,
+} from "@/lib/queries";
 import { formatMoney, formatDate, daysSince } from "@/lib/format";
 import {
   computeSegment,
@@ -23,6 +29,7 @@ import {
   ageTurning,
 } from "@/lib/segmentation";
 import { matchesCampaign } from "@/lib/campaigns";
+import { paymentLabel } from "@/lib/sales";
 import { buildCampaignMessage } from "@/lib/build-message";
 import { pointsBalance } from "@/lib/points";
 import { Avatar, SegmentBadge, Pill } from "@/components/ui";
@@ -44,11 +51,17 @@ export default async function ClienteDetailPage({
 
   const customer = await db.customer.findFirst({
     where: { id, businessId: biz.id },
-    include: { purchases: { orderBy: { date: "desc" } } },
+    include: {
+      purchases: {
+        orderBy: { date: "desc" },
+        include: { items: { orderBy: { name: "asc" } } },
+      },
+    },
   });
   if (!customer) notFound();
 
   const campaigns = await getCampaigns(biz.id);
+  const services = await getServices(biz.id, true);
 
   const pointsEnabled = biz.modules.includes("puntos");
   let pointsHistory: { id: string; points: number; reason: string; note: string | null; createdAt: Date }[] = [];
@@ -86,15 +99,31 @@ export default async function ClienteDetailPage({
   // era un if/else propio sobre las plantillas, que podía sugerir algo distinto
   // de lo que decía el recordatorio para la misma persona.
   const daysSinceLast = daysSince(customer.lastPurchaseAt);
+
+  // Días desde la última vez que compró cada servicio. Sin esto, una campaña
+  // por servicio nunca se sugeriría acá aunque sí apareciera en /recordatorios.
+  const serviceRecency = await db.purchaseItem.groupBy({
+    by: ["serviceId"],
+    where: { businessId: biz.id, customerId: customer.id, serviceId: { not: null } },
+    _max: { date: true },
+  });
+  const daysSinceService: Record<string, number> = {};
+  for (const row of serviceRecency) {
+    if (!row.serviceId || !row._max.date) continue;
+    const d = daysSince(row._max.date);
+    if (d !== null) daysSinceService[row.serviceId] = d;
+  }
+
   const target = {
     segment,
     birthdayInDays: bdayIn,
     daysSinceLast,
     createdAt: customer.createdAt,
     totalSpent,
+    daysSinceService,
   };
   const suggested =
-    campaigns.find((c) => c.active && matchesCampaign(target, c, ruleDefaults(biz))) ?? null;
+    campaigns.find((c) => c.active && matchesCampaign(target, c, ruleDefaults(biz, services))) ?? null;
 
   const reason = suggested
     ? suggested.triggerType === "birthday" && bdayIn !== null
@@ -220,22 +249,52 @@ export default async function ClienteDetailPage({
               </div>
             ) : (
               <ul className="divide-y divide-line-soft">
-                {customer.purchases.map((p) => (
-                  <li key={p.id} className="flex items-center justify-between px-5 py-3.5">
-                    <div className="flex items-center gap-3">
-                      <div className="grid h-9 w-9 place-items-center rounded-lg bg-brand-500/10 text-brand-600">
-                        <ShoppingBag className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-semibold text-ink">
-                          {p.description || "Compra"}
+                {customer.purchases.map((p) => {
+                  // El título es lo que se vendió. Las ventas viejas no tienen
+                  // renglones, así que caen al detalle escrito a mano.
+                  const title =
+                    p.items.length > 0
+                      ? p.items
+                          .map((i) => (i.quantity > 1 ? `${i.name} ×${i.quantity}` : i.name))
+                          .join(" + ")
+                      : p.description || "Compra";
+                  return (
+                    <li key={p.id} className="flex items-start justify-between gap-3 px-5 py-3.5">
+                      <div className="flex min-w-0 items-start gap-3">
+                        <div className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-brand-500/10 text-brand-600">
+                          <ShoppingBag className="h-4 w-4" />
                         </div>
-                        <div className="text-xs text-ink-muted">{formatDate(p.date)}</div>
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold text-ink">{title}</div>
+                          <div className="flex flex-wrap items-center gap-x-2 text-xs text-ink-muted">
+                            <span>{formatDate(p.date)}</span>
+                            <span aria-hidden="true">·</span>
+                            <span>{paymentLabel(p.paymentMethod)}</span>
+                            {p.discount > 0 && (
+                              <>
+                                <span aria-hidden="true">·</span>
+                                <span className="text-amber-700 dark:text-amber-300">
+                                  {formatMoney(p.discount)} de descuento
+                                </span>
+                              </>
+                            )}
+                          </div>
+                          {p.items.length > 0 && p.description && (
+                            <div className="mt-0.5 text-xs text-ink-faint">{p.description}</div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <div className="text-sm font-bold text-ink">{formatMoney(p.amount)}</div>
-                  </li>
-                ))}
+                      <div className="shrink-0 text-right">
+                        <div className="text-sm font-bold text-ink">{formatMoney(p.amount)}</div>
+                        {p.discount > 0 && (
+                          <div className="text-xs text-ink-faint line-through">
+                            {formatMoney(p.subtotal)}
+                          </div>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>
@@ -250,7 +309,15 @@ export default async function ClienteDetailPage({
               history={pointsHistory.map((h) => ({ ...h, createdAt: h.createdAt.toISOString() }))}
             />
           )}
-          <AddPurchaseForm customerId={customer.id} />
+          <AddPurchaseForm
+            customerId={customer.id}
+            services={services.map((sv) => ({
+              id: sv.id,
+              name: sv.name,
+              price: sv.price,
+              category: sv.category,
+            }))}
+          />
           <QuickContact
             phone={customer.phone}
             email={customer.email}

@@ -3,6 +3,7 @@ import {
   getCurrentBusiness,
   getEnrichedCustomers,
   getCampaigns,
+  getServices,
   campaignRecipients,
   ruleDefaults,
   toConfig,
@@ -20,9 +21,10 @@ export const dynamic = "force-dynamic";
 export default async function CampanasPage() {
   const biz = await getCurrentBusiness();
   const cfg = toConfig(biz);
-  const defaults = ruleDefaults(biz);
   const customers = await getEnrichedCustomers(biz.id, cfg);
   const campaigns = await getCampaigns(biz.id);
+  const services = await getServices(biz.id);
+  const defaults = ruleDefaults(biz, services);
 
   // La variable {puntos} solo tiene sentido con el módulo activo; sin él ni
   // siquiera consultamos la tabla.
@@ -59,6 +61,7 @@ export default async function CampanasPage() {
     triggerDays: c.triggerDays,
     segment: c.segment,
     minSpend: c.minSpend,
+    serviceId: c.serviceId,
     excludeInactive: c.excludeInactive,
     whatsappBody: c.whatsappBody,
     emailSubject: c.emailSubject,
@@ -83,7 +86,13 @@ export default async function CampanasPage() {
         </p>
       </div>
 
-      <CampaignsView audiences={audiences} campaigns={items} />
+      <CampaignsView
+        audiences={audiences}
+        campaigns={items}
+        services={services
+          .filter((sv) => sv.active)
+          .map((sv) => ({ id: sv.id, name: sv.name, recompraDays: sv.recompraDays }))}
+      />
     </div>
   );
 }

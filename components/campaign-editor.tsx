@@ -25,6 +25,7 @@ export interface CampaignItem {
   triggerDays: number | null;
   segment: string | null;
   minSpend: number | null;
+  serviceId: string | null;
   excludeInactive: boolean;
   whatsappBody: string;
   emailSubject: string;
@@ -35,11 +36,19 @@ export interface CampaignItem {
 
 const EMPTY: CampaignFormState = {};
 
+export interface CampaignService {
+  id: string;
+  name: string;
+  recompraDays: number | null;
+}
+
 export function CampaignEditor({
   campaign,
+  services,
   onClose,
 }: {
   campaign: CampaignItem | null;
+  services: CampaignService[];
   onClose: () => void;
 }) {
   const action = campaign ? updateCampaign.bind(null, campaign.id) : createCampaign;
@@ -50,6 +59,15 @@ export function CampaignEditor({
   const [trigger, setTrigger] = useState<TriggerType>(initialTrigger);
 
   const meta = TRIGGER_META[trigger];
+
+  // Para el disparador por servicio: el placeholder de días muestra la recompra
+  // que el negocio ya cargó en ese servicio, así se ve qué valor va a usar si
+  // deja el campo vacío.
+  const [serviceId, setServiceId] = useState<string>(
+    campaign?.serviceId ?? ""
+  );
+  const defaultServiceDays =
+    services.find((sv) => sv.id === (serviceId || services[0]?.id))?.recompraDays ?? null;
   // Las de fábrica se editan en el texto pero no en el disparador: el resto de
   // la app las busca por `builtin` esperando esa semántica. El server hace
   // valer lo mismo, esto es solo para que se vea por qué está bloqueado.
@@ -179,6 +197,56 @@ export function CampaignEditor({
                   ))}
                 </select>
               </div>
+            )}
+
+            {meta.field === "service" && (
+              <>
+                <div>
+                  <label className="label" htmlFor="campaign-service">
+                    Servicio
+                  </label>
+                  {services.length === 0 ? (
+                    <p className="rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-300">
+                      Todavía no cargaste servicios. Cargá al menos uno en Servicios para poder
+                      usar este disparador.
+                    </p>
+                  ) : (
+                    <select
+                      id="campaign-service"
+                      name="serviceId"
+                      value={serviceId || services[0]?.id || ""}
+                      onChange={(e) => setServiceId(e.target.value)}
+                      disabled={lockedTrigger}
+                      className="input disabled:opacity-60"
+                    >
+                      {services.map((sv) => (
+                        <option key={sv.id} value={sv.id}>
+                          {sv.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+                <div>
+                  <label className="label" htmlFor="campaign-days">
+                    {meta.daysLabel}
+                  </label>
+                  <input
+                    id="campaign-days"
+                    name="triggerDays"
+                    type="number"
+                    min={0}
+                    max={3650}
+                    defaultValue={campaign?.triggerDays ?? ""}
+                    placeholder={String(defaultServiceDays ?? "")}
+                    disabled={lockedTrigger}
+                    className="input disabled:opacity-60"
+                  />
+                  <p className="mt-1.5 text-xs text-ink-muted">
+                    Vacío = usa la recompra que cargaste en el servicio.
+                  </p>
+                </div>
+              </>
             )}
 
             {meta.field === "amount" && (

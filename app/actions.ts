@@ -3,7 +3,8 @@
 import { db } from "@/lib/db";
 import { getCurrentBusiness } from "@/lib/queries";
 import { parseFlexibleDate } from "@/lib/csv";
-import { awardPointsForPurchase } from "@/lib/points";
+import { recordSale } from "@/lib/sale-write";
+import type { SaleItemInput } from "@/lib/sales";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -86,42 +87,45 @@ export async function deleteCustomer(id: string) {
 
 export async function addPurchase(customerId: string, formData: FormData) {
   const biz = await getCurrentBusiness();
-  const amount = parseFloat((formData.get("amount") ?? "0").toString());
-  if (!amount || amount <= 0) throw new Error("El monto debe ser mayor a 0");
-  const date = parseDate(formData.get("date")) ?? new Date();
 
-  // Igual que en updateCustomer: el customerId llega del cliente y hay que
-  // confirmar que es de este negocio antes de escribirle nada. quickSale ya lo
-  // hacía; esta ruta se había quedado sin el chequeo.
   const owned = await db.customer.findFirst({
     where: { id: customerId, businessId: biz.id },
     select: { id: true },
   });
   if (!owned) throw new Error("Cliente no encontrado");
 
-  const purchase = await db.purchase.create({
-    data: {
-      businessId: biz.id,
-      customerId,
-      amount,
-      date,
-      description: str(formData.get("description")),
-    },
-  });
-  await awardPointsForPurchase({ businessId: biz.id, customerId, purchaseId: purchase.id, amount });
-
-  // Actualizar última compra si esta es más reciente
-  const customer = await db.customer.findUnique({ where: { id: customerId } });
-  if (customer && (!customer.lastPurchaseAt || date > customer.lastPurchaseAt)) {
-    await db.customer.update({
-      where: { id: customerId },
-      data: { lastPurchaseAt: date },
-    });
+  // Los renglones viajan como JSON en un campo oculto: son una lista de largo
+  // variable y el FormData plano no la representa bien.
+  let items: SaleItemInput[] = [];
+  const rawItems = str(formData.get("items"));
+  if (rawItems) {
+    try {
+      const parsed = JSON.parse(rawItems);
+      if (Array.isArray(parsed)) items = parsed as SaleItemInput[];
+    } catch {
+      // Un JSON roto no debe tirar la venta: se sigue con el monto suelto.
+    }
   }
+
+  const freeAmount = parseFloat((formData.get("amount") ?? "0").toString());
+  const discount = parseFloat((formData.get("discount") ?? "0").toString()) || 0;
+
+  await recordSale({
+    businessId: biz.id,
+    customerId,
+    items,
+    freeAmount: Number.isFinite(freeAmount) ? freeAmount : null,
+    discount,
+    discountNote: str(formData.get("discountNote")),
+    paymentMethod: (formData.get("paymentMethod") ?? "").toString(),
+    date: parseDate(formData.get("date")) ?? new Date(),
+    description: str(formData.get("description")),
+  });
 
   revalidatePath(`/clientes/${customerId}`);
   revalidatePath("/clientes");
   revalidatePath("/dashboard");
+  revalidatePath("/recordatorios");
 }
 
 export async function logContact(
@@ -275,88 +279,102 @@ export async function searchCustomers(query: string): Promise<CustomerSearchResu
 }
 
 // Registrar una venta en el mínimo de pasos: elegir cliente + monto, sin salir de la pantalla actual.
+// Lo que manda el modal de venta rápida. Los renglones ya vienen elegidos del
+// catálogo (o escritos a mano); el precio final lo recalcula el server.
+export interface QuickSaleInput {
+  customerId: string;
+  items?: SaleItemInput[];
+  // Venta de monto suelto, cuando el negocio todavía no cargó servicios.
+  amount?: number;
+  discount?: number;
+  discountNote?: string;
+  paymentMethod?: string;
+  description?: string;
+}
+
 export async function quickSale(
-  customerId: string,
-  amount: number,
-  description?: string
-): Promise<{ customerName: string }> {
+  input: QuickSaleInput
+): Promise<{ customerName: string; total: number }> {
   const biz = await getCurrentBusiness();
-  if (!amount || amount <= 0) throw new Error("El monto debe ser mayor a 0");
 
   const customer = await db.customer.findFirst({
-    where: { id: customerId, businessId: biz.id },
+    where: { id: input.customerId, businessId: biz.id },
+    select: { id: true, name: true },
   });
   if (!customer) throw new Error("Cliente no encontrado");
 
-  const date = new Date();
-  const purchase = await db.purchase.create({
-    data: {
-      businessId: biz.id,
-      customerId,
-      amount,
-      date,
-      description: description?.trim() || null,
-    },
+  const sale = await recordSale({
+    businessId: biz.id,
+    customerId: customer.id,
+    items: input.items ?? [],
+    freeAmount: input.amount ?? null,
+    discount: input.discount ?? 0,
+    discountNote: input.discountNote ?? null,
+    paymentMethod: input.paymentMethod,
+    description: input.description ?? null,
   });
-  await awardPointsForPurchase({ businessId: biz.id, customerId, purchaseId: purchase.id, amount });
 
-  if (!customer.lastPurchaseAt || date > customer.lastPurchaseAt) {
-    await db.customer.update({ where: { id: customerId }, data: { lastPurchaseAt: date } });
-  }
-
-  revalidatePath(`/clientes/${customerId}`);
+  revalidatePath(`/clientes/${customer.id}`);
   revalidatePath("/clientes");
   revalidatePath("/dashboard");
   revalidatePath("/segmentos");
   revalidatePath("/recordatorios");
 
-  return { customerName: customer.name };
+  return { customerName: customer.name, total: sale.total };
 }
 
 export interface QuickCustomerInput {
   name: string;
   phone?: string;
-  amount: number;
+  items?: SaleItemInput[];
+  amount?: number;
+  discount?: number;
+  discountNote?: string;
+  paymentMethod?: string;
   description?: string;
 }
 
 // Alta de cliente + primera venta en un solo paso (para clientes nuevos en el mostrador).
 export async function quickNewCustomerSale(
   input: QuickCustomerInput
-): Promise<{ customerId: string; customerName: string }> {
+): Promise<{ customerId: string; customerName: string; total: number }> {
   const biz = await getCurrentBusiness();
   const name = input.name.trim();
   if (!name) throw new Error("El nombre es obligatorio");
-  if (!input.amount || input.amount <= 0) throw new Error("El monto debe ser mayor a 0");
 
-  const date = new Date();
+  // Se valida ANTES de crear el cliente: si la venta se rechazara después, el
+  // alta ya estaría hecha y quedaría un cliente fantasma sin compras.
+  const hasItems = (input.items ?? []).length > 0;
+  const hasAmount = Number.isFinite(input.amount) && (input.amount ?? 0) > 0;
+  if (!hasItems && !hasAmount) {
+    throw new Error("Elegí al menos un servicio o poné un monto mayor a 0");
+  }
+
   const customer = await db.customer.create({
     data: {
       businessId: biz.id,
       name,
       phone: input.phone?.trim() || null,
-      lastPurchaseAt: date,
-      purchases: {
-        create: {
-          businessId: biz.id,
-          amount: input.amount,
-          date,
-          description: input.description?.trim() || null,
-        },
-      },
     },
-    include: { purchases: true },
+    select: { id: true, name: true },
   });
-  await awardPointsForPurchase({
+
+  // La venta va por el mismo camino que todas: así el cliente nuevo arranca
+  // con renglones, método de pago y puntos igual que uno ya existente.
+  const sale = await recordSale({
     businessId: biz.id,
     customerId: customer.id,
-    purchaseId: customer.purchases[0].id,
-    amount: input.amount,
+    items: input.items ?? [],
+    freeAmount: input.amount ?? null,
+    discount: input.discount ?? 0,
+    discountNote: input.discountNote ?? null,
+    paymentMethod: input.paymentMethod,
+    description: input.description ?? null,
   });
 
   revalidatePath("/clientes");
   revalidatePath("/dashboard");
   revalidatePath("/segmentos");
 
-  return { customerId: customer.id, customerName: customer.name };
+  return { customerId: customer.id, customerName: customer.name, total: sale.total };
 }

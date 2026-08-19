@@ -33,6 +33,8 @@ model Business {
   purchases     Purchase[]
   templates     Template[]
   campaigns     Campaign[]
+  services      Service[]
+  purchaseItems PurchaseItem[]
   contacts      ContactLog[]
   users         User[]
   modules       BusinessModule[]
@@ -88,6 +90,7 @@ model Customer {
   purchases     Purchase[]
   contacts      ContactLog[]
   pointsEntries PointsEntry[]
+  purchaseItems PurchaseItem[]
 
   @@index([businessId])
 }
@@ -97,15 +100,87 @@ model Purchase {
   businessId  String
   customerId  String
   date        DateTime @default(now())
+  // Lo que efectivamente entró: subtotal - discount. Es el campo histórico y
+  // sigue siendo el que suman todos los cálculos de facturación.
   amount      Float
   description String?
 
-  business      Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  customer      Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  // Suma de los ítems antes del descuento. En las ventas viejas (anteriores a
+  // los ítems) vale lo mismo que amount, ver scripts/migrate-sales.ts.
+  subtotal      Float   @default(0)
+  discount      Float   @default(0)
+  discountNote  String?
+  // efectivo | debito | credito | transferencia | mercadopago | otro
+  // (PAYMENT_METHODS en lib/sales.ts es la fuente de verdad)
+  paymentMethod String  @default("efectivo")
+
+  business      Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customer      Customer       @relation(fields: [customerId], references: [id], onDelete: Cascade)
   pointsEntries PointsEntry[]
+  items         PurchaseItem[]
 
   @@index([businessId])
   @@index([customerId])
+  @@index([businessId, date])
+}
+
+// Producto o servicio con precio predefinido. Es del PLAN BASE, no de un
+// módulo: sin esto las campañas no pueden filtrar por qué compró el cliente,
+// que es la función que hace que la fidelización sirva de verdad.
+model Service {
+  id          String  @id @default(cuid())
+  businessId  String
+  name        String
+  description String  @default("")
+  price       Float
+  // Agrupador libre que escribe el negocio ("Cortes", "Color", "Productos").
+  category    String  @default("")
+  // Cada cuántos días se espera que el cliente vuelva por ESTE servicio. Un
+  // corte se repite a los 15 días y una coloración a los 60, así que un único
+  // recompraDays por negocio no alcanza. En null, la campaña cae al valor
+  // general de Configuración.
+  recompraDays Int?
+  // Se desactiva en vez de borrarse cuando ya tiene ventas asociadas.
+  active      Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  business  Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  items     PurchaseItem[]
+  campaigns Campaign[]
+
+  @@index([businessId])
+}
+
+// Un renglón de una venta. `name` y `unitPrice` son FOTO del momento: si mañana
+// sube el precio del corte, la venta de ayer no cambia.
+//
+// businessId, customerId y date están denormalizados a propósito. Esta tabla ya
+// es una foto, y tenerlos acá deja resolver "cuándo fue la última vez que este
+// cliente compró este servicio" con un solo groupBy, en vez de traer todas las
+// compras con sus ítems y recorrerlas en memoria en cada pantalla.
+model PurchaseItem {
+  id         String   @id @default(cuid())
+  businessId String
+  customerId String
+  purchaseId String
+  serviceId  String?
+  name       String
+  unitPrice  Float
+  quantity   Int      @default(1)
+  subtotal   Float
+  date       DateTime
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  purchase Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  // El servicio se puede borrar del catálogo sin borrar la historia de ventas.
+  service  Service? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+
+  @@index([businessId])
+  @@index([customerId])
+  @@index([purchaseId])
+  @@index([businessId, serviceId, customerId])
 }
 
 // OBSOLETO: lo reemplazó `Campaign`, que junta el disparador y los dos canales
@@ -148,6 +223,10 @@ model Campaign {
   triggerDays Int?
   segment     String?
   minSpend    Float?
+  // Para triggerType = "service-recompra": qué servicio tiene que haber
+  // comprado. Si el servicio se borra, la campaña queda sin disparador y no
+  // alcanza a nadie (mejor que alcanzar a todos por error).
+  serviceId   String?
   // Para los disparadores por tiempo: no incluir a quien ya se dio por perdido.
   // El mensaje de "hace poco que no venís" no aplica a un cliente inactivo, que
   // tiene su propia campaña de reactivación.
@@ -161,6 +240,7 @@ model Campaign {
   createdAt DateTime @default(now())
 
   business Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  service  Service?     @relation(fields: [serviceId], references: [id], onDelete: SetNull)
   contacts ContactLog[]
 
   @@index([businessId])

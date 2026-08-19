@@ -18,7 +18,7 @@ const montserrat = Montserrat({
 });
 
 // El manifest y las meta apple-web-app se declaran solo en app/(app)/layout.tsx:
-// la app instalable es el panel, no esta landing pública (ver Fase 4).
+// la app instalable es el panel, no esta landing pública (ver "PWA" en CLAUDE.md).
 export const metadata: Metadata = {
   title: "Vuelvo CRM | Porque vender una vez no alcanza",
   description:

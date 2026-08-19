@@ -42,6 +42,7 @@ interface TriggerFields {
   triggerDays: number | null;
   segment: string | null;
   minSpend: number | null;
+  serviceId: string | null;
   excludeInactive: boolean;
 }
 
@@ -76,7 +77,10 @@ function parseText(formData: FormData): { error: string } | { data: TextFields }
 // FormData—, así que pedirlos siempre haría imposible guardar esas campañas.
 // Además el server no debería confiar en un disparador mandado por el cliente
 // para una campaña cuyo disparador justamente no se puede cambiar.
-function parseTrigger(formData: FormData): { error: string } | { data: TriggerFields } {
+async function parseTrigger(
+  formData: FormData,
+  businessId: string
+): Promise<{ error: string } | { data: TriggerFields }> {
   const triggerType = clean(formData.get("triggerType"));
   if (!isTriggerType(triggerType)) return { error: "Elegí un disparador válido." };
 
@@ -84,8 +88,9 @@ function parseTrigger(formData: FormData): { error: string } | { data: TriggerFi
   const days = optionalInt(formData.get("triggerDays"));
   const segment = clean(formData.get("segment"));
   const minSpend = optionalFloat(formData.get("minSpend"));
+  const serviceId = clean(formData.get("serviceId"));
 
-  if (meta.field === "days" && days !== null && (days < 0 || days > 3650)) {
+  if ((meta.field === "days" || meta.field === "service") && days !== null && (days < 0 || days > 3650)) {
     return { error: "Los días tienen que estar entre 0 y 3650." };
   }
   if (meta.field === "segment" && !(segment in SEGMENT_META)) {
@@ -94,15 +99,26 @@ function parseTrigger(formData: FormData): { error: string } | { data: TriggerFi
   if (meta.field === "amount" && (minSpend === null || minSpend < 0)) {
     return { error: "Poné un monto válido para el gasto acumulado." };
   }
+  if (meta.field === "service") {
+    if (!serviceId) return { error: "Elegí el servicio que dispara la campaña." };
+    // El servicio tiene que ser de este negocio: si no, una campaña podría
+    // quedar apuntando al catálogo de otro.
+    const owned = await db.service.findFirst({
+      where: { id: serviceId, businessId },
+      select: { id: true },
+    });
+    if (!owned) return { error: "Ese servicio no existe en tu catálogo." };
+  }
 
   return {
     data: {
       triggerType,
       // Solo se guarda el campo que el disparador usa; el resto va a null para
       // que no queden valores viejos decidiendo audiencias de forma invisible.
-      triggerDays: meta.field === "days" ? days : null,
+      triggerDays: meta.field === "days" || meta.field === "service" ? days : null,
       segment: meta.field === "segment" ? segment : null,
       minSpend: meta.field === "amount" ? minSpend : null,
+      serviceId: meta.field === "service" ? serviceId : null,
       excludeInactive: clean(formData.get("excludeInactive")) === "on",
     },
   };
@@ -121,7 +137,7 @@ export async function createCampaign(
   const biz = await getCurrentBusiness();
   const text = parseText(formData);
   if ("error" in text) return text;
-  const trigger = parseTrigger(formData);
+  const trigger = await parseTrigger(formData, biz.id);
   if ("error" in trigger) return trigger;
 
   const count = await db.campaign.count({ where: { businessId: biz.id } });
@@ -163,7 +179,7 @@ export async function updateCampaign(
     return { ok: true };
   }
 
-  const trigger = parseTrigger(formData);
+  const trigger = await parseTrigger(formData, biz.id);
   if ("error" in trigger) return trigger;
 
   await db.campaign.update({
@@ -223,6 +239,7 @@ export async function duplicateCampaign(id: string) {
       triggerDays: source.triggerDays,
       segment: source.segment,
       minSpend: source.minSpend,
+      serviceId: source.serviceId,
       excludeInactive: source.excludeInactive,
       whatsappBody: source.whatsappBody,
       emailSubject: source.emailSubject,

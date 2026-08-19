@@ -4,6 +4,7 @@ import {
   getCurrentBusiness,
   getEnrichedCustomers,
   getCampaigns,
+  getServices,
   campaignRecipients,
   ruleDefaults,
   toConfig,
@@ -19,8 +20,8 @@ export const dynamic = "force-dynamic";
 export default async function RecordatoriosPage() {
   const biz = await getCurrentBusiness();
   const cfg = toConfig(biz);
-  const defaults = ruleDefaults(biz);
   const customers = await getEnrichedCustomers(biz.id, cfg);
+  const defaults = ruleDefaults(biz, await getServices(biz.id));
   const campaigns = (await getCampaigns(biz.id)).filter((c) => c.active);
 
   const balances = biz.modules.includes("puntos")

@@ -54,6 +54,8 @@ maskable se arma aparte (violeta a sangre + marca al 58%) porque el sistema oper
 aplica su propia máscara y un badge ya redondeado quedaría recortado dos veces. El texto
 del OG usa fuentes del sistema, así que conviene mirarlo antes de commitear.
 
+El plan de fases y el estado real de cada módulo viven en `docs/roadmap.md`.
+
 ## Comandos
 
 ```bash
@@ -64,6 +66,7 @@ npm run db:push      # pushea prisma/schema.prisma a la base de datos (sin archi
 npm run db:seed      # borra + reseed datos demo (ver nota de peligro abajo)
 npm run db:reset     # db push --force-reset + db:seed
 npm run db:migrate-campaigns   # consolida Template (viejo) en Campaign; idempotente, no borra nada
+npm run db:migrate-sales       # rellena Purchase.subtotal en ventas anteriores a los ítems; idempotente
 npm run icons:generate    # regenera íconos PWA + og.png desde public/logo.svg via sharp
 node scripts/pdf-to-svg.cjs   # regenera public/logo*.svg desde el PDF del manual de marca
 ```
@@ -205,6 +208,47 @@ Las variables de `renderTemplate` (`lib/messages.ts`) se resuelven por diccionar
 regex, no con `replaceAll` literal: una variable mal escrita queda **visible** en el
 mensaje (`{nombree}`) en vez de desaparecer, así el negocio ve el error antes de
 mandárselo a un cliente. `{puntos}` solo trae dato real si el módulo Puntos está activo.
+
+### Servicios y venta con ítems
+
+`Service` es un producto o servicio con precio predefinido. Es del **plan base**,
+no de un módulo: sin esto las campañas no pueden filtrar por *qué* compró el
+cliente, que es lo que hace que la fidelización sirva de verdad.
+
+Cada servicio puede llevar su propio `recompraDays` — un corte se repite a los 15
+días y una coloración a los 60, así que el único `recompraDays` del negocio no
+alcanza. El disparador `service-recompra` lo usa como default: si la campaña deja
+`triggerDays` en null, hereda el del servicio, y recién si ese también es null cae
+al general de Configuración.
+
+Una venta ahora tiene `PurchaseItem[]`, `subtotal`, `discount` y `paymentMethod`.
+`amount` sigue siendo **lo que efectivamente entró** (`subtotal - discount`) y es
+el campo que suman todos los cálculos de facturación — no cambiar esa semántica.
+Los puntos se otorgan sobre `amount`, no sobre el subtotal: si hubo descuento, el
+cliente no gana puntos por lo que no gastó.
+
+`PurchaseItem` guarda `name` y `unitPrice` como **foto del momento**: si mañana
+sube el precio del corte, la venta de ayer no cambia. Además lleva `businessId`,
+`customerId` y `date` denormalizados a propósito — con eso, "cuándo fue la última
+vez que este cliente compró este servicio" se resuelve con un solo `groupBy` en
+vez de traer todas las compras con sus ítems y recorrerlas en cada pantalla.
+
+`lib/sale-write.ts` (`recordSale`) es el **único** lugar que escribe una venta;
+lo usan la ficha del cliente, la venta rápida y el alta con primera venta. Ahí se
+releen los servicios del catálogo: el nombre sale de la base y no del formulario,
+porque si no un cliente manipulado podría escribir cualquier nombre y precio en
+los reportes del propio negocio. Los totales se calculan siempre en el server con
+`saleTotals()` — nunca se confía en un total mandado por el cliente.
+
+`lib/sales.ts` es **puro** (métodos de pago y aritmética), igual que
+`lib/campaigns.ts` y `lib/modules.ts`, porque lo importa el modal de venta rápida
+que es client.
+
+⚠️ En `components/sale-items-picker.tsx`, `onItemsChange` es el setter de React
+tal cual (`Dispatch<SetStateAction<…>>`), no un callback plano: las funciones
+actualizan a partir del estado **anterior**. Con un callback plano, dos clics
+seguidos sobre el mismo servicio leían ambos la lista vieja y el segundo se
+perdía — en el mostrador eso es una unidad que no se cobra.
 
 ### Módulos de complemento pagos
 

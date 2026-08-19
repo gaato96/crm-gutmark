@@ -11,7 +11,8 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:reset": "prisma db push --force-reset && tsx prisma/seed.ts",
     "db:migrate-campaigns": "tsx scripts/migrate-campaigns.ts",
-    "icons:generate": "node scripts/generate-icons.cjs"
+    "icons:generate": "node scripts/generate-icons.cjs",
+    "db:migrate-sales": "tsx scripts/migrate-sales.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

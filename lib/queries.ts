@@ -12,7 +12,7 @@ import {
 } from "./segmentation";
 import { daysSince } from "./format";
 import { matchesCampaign, CampaignRule, RuleDefaults } from "./campaigns";
-import type { Campaign } from "@prisma/client";
+import type { Campaign, Service } from "@prisma/client";
 
 export interface EnrichedCustomer {
   id: string;
@@ -33,6 +33,9 @@ export interface EnrichedCustomer {
   needsWinback: boolean;
   birthdayInDays: number | null;
   birthdayThisMonth: boolean;
+  // Días desde la última vez que compró cada servicio. Vacío si el negocio
+  // todavía no cargó servicios o si el cliente nunca compró ninguno.
+  daysSinceService: Record<string, number>;
 }
 
 // Devuelve el negocio del usuario autenticado. Si no hay sesión, redirige al login.
@@ -59,13 +62,33 @@ export async function getEnrichedCustomers(
   businessId: string,
   cfg: BusinessConfig
 ): Promise<EnrichedCustomer[]> {
-  const customers = await db.customer.findMany({
-    where: { businessId },
-    include: {
-      purchases: { select: { amount: true } },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  const [customers, serviceRecency] = await Promise.all([
+    db.customer.findMany({
+      where: { businessId },
+      include: {
+        purchases: { select: { amount: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    // Última compra de cada par (cliente, servicio), en una sola consulta.
+    // Por eso PurchaseItem lleva customerId y date denormalizados: sin eso
+    // habría que traer todas las compras con sus ítems y recorrerlas.
+    db.purchaseItem.groupBy({
+      by: ["customerId", "serviceId"],
+      where: { businessId, serviceId: { not: null } },
+      _max: { date: true },
+    }),
+  ]);
+
+  const byCustomer = new Map<string, Record<string, number>>();
+  for (const row of serviceRecency) {
+    if (!row.serviceId || !row._max.date) continue;
+    const days = daysSince(row._max.date);
+    if (days === null) continue;
+    const entry = byCustomer.get(row.customerId) ?? {};
+    entry[row.serviceId] = days;
+    byCustomer.set(row.customerId, entry);
+  }
 
   return customers.map((c) => {
     const purchaseCount = c.purchases.length;
@@ -96,6 +119,7 @@ export async function getEnrichedCustomers(
       needsWinback: needsWinback(stats, cfg),
       birthdayInDays: daysToBirthday(c.birthdate),
       birthdayThisMonth: birthdayThisMonth(c.birthdate),
+      daysSinceService: byCustomer.get(c.id) ?? {},
     };
   });
 }
@@ -110,8 +134,33 @@ export async function getCampaigns(businessId: string): Promise<Campaign[]> {
   });
 }
 
-export function ruleDefaults(biz: { recompraDays: number }): RuleDefaults {
-  return { recompraDays: biz.recompraDays };
+// Los defaults que usa el motor de campañas. Recibe los servicios para poder
+// resolver "usar la recompra propia de este servicio" sin que cada pantalla
+// tenga que armar los diccionarios por su cuenta.
+export function ruleDefaults(
+  biz: { recompraDays: number },
+  services: Pick<Service, "id" | "name" | "recompraDays">[] = []
+): RuleDefaults {
+  const serviceRecompraDays: Record<string, number | null> = {};
+  const serviceNames: Record<string, string> = {};
+  for (const s of services) {
+    serviceRecompraDays[s.id] = s.recompraDays;
+    serviceNames[s.id] = s.name;
+  }
+  return { recompraDays: biz.recompraDays, serviceRecompraDays, serviceNames };
+}
+
+// Servicios del negocio, en el orden en que se muestran. `activeOnly` deja
+// fuera los desactivados: sirven para el selector de venta, pero las campañas
+// y los reportes viejos igual tienen que poder nombrar uno ya desactivado.
+export async function getServices(
+  businessId: string,
+  activeOnly = false
+): Promise<Service[]> {
+  return db.service.findMany({
+    where: { businessId, ...(activeOnly ? { active: true } : {}) },
+    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+  });
 }
 
 export function campaignRecipients(
