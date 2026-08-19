@@ -62,6 +62,14 @@ export default async function ClienteDetailPage({
 
   const campaigns = await getCampaigns(biz.id);
   const services = await getServices(biz.id, true);
+  // Solo con el módulo Caja activo tiene sentido preguntar quién atendió.
+  const employees = biz.modules.includes("caja")
+    ? await db.employee.findMany({
+        where: { businessId: biz.id, active: true },
+        orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+        select: { id: true, name: true },
+      })
+    : [];
 
   const pointsEnabled = biz.modules.includes("puntos");
   let pointsHistory: { id: string; points: number; reason: string; note: string | null; createdAt: Date }[] = [];
@@ -317,6 +325,7 @@ export default async function ClienteDetailPage({
               price: sv.price,
               category: sv.category,
             }))}
+            employees={employees}
           />
           <QuickContact
             phone={customer.phone}

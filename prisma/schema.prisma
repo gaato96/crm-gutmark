@@ -35,6 +35,11 @@ model Business {
   campaigns     Campaign[]
   services      Service[]
   purchaseItems PurchaseItem[]
+  employees     Employee[]
+  costRules     CostRule[]
+  saleCosts     SaleCost[]
+  cashSessions  CashSession[]
+  cashMovements CashMovement[]
   contacts      ContactLog[]
   users         User[]
   modules       BusinessModule[]
@@ -114,14 +119,26 @@ model Purchase {
   // (PAYMENT_METHODS en lib/sales.ts es la fuente de verdad)
   paymentMethod String  @default("efectivo")
 
+  // Quién atendió esta venta. De acá sale la comisión del empleado. Queda en
+  // null si el módulo no está activo o si atendió el dueño.
+  employeeId    String?
+  // Caja abierta al momento de la venta, si había una. Null significa que se
+  // vendió sin caja abierta — no se fuerza, para no bloquear el mostrador.
+  cashSessionId String?
+
   business      Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
   customer      Customer       @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  employee      Employee?      @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  cashSession   CashSession?   @relation(fields: [cashSessionId], references: [id], onDelete: SetNull)
   pointsEntries PointsEntry[]
   items         PurchaseItem[]
+  costs         SaleCost[]
 
   @@index([businessId])
   @@index([customerId])
   @@index([businessId, date])
+  @@index([employeeId])
+  @@index([cashSessionId])
 }
 
 // Producto o servicio con precio predefinido. Es del PLAN BASE, no de un
@@ -355,4 +372,127 @@ model PointsEntry {
 
   @@index([businessId])
   @@index([customerId])
+}
+
+// --- Módulo: Caja y Reportes ------------------------------------------------
+
+// Quién atiende. NO es un usuario del sistema: no tiene login ni contraseña,
+// es un registro para saber quién hizo cada venta y cuánto se le debe. Darles
+// cuenta propia sería agregar permisos por rol dentro del negocio, que es otro
+// problema (ver docs/roadmap.md).
+model Employee {
+  id         String  @id @default(cuid())
+  businessId String
+  name       String
+  // Porcentaje de cada venta que se lleva. 40 = 40%. En 0 no genera comisión,
+  // que es el caso del dueño cuando atiende él mismo.
+  commissionPct Float @default(0)
+  active     Boolean  @default(true)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  business  Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  purchases Purchase[]
+  costs     SaleCost[]
+
+  @@index([businessId])
+}
+
+// Costo que se aplica solo a cada venta: impuesto al débito, comisión de la
+// pasarela, etc. La comisión del empleado NO se modela acá — sale de
+// Employee.commissionPct, porque cambia según quién atendió y no según la venta.
+model CostRule {
+  id         String  @id @default(cuid())
+  businessId String
+  name       String
+  // "percent" (sobre el total cobrado) | "fixed" (importe por venta)
+  kind       String  @default("percent")
+  value      Float   @default(0)
+  // Si está seteado, la regla se aplica SOLO a las ventas con ese método de
+  // pago. Es el caso real: la comisión de Mercado Pago no corresponde cobrarla
+  // en una venta en efectivo.
+  paymentMethod String?
+  active     Boolean  @default(true)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  business Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  costs    SaleCost[]
+
+  @@index([businessId])
+}
+
+// Costo ya aplicado a una venta concreta. Es una FOTO: guarda el nombre y el
+// importe calculado en ese momento, así cambiar la comisión de un empleado no
+// reescribe lo que se le debía por los cortes del mes pasado.
+model SaleCost {
+  id         String   @id @default(cuid())
+  businessId String
+  purchaseId String
+  // "comision" (de un empleado) | "regla" (de una CostRule)
+  kind       String
+  label      String
+  amount     Float
+  employeeId String?
+  costRuleId String?
+  date       DateTime
+
+  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  purchase Purchase  @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  employee Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  costRule CostRule? @relation(fields: [costRuleId], references: [id], onDelete: SetNull)
+
+  @@index([businessId])
+  @@index([purchaseId])
+  @@index([businessId, date])
+  @@index([employeeId])
+}
+
+// Una jornada de caja: se abre con un fondo y se cierra contando la plata.
+model CashSession {
+  id            String    @id @default(cuid())
+  businessId    String
+  openedAt      DateTime  @default(now())
+  closedAt      DateTime?
+  openingAmount Float     @default(0)
+  // Lo que se contó al cerrar. Null mientras está abierta.
+  countedAmount Float?
+  // Lo que el sistema esperaba en efectivo. Se congela al cerrar en vez de
+  // recalcularse al leer: si después se edita una venta vieja, el arqueo de
+  // aquel día tiene que seguir diciendo lo que decía cuando se cerró.
+  expectedAmount Float?
+  // countedAmount - expectedAmount. Negativo = falta plata.
+  difference    Float?
+  openedByUserId String?
+  notes         String?
+
+  business  Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  movements CashMovement[]
+  purchases Purchase[]
+
+  @@index([businessId])
+  @@index([businessId, openedAt])
+}
+
+// Movimiento de caja. Las ventas en efectivo entran solas; el resto lo carga
+// el negocio a mano (pagó un proveedor, retiró plata, puso cambio).
+model CashMovement {
+  id         String   @id @default(cuid())
+  businessId String
+  sessionId  String
+  // "venta" | "ingreso" | "egreso" | "retiro"
+  kind       String
+  // Positivo suma, negativo resta. El signo lo fija la acción según `kind`,
+  // no el formulario, para que un egreso no pueda cargarse como ingreso.
+  amount     Float
+  paymentMethod String @default("efectivo")
+  description   String @default("")
+  purchaseId    String?
+  createdAt  DateTime @default(now())
+
+  business Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  session  CashSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([sessionId])
 }

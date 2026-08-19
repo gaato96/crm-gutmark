@@ -19,6 +19,7 @@ import {
   CustomerSearchResult,
 } from "@/app/actions";
 import { listServicesForSale, type SellableService } from "@/app/service-actions";
+import { listEmployeesForSale, type SellingEmployee } from "@/app/cash-actions";
 import { DEFAULT_PAYMENT_METHOD } from "@/lib/sales";
 import { Avatar } from "@/components/ui";
 import { SaleItemsPicker, type PickedItem } from "@/components/sale-items-picker";
@@ -48,6 +49,8 @@ export function QuickSaleModal({
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [services, setServices] = useState<SellableService[]>([]);
+  const [employees, setEmployees] = useState<SellingEmployee[]>([]);
+  const [employeeId, setEmployeeId] = useState("");
   const [items, setItems] = useState<PickedItem[]>([]);
   const [discount, setDiscount] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState<string>(DEFAULT_PAYMENT_METHOD);
@@ -73,6 +76,7 @@ export function QuickSaleModal({
     setItems([]);
     setDiscount(0);
     setPaymentMethod(DEFAULT_PAYMENT_METHOD);
+    setEmployeeId("");
     setNewName("");
     setNewPhone("");
     setError("");
@@ -119,6 +123,12 @@ export function QuickSaleModal({
       .catch(() => {
         // Sin catálogo se vende igual: no vale la pena frenar el mostrador.
       });
+    // Devuelve vacío si el negocio no tiene el módulo Caja.
+    listEmployeesForSale()
+      .then((r) => {
+        if (!cancelled) setEmployees(r);
+      })
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
@@ -184,6 +194,7 @@ export function QuickSaleModal({
           amount: typed || undefined,
           discount,
           paymentMethod,
+          employeeId: employeeId || undefined,
           description,
         });
         setDoneMessage(`Venta registrada a ${res.customerName.split(" ")[0]}`);
@@ -221,6 +232,7 @@ export function QuickSaleModal({
           amount: typed || undefined,
           discount,
           paymentMethod,
+          employeeId: employeeId || undefined,
           description,
         });
         setDoneMessage(`${res.customerName.split(" ")[0]} agregado con su primera compra`);
@@ -361,6 +373,9 @@ export function QuickSaleModal({
               onDiscountChange={setDiscount}
               paymentMethod={paymentMethod}
               onPaymentMethodChange={setPaymentMethod}
+              employees={employees}
+              employeeId={employeeId}
+              onEmployeeChange={setEmployeeId}
               compact
             />
 
@@ -433,6 +448,9 @@ export function QuickSaleModal({
                 onDiscountChange={setDiscount}
                 paymentMethod={paymentMethod}
                 onPaymentMethodChange={setPaymentMethod}
+                employees={employees}
+                employeeId={employeeId}
+                onEmployeeChange={setEmployeeId}
                 compact
               />
             </div>

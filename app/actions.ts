@@ -118,6 +118,7 @@ export async function addPurchase(customerId: string, formData: FormData) {
     discount,
     discountNote: str(formData.get("discountNote")),
     paymentMethod: (formData.get("paymentMethod") ?? "").toString(),
+    employeeId: str(formData.get("employeeId")),
     date: parseDate(formData.get("date")) ?? new Date(),
     description: str(formData.get("description")),
   });
@@ -283,6 +284,7 @@ export async function searchCustomers(query: string): Promise<CustomerSearchResu
 // catálogo (o escritos a mano); el precio final lo recalcula el server.
 export interface QuickSaleInput {
   customerId: string;
+  employeeId?: string;
   items?: SaleItemInput[];
   // Venta de monto suelto, cuando el negocio todavía no cargó servicios.
   amount?: number;
@@ -311,6 +313,7 @@ export async function quickSale(
     discount: input.discount ?? 0,
     discountNote: input.discountNote ?? null,
     paymentMethod: input.paymentMethod,
+    employeeId: input.employeeId ?? null,
     description: input.description ?? null,
   });
 
@@ -326,6 +329,7 @@ export async function quickSale(
 export interface QuickCustomerInput {
   name: string;
   phone?: string;
+  employeeId?: string;
   items?: SaleItemInput[];
   amount?: number;
   discount?: number;
@@ -369,6 +373,7 @@ export async function quickNewCustomerSale(
     discount: input.discount ?? 0,
     discountNote: input.discountNote ?? null,
     paymentMethod: input.paymentMethod,
+    employeeId: input.employeeId ?? null,
     description: input.description ?? null,
   });
 

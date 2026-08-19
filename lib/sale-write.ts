@@ -1,6 +1,7 @@
 import "server-only";
 import { db } from "./db";
 import { awardPointsForPurchase } from "./points";
+import { applySaleSideEffects } from "./cash-write";
 import {
   saleTotals,
   lineSubtotal,
@@ -22,6 +23,9 @@ export interface RecordSaleInput {
   paymentMethod?: string;
   date?: Date;
   description?: string | null;
+  // Quién atendió. Solo tiene efecto con el módulo Caja activo; de ahí sale la
+  // comisión. Se valida contra el negocio antes de guardarse.
+  employeeId?: string | null;
 }
 
 export interface RecordedSale {
@@ -97,11 +101,24 @@ export async function recordSale(input: RecordSaleInput): Promise<RecordedSale> 
 
   const totals = saleTotals(items, input.discount ?? 0);
 
+  // El empleado se valida acá y no se confía en el id del formulario: sin esto
+  // una venta podría quedar atribuida al empleado de otro negocio, y con ella
+  // su comisión.
+  let employeeId: string | null = null;
+  if (input.employeeId) {
+    const emp = await db.employee.findFirst({
+      where: { id: input.employeeId, businessId },
+      select: { id: true },
+    });
+    employeeId = emp?.id ?? null;
+  }
+
   const purchase = await db.purchase.create({
     data: {
       businessId,
       customerId,
       date,
+      employeeId,
       amount: totals.total,
       subtotal: totals.subtotal,
       discount: totals.discount,
@@ -133,6 +150,20 @@ export async function recordSale(input: RecordSaleInput): Promise<RecordedSale> 
     purchaseId: purchase.id,
     amount: totals.total,
   });
+
+  // Comisiones, costos por regla y movimiento de caja. Se auto-gatea con el
+  // módulo: si el negocio no lo tiene, no hace nada.
+  const cashSessionId = await applySaleSideEffects({
+    businessId,
+    purchaseId: purchase.id,
+    employeeId,
+    total: totals.total,
+    paymentMethod,
+    date,
+  });
+  if (cashSessionId) {
+    await db.purchase.update({ where: { id: purchase.id }, data: { cashSessionId } });
+  }
 
   const customer = await db.customer.findUnique({
     where: { id: customerId },

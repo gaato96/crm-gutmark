@@ -9,21 +9,25 @@ import { SubmitButton } from "./submit-button";
 import {
   SaleItemsPicker,
   type PickableService,
+  type PickableEmployee,
   type PickedItem,
 } from "./sale-items-picker";
 
 export function AddPurchaseForm({
   customerId,
   services,
+  employees = [],
 }: {
   customerId: string;
   services: PickableService[];
+  employees?: PickableEmployee[];
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<PickedItem[]>([]);
   const [discount, setDiscount] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState<string>(DEFAULT_PAYMENT_METHOD);
+  const [employeeId, setEmployeeId] = useState("");
   const today = new Date().toISOString().slice(0, 10);
   const action = addPurchase.bind(null, customerId);
 
@@ -31,6 +35,7 @@ export function AddPurchaseForm({
     setItems([]);
     setDiscount(0);
     setPaymentMethod(DEFAULT_PAYMENT_METHOD);
+    setEmployeeId("");
   }
 
   if (!open) {
@@ -85,6 +90,7 @@ export function AddPurchaseForm({
       />
       <input type="hidden" name="discount" value={discount} />
       <input type="hidden" name="paymentMethod" value={paymentMethod} />
+      <input type="hidden" name="employeeId" value={employeeId} />
 
       <SaleItemsPicker
         services={services}
@@ -94,6 +100,9 @@ export function AddPurchaseForm({
         onDiscountChange={setDiscount}
         paymentMethod={paymentMethod}
         onPaymentMethodChange={setPaymentMethod}
+        employees={employees}
+        employeeId={employeeId}
+        onEmployeeChange={setEmployeeId}
         compact
       />
 

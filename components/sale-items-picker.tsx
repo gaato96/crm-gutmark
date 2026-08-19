@@ -5,6 +5,11 @@ import { Plus, Minus, Trash2, Tag } from "lucide-react";
 import { formatMoney } from "@/lib/format";
 import { PAYMENT_METHODS, saleTotals, type SaleItemInput } from "@/lib/sales";
 
+export interface PickableEmployee {
+  id: string;
+  name: string;
+}
+
 // El catálogo tal como llega del server (solo lo que el selector necesita).
 export interface PickableService {
   id: string;
@@ -33,6 +38,9 @@ export function SaleItemsPicker({
   onDiscountChange,
   paymentMethod,
   onPaymentMethodChange,
+  employees = [],
+  employeeId = "",
+  onEmployeeChange,
   compact = false,
 }: {
   services: PickableService[];
@@ -46,6 +54,11 @@ export function SaleItemsPicker({
   onDiscountChange: (n: number) => void;
   paymentMethod: string;
   onPaymentMethodChange: (m: string) => void;
+  // Solo llegan con el módulo Caja activo. Sin empleados cargados, el selector
+  // no se muestra: al dueño que atiende solo no le sirve de nada.
+  employees?: PickableEmployee[];
+  employeeId?: string;
+  onEmployeeChange?: (id: string) => void;
   compact?: boolean;
 }) {
   const [query, setQuery] = useState("");
@@ -207,6 +220,27 @@ export function SaleItemsPicker({
           />
         </div>
       </div>
+
+      {employees.length > 0 && onEmployeeChange && (
+        <div>
+          <label className="label" htmlFor="sale-employee">
+            ¿Quién atendió?
+          </label>
+          <select
+            id="sale-employee"
+            value={employeeId}
+            onChange={(e) => onEmployeeChange(e.target.value)}
+            className="input"
+          >
+            <option value="">Sin asignar</option>
+            {employees.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {items.length > 0 && (
         <div className="rounded-xl bg-surface-2 px-3.5 py-2.5 text-sm">

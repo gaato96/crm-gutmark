@@ -20,14 +20,14 @@ después. Si cambia el orden de las fases, se actualiza acá.
 | `/recordatorios` | ✅ |
 | `/campanas` (campañas propias con disparador y mensaje) | ✅ |
 | `/configuracion` | ✅ |
-| `/servicios` (productos y servicios con precio) | 🔨 en curso |
+| `/servicios` (productos y servicios con precio) | ✅ |
 
 ### Módulos pagos
 
 | Módulo | Precio | Estado |
 |---|---|---|
 | Puntos / beneficios | $9.900 | ✅ construido |
-| **Caja y Reportes** | $26.900 | 🔨 **en curso** |
+| **Caja y Reportes** | $26.900 | ✅ construido |
 | Stock / Inventario | $21.900 | ✗ |
 | Punto de venta (POS) | $26.900 | ✗ |
 | Cuenta corriente | $12.900 | ✗ |
@@ -59,11 +59,11 @@ Poppins. Ver "Identidad de marca (v2)" en `CLAUDE.md`.
 El negocio crea sus propias campañas con disparador y mensaje. Seis tipos de
 disparador, audiencia calculada al leer. Ver "Campañas" en `CLAUDE.md`.
 
-### Fase 3 — Caja y Reportes 🔨 (en curso)
+### Fase 3 — Caja y Reportes ✅
 
-Se entrega en dos partes.
+Se entregó en dos partes.
 
-**3a — Servicios y venta enriquecida** *(plan base, para todos)*
+**3a — Servicios y venta enriquecida** ✅ *(plan base, para todos)*
 
 - `Service`: producto o servicio con precio predefinido y, opcionalmente, cada
   cuántos días se espera la recompra de *ese* servicio (un corte a los 15 días,
@@ -72,7 +72,7 @@ Se entrega en dos partes.
 - Disparador de campaña nuevo: **por servicio + días desde esa compra**. Es lo
   que permite "a los que se hicieron corte + barba, escribiles a los 15 días".
 
-**3b — Caja, empleados y reportes** *(módulo pago)*
+**3b — Caja, empleados y reportes** ✅ *(módulo pago)*
 
 - Apertura y cierre de caja con arqueo (esperado vs. contado vs. diferencia).
 - Movimientos: ventas, ingresos, egresos y retiros.
@@ -83,7 +83,7 @@ Se entrega en dos partes.
 - Reportes por semana y por mes: facturación, costos, neto, ticket promedio,
   por servicio, por empleado y por método de pago.
 
-### Fase 4 — Resto de los módulos
+### Fase 4 — Resto de los módulos *(siguiente)*
 
 Orden recomendado. El criterio no es dificultad sino **cuánto refuerza la
 recompra**, que es la promesa del producto:

@@ -67,6 +67,7 @@ npm run db:seed      # borra + reseed datos demo (ver nota de peligro abajo)
 npm run db:reset     # db push --force-reset + db:seed
 npm run db:migrate-campaigns   # consolida Template (viejo) en Campaign; idempotente, no borra nada
 npm run db:migrate-sales       # rellena Purchase.subtotal en ventas anteriores a los ítems; idempotente
+npm run db:migrate-modules     # fusiona el módulo "reportes" dentro de "caja"; idempotente
 npm run icons:generate    # regenera íconos PWA + og.png desde public/logo.svg via sharp
 node scripts/pdf-to-svg.cjs   # regenera public/logo*.svg desde el PDF del manual de marca
 ```
@@ -292,6 +293,52 @@ payment gateway, por choice explícita. `billingStatus()` deriva `al-dia` / `pen
 calendario actual, no de fuente externa. `businessMonthlyTotal()` suma plan base más precio de
 cada módulo habilitado (override o precio catálogo) — esto es lo que alimenta card MRR en
 `/admin` y breakdown per-negocio en `/admin/negocios/[id]`.
+
+### Módulo Caja y Reportes
+
+Se vende como **un** módulo (código `caja`, $26.900) pero navega desde **dos**
+pantallas. Por eso `MODULE_NAV` tiene dos filas con el mismo `code` — el sidebar
+usa el `href` como clave de React, que sí es único. Antes eran dos módulos
+separados; `npm run db:migrate-modules` fusiona los datos viejos.
+
+**Los costos son una foto.** `SaleCost` guarda el nombre y el importe ya
+calculados. Si mañana se le sube la comisión a un barbero, lo que se le debía por
+los cortes del mes pasado no cambia. Por eso la etiqueta dice "Comisión Juan" en
+texto y no se arma leyendo el empleado al mostrar.
+
+La comisión sale de `Employee.commissionPct` y no de una `CostRule`, porque
+depende de quién atendió y no de la venta. Las `CostRule` son para lo que
+descuenta un tercero (Mercado Pago, impuesto al débito) y pueden atarse a un
+método de pago: cobrar la comisión de la pasarela en una venta en efectivo sería
+un error caro y silencioso.
+
+Todo se calcula sobre lo **efectivamente cobrado** (`Purchase.amount`), no sobre
+el subtotal: si el negocio hizo un descuento, el barbero cobra su porcentaje de
+lo que entró.
+
+⚠️ **El arqueo solo cuenta el efectivo.** Una venta con tarjeta no deja plata en
+el cajón; sumarla daría un faltante enorme en cada cierre. Ver `cashExpected()`
+en `lib/cash.ts`.
+
+⚠️ **El esperado se congela al cerrar** (`CashSession.expectedAmount`) en vez de
+recalcularse al leer. Si después se edita una venta vieja, el arqueo de aquel día
+tiene que seguir diciendo lo que decía cuando se cerró.
+
+El cierre es **a ciegas**: el esperado queda tapado hasta escribir lo contado. Si
+el número está a la vista se copia y el arqueo no sirve para nada — hay un enlace
+para verlo igual, porque el dueño sí puede querer mirarlo.
+
+El signo de un `CashMovement` lo fija `signedAmount()` según el tipo, nunca el
+formulario: si el importe viniera con signo desde la UI, un egreso podría
+cargarse como ingreso y la caja cerraría bien con la plata mal.
+
+`applySaleSideEffects()` (`lib/cash-write.ts`) se auto-gatea con el módulo, igual
+que `awardPointsForPurchase`: el flujo de venta llama siempre y no pasa nada si
+el negocio no lo tiene contratado.
+
+Los empleados **no** son usuarios: no tienen login. Son registros para saber
+quién hizo cada venta y cuánto se le debe. Darles cuenta propia implicaría
+permisos por rol dentro del negocio, que es otro problema (ver `docs/roadmap.md`).
 
 ### Theming: CSS variables, no dark: className soup
 

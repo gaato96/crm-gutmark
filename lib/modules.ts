@@ -22,7 +22,6 @@ export const MODULE_CODES = [
   "stock",
   "pos",
   "caja",
-  "reportes",
   "puntos",
   "catalogo",
   "turnos",
@@ -39,6 +38,10 @@ export function isModuleCode(v: string): v is ModuleCode {
 // Ítems de navegación por módulo (href + label + ícono), resueltos del
 // lado del cliente contra la lista de códigos activos del negocio.
 //
+// Un mismo `code` puede aparecer más de una vez: "caja" se vende como un solo
+// módulo ("Caja y Reportes") pero se navega desde dos pantallas distintas.
+// Por eso las claves de React usan el href, que sí es único, y no el código.
+//
 // `implemented` marca si la ruta existe de verdad. El catálogo lista los nueve
 // módulos, pero solo los implementados tienen página detrás; sin este flag,
 // activarle a un negocio un módulo no construido le mete un link en el sidebar
@@ -52,14 +55,14 @@ export const MODULE_NAV: {
   implemented: boolean;
 }[] = [
   { code: "pos", href: "/pos", label: "Punto de venta", icon: ScanBarcode, implemented: false },
-  { code: "caja", href: "/caja", label: "Caja", icon: Wallet, implemented: false },
+  { code: "caja", href: "/caja", label: "Caja", icon: Wallet, implemented: true },
+  { code: "caja", href: "/reportes", label: "Reportes", icon: BarChart3, implemented: true },
   { code: "stock", href: "/stock", label: "Stock", icon: Package, implemented: false },
   { code: "catalogo", href: "/catalogo", label: "Catálogo", icon: LayoutGrid, implemented: false },
   { code: "turnos", href: "/turnos", label: "Turnos", icon: CalendarClock, implemented: false },
   { code: "cuenta-corriente", href: "/cuenta-corriente", label: "Cuenta corriente", icon: BookUser, implemented: false },
   { code: "gastos", href: "/gastos", label: "Gastos", icon: Receipt, implemented: false },
   { code: "puntos", href: "/puntos", label: "Puntos", icon: Gift, implemented: true },
-  { code: "reportes", href: "/reportes", label: "Reportes", icon: BarChart3, implemented: false },
 ];
 
 // ¿El módulo tiene página construida? Lo usan el sidebar (para no mostrar un
@@ -108,9 +111,10 @@ export const MODULE_SEED: {
   },
   {
     code: "caja",
-    name: "Caja",
-    description: "Apertura, cierre y arqueo de caja diario.",
-    monthlyPrice: 14900,
+    name: "Caja y Reportes",
+    description:
+      "Apertura y cierre de caja con arqueo, comisiones por empleado y reportes de facturación y rentabilidad por semana y mes.",
+    monthlyPrice: 26900,
     sortOrder: 40,
   },
   {
@@ -140,12 +144,5 @@ export const MODULE_SEED: {
     description: "Vidriera visual de productos, tipo scroll, para compartir con clientes.",
     monthlyPrice: 14900,
     sortOrder: 80,
-  },
-  {
-    code: "reportes",
-    name: "Reportes",
-    description: "Reportes avanzados de ventas, caja y rentabilidad.",
-    monthlyPrice: 14900,
-    sortOrder: 90,
   },
 ];
