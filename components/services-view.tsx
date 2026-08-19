@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useCallback, useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, X, Scissors, RotateCcw, EyeOff, Eye } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Tags, RotateCcw, EyeOff, Eye } from "lucide-react";
 import {
   createService,
   updateService,
@@ -10,11 +10,13 @@ import {
   type ServiceFormState,
 } from "@/app/service-actions";
 import { formatMoney } from "@/lib/format";
+import { catalogWords, ITEM_KINDS, itemKindLabel, defaultItemKind } from "@/lib/rubros";
 import { SubmitButton } from "./submit-button";
 
 export interface ServiceItem {
   id: string;
   name: string;
+  kind: string;
   description: string;
   price: number;
   category: string;
@@ -28,10 +30,13 @@ const EMPTY: ServiceFormState = {};
 export function ServicesView({
   services,
   recompraDaysDefault,
+  catalogMode,
 }: {
   services: ServiceItem[];
   recompraDaysDefault: number;
+  catalogMode: string;
 }) {
+  const words = catalogWords(catalogMode);
   const [editing, setEditing] = useState<string | null>(null);
   const close = useCallback(() => setEditing(null), []);
 
@@ -47,6 +52,7 @@ export function ServicesView({
         <ServiceEditor
           service={current}
           recompraDaysDefault={recompraDaysDefault}
+          catalogMode={catalogMode}
           onClose={close}
         />
       )}
@@ -54,13 +60,13 @@ export function ServicesView({
       {!editing && (
         <div className="mb-4 flex justify-end">
           <button onClick={() => setEditing("new")} className="btn-primary">
-            <Plus className="h-4 w-4" /> Nuevo servicio
+            <Plus className="h-4 w-4" /> {words.nuevo}
           </button>
         </div>
       )}
 
       {services.length === 0 && !editing ? (
-        <EmptyState onCreate={() => setEditing("new")} />
+        <EmptyState words={words} onCreate={() => setEditing("new")} />
       ) : (
         <div className="space-y-6">
           {activos.length > 0 && (
@@ -70,6 +76,7 @@ export function ServicesView({
                   key={s.id}
                   s={s}
                   recompraDaysDefault={recompraDaysDefault}
+                  catalogMode={catalogMode}
                   onEdit={() => setEditing(s.id)}
                 />
               ))}
@@ -87,6 +94,7 @@ export function ServicesView({
                     key={s.id}
                     s={s}
                     recompraDaysDefault={recompraDaysDefault}
+                    catalogMode={catalogMode}
                     onEdit={() => setEditing(s.id)}
                   />
                 ))}
@@ -102,10 +110,12 @@ export function ServicesView({
 function ServiceCard({
   s,
   recompraDaysDefault,
+  catalogMode,
   onEdit,
 }: {
   s: ServiceItem;
   recompraDaysDefault: number;
+  catalogMode: string;
   onEdit: () => void;
 }) {
   const [busy, setBusy] = useState(false);
@@ -134,9 +144,22 @@ function ServiceCard({
         </span>
       </div>
 
-      {s.category && (
-        <span className="badge mb-2 bg-surface-2 text-ink-muted ring-line">{s.category}</span>
-      )}
+      <div className="mb-2 flex flex-wrap gap-1.5">
+        {catalogMode === "ambos" && (
+          <span
+            className={`badge ${
+              s.kind === "producto"
+                ? "bg-sky-500/15 text-sky-700 ring-sky-500/25 dark:text-sky-300"
+                : "bg-accent-500/15 text-accent-700 ring-accent-500/25 dark:text-accent-300"
+            }`}
+          >
+            {itemKindLabel(s.kind)}
+          </span>
+        )}
+        {s.category && (
+          <span className="badge bg-surface-2 text-ink-muted ring-line">{s.category}</span>
+        )}
+      </div>
 
       {s.description && <p className="mb-2 text-sm text-ink-muted">{s.description}</p>}
 
@@ -196,12 +219,15 @@ function ServiceCard({
 function ServiceEditor({
   service,
   recompraDaysDefault,
+  catalogMode,
   onClose,
 }: {
   service: ServiceItem | null;
   recompraDaysDefault: number;
+  catalogMode: string;
   onClose: () => void;
 }) {
+  const words = catalogWords(catalogMode);
   const action = service ? updateService.bind(null, service.id) : createService;
   const [state, formAction] = useActionState(action, EMPTY);
 
@@ -215,7 +241,7 @@ function ServiceEditor({
       <div className="mb-5 flex items-start justify-between gap-3">
         <div>
           <h2 className="font-display text-lg font-bold text-ink">
-            {service ? `Editar ${service.name}` : "Nuevo servicio o producto"}
+            {service ? `Editar ${service.name}` : words.nuevo}
           </h2>
           <p className="mt-0.5 text-sm text-ink-muted">
             El precio queda predefinido para no tipearlo en cada venta.
@@ -238,7 +264,7 @@ function ServiceEditor({
               defaultValue={service?.name ?? ""}
               maxLength={80}
               required
-              placeholder="Corte + Barba"
+              placeholder={words.ejemplo}
               className="input"
             />
           </div>
@@ -275,7 +301,7 @@ function ServiceEditor({
           </div>
           <div>
             <label className="label" htmlFor="svc-recompra">
-              ¿Cada cuántos días vuelve?{" "}
+              {words.recompraLabel}{" "}
               <span className="font-normal text-ink-faint">(opcional)</span>
             </label>
             <input
@@ -289,9 +315,8 @@ function ServiceEditor({
               className="input"
             />
             <p className="mt-1.5 text-xs text-ink-muted">
-              Un corte se repite a los 15 días y una coloración a los 60. Las campañas por
-              servicio usan este número. Vacío = usa los {recompraDaysDefault} días generales de
-              Configuración.
+              {words.recompraHelp} Vacío = usa los {recompraDaysDefault} días
+              generales de Configuración.
             </p>
           </div>
         </div>
@@ -319,7 +344,7 @@ function ServiceEditor({
             Cancelar
           </button>
           <SubmitButton className="btn-primary">
-            {service ? "Guardar cambios" : "Crear servicio"}
+            {service ? "Guardar cambios" : words.nuevo}
           </SubmitButton>
         </div>
       </form>
@@ -327,17 +352,21 @@ function ServiceEditor({
   );
 }
 
-function EmptyState({ onCreate }: { onCreate: () => void }) {
+function EmptyState({
+  words,
+  onCreate,
+}: {
+  words: ReturnType<typeof catalogWords>;
+  onCreate: () => void;
+}) {
   return (
     <div className="card flex flex-col items-center px-6 py-16 text-center">
       <div className="mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-brand-500/10 text-brand-600">
-        <Scissors className="h-7 w-7" />
+        <Tags className="h-7 w-7" />
       </div>
-      <h3 className="font-display text-base font-bold text-ink">Todavía no cargaste nada</h3>
+      <h3 className="font-display text-base font-bold text-ink">{words.emptyTitle}</h3>
       <p className="mt-1 max-w-md text-sm text-ink-muted">
-        Cargá lo que vendés con su precio y después lo elegís de una lista al registrar la venta,
-        sin tipear el monto. Además vas a poder armar campañas como “a los que se hicieron corte
-        + barba, escribiles a los 15 días”.
+        {words.emptyText}
       </p>
       <button onClick={onCreate} className="btn-primary mt-5">
         <Plus className="h-4 w-4" /> Cargar el primero

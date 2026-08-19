@@ -105,6 +105,10 @@ export interface SessionUser {
     id: string;
     name: string;
     rubro: string;
+    // Decide el vocabulario de toda la interfaz (ver lib/rubros.ts). Va en la
+    // sesión para que el AppShell, que es client, pueda nombrar bien el menú
+    // sin una consulta extra en cada render.
+    catalogMode: string;
     inactivityDays: number;
     recompraDays: number;
     vipMinSpend: number;
@@ -151,6 +155,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
       id: user.business.id,
       name: user.business.name,
       rubro: user.business.rubro,
+      catalogMode: user.business.catalogMode,
       inactivityDays: user.business.inactivityDays,
       recompraDays: user.business.recompraDays,
       vipMinSpend: user.business.vipMinSpend,

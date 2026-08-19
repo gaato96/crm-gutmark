@@ -20,7 +20,7 @@ después. Si cambia el orden de las fases, se actualiza acá.
 | `/recordatorios` | ✅ |
 | `/campanas` (campañas propias con disparador y mensaje) | ✅ |
 | `/configuracion` | ✅ |
-| `/servicios` (productos y servicios con precio) | ✅ |
+| `/catalogo` (productos y servicios con precio) | ✅ |
 
 ### Módulos pagos
 
@@ -32,7 +32,7 @@ después. Si cambia el orden de las fases, se actualiza acá.
 | Punto de venta (POS) | $26.900 | ✗ |
 | Cuenta corriente | $12.900 | ✗ |
 | Turnos / Reservas | $17.900 | ✗ |
-| Catálogo digital | $14.900 | ✗ |
+| Vidriera digital (pública) | $14.900 | ✗ |
 | Gastos y rentabilidad | $12.900 | ✗ |
 | Asistente IA | a definir | ✗ |
 
@@ -90,7 +90,7 @@ recompra**, que es la promesa del producto:
 
 | # | Módulo | Por qué en este lugar |
 |---|---|---|
-| 1 | Catálogo digital | El más barato de construir y el que más se comparte. Trae tráfico. |
+| 1 | Vidriera digital | Página pública con lo que vende, para compartir por WhatsApp o Instagram. La más barata de construir y la que más se comparte. |
 | 2 | Turnos / Reservas | Recompra calendarizada. Es el corazón del producto para peluquería, estética y veterinaria. |
 | 3 | Stock | Prerrequisito de POS y de un catálogo con precios reales. |
 | 4 | Cuenta corriente | El fiado es universal en el barrio y hoy se lleva en papel. |

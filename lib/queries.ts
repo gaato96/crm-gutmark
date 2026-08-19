@@ -12,6 +12,7 @@ import {
 } from "./segmentation";
 import { daysSince } from "./format";
 import { matchesCampaign, CampaignRule, RuleDefaults } from "./campaigns";
+import { catalogWords } from "./rubros";
 import type { Campaign, Service } from "@prisma/client";
 
 export interface EnrichedCustomer {
@@ -138,7 +139,7 @@ export async function getCampaigns(businessId: string): Promise<Campaign[]> {
 // resolver "usar la recompra propia de este servicio" sin que cada pantalla
 // tenga que armar los diccionarios por su cuenta.
 export function ruleDefaults(
-  biz: { recompraDays: number },
+  biz: { recompraDays: number; catalogMode?: string },
   services: Pick<Service, "id" | "name" | "recompraDays">[] = []
 ): RuleDefaults {
   const serviceRecompraDays: Record<string, number | null> = {};
@@ -147,7 +148,14 @@ export function ruleDefaults(
     serviceRecompraDays[s.id] = s.recompraDays;
     serviceNames[s.id] = s.name;
   }
-  return { recompraDays: biz.recompraDays, serviceRecompraDays, serviceNames };
+  return {
+    recompraDays: biz.recompraDays,
+    serviceRecompraDays,
+    serviceNames,
+    // "Se hicieron Corte + Barba" en una barbería, "Compraron Alimento 15 kg"
+    // en un pet shop. Lo resuelve describeTrigger.
+    catalogVerb: catalogWords(biz.catalogMode ?? "ambos").triggerVerb,
+  };
 }
 
 // Servicios del negocio, en el orden en que se muestran. `activeOnly` deja

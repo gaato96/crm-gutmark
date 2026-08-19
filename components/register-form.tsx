@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AlertCircle } from "lucide-react";
 import { register, AuthState } from "@/app/auth-actions";
 import { SubmitButton } from "./submit-button";
+import { RubroSelect } from "@/components/rubro-select";
 
 export function RegisterForm() {
   const [state, action] = useActionState<AuthState, FormData>(register, {});
@@ -30,17 +31,7 @@ export function RegisterForm() {
             placeholder="Ej. Perfumería Bella"
           />
         </div>
-        <div>
-          <label className="label" htmlFor="rubro">
-            Rubro
-          </label>
-          <input
-            id="rubro"
-            name="rubro"
-            className="input"
-            placeholder="Ej. Perfumería, peluquería, veterinaria…"
-          />
-        </div>
+        <RubroSelect />
         <div>
           <label className="label" htmlFor="name">
             Tu nombre

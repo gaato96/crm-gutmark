@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { getCurrentBusiness } from "@/lib/queries";
 import { parseFlexibleDate } from "@/lib/csv";
 import { recordSale } from "@/lib/sale-write";
+import { isRubroCode, modeForRubro } from "@/lib/rubros";
 import type { SaleItemInput } from "@/lib/sales";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -164,11 +165,27 @@ export async function logContact(
 
 export async function updateBusiness(formData: FormData) {
   const biz = await getCurrentBusiness();
+
+  const rubroRaw = str(formData.get("rubro"));
+  const rubro = rubroRaw && isRubroCode(rubroRaw) ? rubroRaw : biz.rubro;
+
+  // El modo sigue al rubro solo si nadie lo tocó a mano. Si el superadmin lo
+  // forzó (una barbería que solo quiere ver servicios), cambiar el rubro no le
+  // pisa esa decisión.
+  const modoActual = await db.business.findUnique({
+    where: { id: biz.id },
+    select: { catalogMode: true, rubro: true },
+  });
+  const fueForzado =
+    modoActual !== null && modoActual.catalogMode !== modeForRubro(modoActual.rubro);
+  const catalogMode = fueForzado ? modoActual!.catalogMode : modeForRubro(rubro);
+
   await db.business.update({
     where: { id: biz.id },
     data: {
       name: str(formData.get("name")) ?? biz.name,
-      rubro: str(formData.get("rubro")) ?? biz.rubro,
+      rubro,
+      catalogMode,
       inactivityDays: parseInt((formData.get("inactivityDays") ?? "60").toString()) || 60,
       recompraDays: parseInt((formData.get("recompraDays") ?? "45").toString()) || 45,
       vipMinSpend: parseFloat((formData.get("vipMinSpend") ?? "50000").toString()) || 50000,
@@ -177,6 +194,7 @@ export async function updateBusiness(formData: FormData) {
   revalidatePath("/configuracion");
   revalidatePath("/dashboard");
   revalidatePath("/segmentos");
+  revalidatePath("/catalogo");
 }
 
 export interface ImportRow {

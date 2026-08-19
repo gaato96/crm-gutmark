@@ -8,7 +8,7 @@ import {
   Receipt,
   UserPlus,
   Repeat,
-  Scissors,
+  Tags,
   Users,
   CreditCard,
   Minus,
@@ -17,6 +17,7 @@ import { formatMoney } from "@/lib/format";
 import type { ReportComparison, ReportRow } from "@/lib/reports";
 import { paymentLabel } from "@/lib/sales";
 import type { PeriodKind } from "@/lib/cash";
+import { catalogWords } from "@/lib/rubros";
 
 export function ReportesView({
   kind,
@@ -24,13 +25,16 @@ export function ReportesView({
   anteriorLabel,
   data,
   comisiones,
+  catalogMode,
 }: {
   kind: PeriodKind;
   periodLabel: string;
   anteriorLabel: string;
   data: ReportComparison;
   comisiones: { employeeId: string | null; name: string; amount: number; ventas: number }[];
+  catalogMode: string;
 }) {
+  const words = catalogWords(catalogMode);
   const a = data.actual;
 
   return (
@@ -127,10 +131,10 @@ export function ReportesView({
 
           <div className="grid gap-4 lg:grid-cols-2">
             <Breakdown
-              title="Por servicio"
-              icon={<Scissors className="h-4 w-4" />}
+              title={words.reportBreakdown}
+              icon={<Tags className="h-4 w-4" />}
               rows={a.porServicio}
-              empty="Las ventas de este período no tienen servicios cargados."
+              empty={`Las ventas de este período no tienen ${words.plural} cargados.`}
             />
             <Breakdown
               title="Por quién atendió"

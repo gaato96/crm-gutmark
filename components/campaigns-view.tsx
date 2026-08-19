@@ -30,10 +30,12 @@ export function CampaignsView({
   audiences,
   campaigns,
   services,
+  catalogMode,
 }: {
   audiences: Audience[];
   campaigns: CampaignItem[];
   services: CampaignService[];
+  catalogMode: string;
 }) {
   const [tab, setTab] = useState<Tab>("enviar");
   // null = cerrado, "new" = alta, un id = edición de esa campaña.
@@ -70,6 +72,7 @@ export function CampaignsView({
             <CampaignEditor
               campaign={editingCampaign}
               services={services}
+              catalogMode={catalogMode}
               onClose={closeEditor}
             />
           )}

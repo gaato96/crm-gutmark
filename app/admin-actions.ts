@@ -12,6 +12,7 @@ import {
 } from "@/lib/auth";
 import { createDefaultCampaigns } from "@/lib/default-campaigns";
 import { isModuleCode, MODULE_SEED } from "@/lib/modules";
+import { isRubroCode, modeForRubro, isCatalogMode } from "@/lib/rubros";
 
 export interface AdminFormState {
   error?: string;
@@ -29,7 +30,8 @@ export async function createBusiness(
   await requireSuperAdmin();
 
   const businessName = clean(formData.get("businessName"));
-  const rubro = clean(formData.get("rubro")) || "General";
+  const rubroRaw = clean(formData.get("rubro"));
+  const rubro = isRubroCode(rubroRaw) ? rubroRaw : "otro";
   const ownerName = clean(formData.get("ownerName"));
   const email = clean(formData.get("email")).toLowerCase();
   const password = clean(formData.get("password"));
@@ -42,7 +44,7 @@ export async function createBusiness(
   if (existing) return { error: "Ya existe una cuenta con ese email." };
 
   const business = await db.business.create({
-    data: { name: businessName, rubro },
+    data: { name: businessName, rubro, catalogMode: modeForRubro(rubro) },
   });
   await db.user.create({
     data: {
@@ -252,4 +254,37 @@ export async function deletePayment(paymentId: string, businessId: string) {
   await db.payment.delete({ where: { id: paymentId } });
   revalidatePath(`/admin/negocios/${businessId}`);
   revalidatePath("/admin");
+}
+
+// Rubro y modo de catálogo de un negocio. El modo decide el vocabulario de
+// toda la interfaz del dueño, así que es lo primero a corregir si un negocio
+// quedó mal clasificado.
+export async function setBusinessCatalog(
+  businessId: string,
+  _prev: AdminFormState,
+  formData: FormData
+): Promise<AdminFormState> {
+  await requireSuperAdmin();
+
+  const rubro = clean(formData.get("rubro"));
+  if (!isRubroCode(rubro)) return { error: "Elegí un rubro válido." };
+
+  const modeRaw = clean(formData.get("catalogMode"));
+  // Vacío = seguir el default del rubro. Guardamos el valor resuelto y no el
+  // vacío: así el resto de la app nunca tiene que volver a derivarlo.
+  const catalogMode = modeRaw
+    ? isCatalogMode(modeRaw)
+      ? modeRaw
+      : null
+    : modeForRubro(rubro);
+  if (!catalogMode) return { error: "Elegí un modo de catálogo válido." };
+
+  await db.business.update({
+    where: { id: businessId },
+    data: { rubro, catalogMode },
+  });
+
+  revalidatePath(`/admin/negocios/${businessId}`);
+  revalidatePath("/admin");
+  return { ok: true };
 }

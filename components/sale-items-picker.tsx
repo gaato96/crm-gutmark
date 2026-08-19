@@ -41,6 +41,7 @@ export function SaleItemsPicker({
   employees = [],
   employeeId = "",
   onEmployeeChange,
+  sellerLabel = "¿Quién atendió?",
   compact = false,
 }: {
   services: PickableService[];
@@ -59,6 +60,8 @@ export function SaleItemsPicker({
   employees?: PickableEmployee[];
   employeeId?: string;
   onEmployeeChange?: (id: string) => void;
+  // Cambia segun el rubro: un kiosco pregunta "quien vendio", no "quien atendio".
+  sellerLabel?: string;
   compact?: boolean;
 }) {
   const [query, setQuery] = useState("");
@@ -224,7 +227,7 @@ export function SaleItemsPicker({
       {employees.length > 0 && onEmployeeChange && (
         <div>
           <label className="label" htmlFor="sale-employee">
-            ¿Quién atendió?
+            {sellerLabel}
           </label>
           <select
             id="sale-employee"

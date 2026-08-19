@@ -89,6 +89,7 @@ export default async function CampanasPage() {
       <CampaignsView
         audiences={audiences}
         campaigns={items}
+        catalogMode={biz.catalogMode}
         services={services
           .filter((sv) => sv.active)
           .map((sv) => ({ id: sv.id, name: sv.name, recompraDays: sv.recompraDays }))}

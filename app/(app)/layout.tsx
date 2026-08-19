@@ -32,6 +32,7 @@ export default async function AppLayout({
       <AppShell
         businessName={session.business.name}
         rubro={session.business.rubro}
+        catalogMode={session.business.catalogMode}
         userEmail={session.email}
         isImpersonating={session.isImpersonating}
         modules={session.business.modules}

@@ -2,10 +2,11 @@ import { getCurrentBusiness, getServices } from "@/lib/queries";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui";
 import { ServicesView, type ServiceItem } from "@/components/services-view";
+import { catalogWords } from "@/lib/rubros";
 
 export const dynamic = "force-dynamic";
 
-export default async function ServiciosPage() {
+export default async function CatalogoPage() {
   const biz = await getCurrentBusiness();
   const services = await getServices(biz.id);
 
@@ -18,9 +19,12 @@ export default async function ServiciosPage() {
   });
   const soldById = new Map(sold.map((s) => [s.serviceId!, s._count._all]));
 
+  const words = catalogWords(biz.catalogMode);
+
   const items: ServiceItem[] = services.map((s) => ({
     id: s.id,
     name: s.name,
+    kind: s.kind,
     description: s.description,
     price: s.price,
     category: s.category,
@@ -31,11 +35,12 @@ export default async function ServiciosPage() {
 
   return (
     <div className="animate-fade-in">
-      <PageHeader
-        title="Servicios y productos"
-        subtitle="Cargá lo que vendés con su precio. Después lo elegís al registrar una venta y podés armar campañas por servicio."
+      <PageHeader title={words.title} subtitle={words.subtitle} />
+      <ServicesView
+        services={items}
+        recompraDaysDefault={biz.recompraDays}
+        catalogMode={biz.catalogMode}
       />
-      <ServicesView services={items} recompraDaysDefault={biz.recompraDays} />
     </div>
   );
 }

@@ -29,6 +29,7 @@ import {
   ageTurning,
 } from "@/lib/segmentation";
 import { matchesCampaign } from "@/lib/campaigns";
+import { catalogWords } from "@/lib/rubros";
 import { paymentLabel } from "@/lib/sales";
 import { buildCampaignMessage } from "@/lib/build-message";
 import { pointsBalance } from "@/lib/points";
@@ -326,6 +327,7 @@ export default async function ClienteDetailPage({
               category: sv.category,
             }))}
             employees={employees}
+            sellerLabel={catalogWords(biz.catalogMode).sellerLabel}
           />
           <QuickContact
             phone={customer.phone}

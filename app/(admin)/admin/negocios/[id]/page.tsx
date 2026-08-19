@@ -8,6 +8,8 @@ import { formatMoney, formatDate } from "@/lib/format";
 import { PageHeader, SectionTitle } from "@/components/ui";
 import { ImpersonateButton, ToggleActiveButton } from "@/components/admin-actions-buttons";
 import { AdminBusinessModules } from "@/components/admin-business-modules";
+import { AdminBusinessCatalog } from "@/components/admin-business-catalog";
+import { rubroLabel } from "@/lib/rubros";
 import { AdminPayments } from "@/components/admin-payments";
 
 export const dynamic = "force-dynamic";
@@ -66,7 +68,7 @@ export default async function NegocioDetailPage({
 
       <PageHeader
         title={business.name}
-        subtitle={business.rubro}
+        subtitle={rubroLabel(business.rubro)}
         action={
           <>
             <ImpersonateButton
@@ -124,6 +126,12 @@ export default async function NegocioDetailPage({
 
       <SectionTitle hint="Se cobra aparte del plan base">Módulos</SectionTitle>
       <div className="mb-6">
+        <AdminBusinessCatalog
+          businessId={business.id}
+          rubro={business.rubro}
+          catalogMode={business.catalogMode}
+        />
+
         <AdminBusinessModules
           businessId={business.id}
           catalog={catalog}

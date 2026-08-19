@@ -9,6 +9,7 @@ import {
   isTriggerType,
 } from "@/lib/campaigns";
 import { SEGMENT_META, type Segment } from "@/lib/segmentation";
+import { catalogWords } from "@/lib/rubros";
 import { TEMPLATE_VARS } from "@/lib/messages";
 import { createCampaign, updateCampaign, type CampaignFormState } from "@/app/campaign-actions";
 import { SubmitButton } from "./submit-button";
@@ -45,12 +46,15 @@ export interface CampaignService {
 export function CampaignEditor({
   campaign,
   services,
+  catalogMode,
   onClose,
 }: {
   campaign: CampaignItem | null;
   services: CampaignService[];
+  catalogMode: string;
   onClose: () => void;
 }) {
+  const words = catalogWords(catalogMode);
   const action = campaign ? updateCampaign.bind(null, campaign.id) : createCampaign;
   const [state, formAction] = useActionState(action, EMPTY);
 
@@ -153,11 +157,13 @@ export function CampaignEditor({
               >
                 {TRIGGER_TYPES.map((t) => (
                   <option key={t} value={t}>
-                    {TRIGGER_META[t].label}
+                    {t === "service-recompra" ? words.triggerLabel : TRIGGER_META[t].label}
                   </option>
                 ))}
               </select>
-              <p className="mt-1.5 text-xs text-ink-muted">{meta.help}</p>
+              <p className="mt-1.5 text-xs text-ink-muted">
+                {trigger === "service-recompra" ? words.triggerHelp : meta.help}
+              </p>
             </div>
 
             {meta.field === "days" && (
@@ -203,12 +209,12 @@ export function CampaignEditor({
               <>
                 <div>
                   <label className="label" htmlFor="campaign-service">
-                    Servicio
+                    {words.singular.charAt(0).toUpperCase() + words.singular.slice(1)}
                   </label>
                   {services.length === 0 ? (
                     <p className="rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-300">
-                      Todavía no cargaste servicios. Cargá al menos uno en Servicios para poder
-                      usar este disparador.
+                      Todavía no cargaste nada. Cargá al menos un ítem en {words.nav} para
+                      poder usar este disparador.
                     </p>
                   ) : (
                     <select

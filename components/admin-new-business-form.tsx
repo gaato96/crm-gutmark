@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { AlertCircle } from "lucide-react";
 import { createBusiness, AdminFormState } from "@/app/admin-actions";
 import { SubmitButton } from "@/components/submit-button";
+import { RubroSelect } from "@/components/rubro-select";
 
 function randomPassword(): string {
   return Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-4);
@@ -28,17 +29,7 @@ export function AdminNewBusinessForm() {
             placeholder="Ej. Peluquería Estilo"
           />
         </div>
-        <div>
-          <label className="label" htmlFor="rubro">
-            Rubro
-          </label>
-          <input
-            id="rubro"
-            name="rubro"
-            className="input"
-            placeholder="Ej. Peluquería"
-          />
-        </div>
+        <RubroSelect />
       </div>
 
       <div className="border-t border-line-soft pt-5">

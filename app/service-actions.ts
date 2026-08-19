@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { getCurrentBusiness } from "@/lib/queries";
+import { isItemKind, defaultItemKind } from "@/lib/rubros";
 
 export interface ServiceFormState {
   error?: string;
@@ -13,7 +14,7 @@ function clean(v: FormDataEntryValue | null): string {
   return (v ?? "").toString().trim();
 }
 
-function parseForm(formData: FormData):
+function parseForm(formData: FormData, catalogMode: string):
   | { error: string }
   | {
       data: {
@@ -21,6 +22,7 @@ function parseForm(formData: FormData):
         description: string;
         price: number;
         category: string;
+        kind: string;
         recompraDays: number | null;
       };
     } {
@@ -45,19 +47,26 @@ function parseForm(formData: FormData):
     recompraDays = n;
   }
 
+  // El tipo solo lo elige el negocio que vende las dos cosas. En los demás lo
+  // fija el modo, así un kiosco no puede terminar con "servicios" cargados.
+  const kindRaw = clean(formData.get("kind"));
+  const kind =
+    catalogMode === "ambos" && isItemKind(kindRaw) ? kindRaw : defaultItemKind(catalogMode);
+
   return {
     data: {
       name,
       description: clean(formData.get("description")),
       price,
       category: clean(formData.get("category")),
+      kind,
       recompraDays,
     },
   };
 }
 
 function revalidate() {
-  revalidatePath("/servicios");
+  revalidatePath("/catalogo");
   revalidatePath("/campanas");
   revalidatePath("/clientes");
 }
@@ -67,7 +76,7 @@ export async function createService(
   formData: FormData
 ): Promise<ServiceFormState> {
   const biz = await getCurrentBusiness();
-  const parsed = parseForm(formData);
+  const parsed = parseForm(formData, biz.catalogMode);
   if ("error" in parsed) return parsed;
 
   const count = await db.service.count({ where: { businessId: biz.id } });
@@ -89,7 +98,7 @@ export async function updateService(
   formData: FormData
 ): Promise<ServiceFormState> {
   const biz = await getCurrentBusiness();
-  const parsed = parseForm(formData);
+  const parsed = parseForm(formData, biz.catalogMode);
   if ("error" in parsed) return parsed;
 
   // Pertenencia explícita: un Server Action es un endpoint POST direccionable.

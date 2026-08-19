@@ -17,10 +17,12 @@ export function AddPurchaseForm({
   customerId,
   services,
   employees = [],
+  sellerLabel,
 }: {
   customerId: string;
   services: PickableService[];
   employees?: PickableEmployee[];
+  sellerLabel?: string;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -103,6 +105,7 @@ export function AddPurchaseForm({
         employees={employees}
         employeeId={employeeId}
         onEmployeeChange={setEmployeeId}
+        sellerLabel={sellerLabel}
         compact
       />
 

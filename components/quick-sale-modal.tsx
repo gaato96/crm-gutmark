@@ -50,6 +50,7 @@ export function QuickSaleModal({
   const [description, setDescription] = useState("");
   const [services, setServices] = useState<SellableService[]>([]);
   const [employees, setEmployees] = useState<SellingEmployee[]>([]);
+  const [sellerLabel, setSellerLabel] = useState("¿Quién atendió?");
   const [employeeId, setEmployeeId] = useState("");
   const [items, setItems] = useState<PickedItem[]>([]);
   const [discount, setDiscount] = useState(0);
@@ -126,7 +127,9 @@ export function QuickSaleModal({
     // Devuelve vacío si el negocio no tiene el módulo Caja.
     listEmployeesForSale()
       .then((r) => {
-        if (!cancelled) setEmployees(r);
+        if (cancelled) return;
+        setEmployees(r.employees);
+        setSellerLabel(r.sellerLabel);
       })
       .catch(() => {});
     return () => {
@@ -376,6 +379,7 @@ export function QuickSaleModal({
               employees={employees}
               employeeId={employeeId}
               onEmployeeChange={setEmployeeId}
+              sellerLabel={sellerLabel}
               compact
             />
 
@@ -451,6 +455,7 @@ export function QuickSaleModal({
                 employees={employees}
                 employeeId={employeeId}
                 onEmployeeChange={setEmployeeId}
+                sellerLabel={sellerLabel}
                 compact
               />
             </div>

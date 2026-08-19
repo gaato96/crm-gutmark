@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireModule } from "@/lib/module-guard";
 import { getSessionUser } from "@/lib/auth";
+import { catalogWords } from "@/lib/rubros";
 import { cashExpected, cashDifference, isMovementKind, signedAmount } from "@/lib/cash";
 import { currentCashSession } from "@/lib/cash-write";
 import { isPaymentMethod, round2 } from "@/lib/sales";
@@ -286,17 +287,27 @@ export interface SellingEmployee {
   name: string;
 }
 
+export interface SaleContext {
+  employees: SellingEmployee[];
+  // Como nombrar a quien hizo la venta, segun el rubro del negocio.
+  sellerLabel: string;
+}
+
 // Empleados para el selector de "quién atendió". Devuelve vacío si el módulo
 // no está activo, en vez de redirigir: lo llama el modal de venta rápida, que
 // existe para todos los negocios tengan o no el módulo.
-export async function listEmployeesForSale(): Promise<SellingEmployee[]> {
+export async function listEmployeesForSale(): Promise<SaleContext> {
   const session = await getSessionUser();
-  if (!session) return [];
-  if (!session.business.modules.includes("caja")) return [];
+  const fallback: SaleContext = { employees: [], sellerLabel: "¿Quién atendió?" };
+  if (!session) return fallback;
 
-  return db.employee.findMany({
+  const sellerLabel = catalogWords(session.business.catalogMode).sellerLabel;
+  if (!session.business.modules.includes("caja")) return { employees: [], sellerLabel };
+
+  const employees = await db.employee.findMany({
     where: { businessId: session.business.id, active: true },
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     select: { id: true, name: true },
   });
+  return { employees, sellerLabel };
 }

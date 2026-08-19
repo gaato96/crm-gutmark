@@ -12,7 +12,7 @@ import {
   Send,
   Settings,
   Blocks,
-  Scissors,
+  Tags,
   Menu,
   X,
   LogOut,
@@ -28,6 +28,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { QuickSaleModal } from "@/components/quick-sale-modal";
 import { Logo } from "@/components/logo";
 import { MODULE_NAV } from "@/lib/modules";
+import { catalogWords, rubroLabel } from "@/lib/rubros";
 
 interface NavItem {
   href: string;
@@ -38,14 +39,18 @@ interface NavItem {
 
 // Ítems fijos del plan base, siempre presentes. Los módulos contratados se
 // insertan entre estos dos grupos (ver AppShell).
-const BASE_NAV_START: NavItem[] = [
-  { href: "/dashboard", label: "Inicio", icon: LayoutDashboard, exact: true },
-  { href: "/clientes", label: "Clientes", icon: Users },
-  { href: "/servicios", label: "Servicios", icon: Scissors },
-  { href: "/segmentos", label: "Segmentos", icon: Target },
-  { href: "/recordatorios", label: "Recordatorios", icon: BellRing },
-  { href: "/campanas", label: "Campañas", icon: Send },
-];
+// El ítem del catálogo se nombra según lo que venda el negocio: "Servicios"
+// para un consultorio, "Productos" para un kiosco, "Catálogo" para los dos.
+function baseNavStart(catalogMode: string): NavItem[] {
+  return [
+    { href: "/dashboard", label: "Inicio", icon: LayoutDashboard, exact: true },
+    { href: "/clientes", label: "Clientes", icon: Users },
+    { href: "/catalogo", label: catalogWords(catalogMode).nav, icon: Tags },
+    { href: "/segmentos", label: "Segmentos", icon: Target },
+    { href: "/recordatorios", label: "Recordatorios", icon: BellRing },
+    { href: "/campanas", label: "Campañas", icon: Send },
+  ];
+}
 const BASE_NAV_END: NavItem[] = [
   { href: "/modulos", label: "Módulos", icon: Blocks },
   { href: "/configuracion", label: "Configuración", icon: Settings },
@@ -54,7 +59,7 @@ const BASE_NAV_END: NavItem[] = [
 // Solo entran al sidebar los módulos contratados QUE ADEMÁS estén construidos:
 // el catálogo se puede activar antes de que exista la página, y un link a una
 // ruta inexistente le da un 404 al negocio.
-function buildNavItems(modules: string[]): NavItem[] {
+function buildNavItems(modules: string[], catalogMode: string): NavItem[] {
   const active = MODULE_NAV.filter(
     (m) => m.implemented && modules.includes(m.code)
   ).map((m) => ({
@@ -62,7 +67,7 @@ function buildNavItems(modules: string[]): NavItem[] {
     label: m.label,
     icon: m.icon,
   }));
-  return [...BASE_NAV_START, ...active, ...BASE_NAV_END];
+  return [...baseNavStart(catalogMode), ...active, ...BASE_NAV_END];
 }
 
 function NavItems({ items, onNavigate }: { items: NavItem[]; onNavigate?: () => void }) {
@@ -98,6 +103,7 @@ export function AppShell({
   children,
   businessName,
   rubro,
+  catalogMode,
   userEmail,
   isImpersonating,
   modules,
@@ -105,6 +111,7 @@ export function AppShell({
   children: React.ReactNode;
   businessName: string;
   rubro: string;
+  catalogMode: string;
   userEmail: string;
   isImpersonating?: boolean;
   modules: string[];
@@ -113,7 +120,7 @@ export function AppShell({
   const [quickSaleOpen, setQuickSaleOpen] = useState(false);
   const [speedDial, setSpeedDial] = useState(false);
   const speedDialRef = useRef<HTMLDivElement>(null);
-  const navItems = buildNavItems(modules);
+  const navItems = buildNavItems(modules, catalogMode);
 
   // Atajo de teclado: "n" abre Nueva venta (si no estás escribiendo en un campo)
   useEffect(() => {
@@ -368,7 +375,7 @@ function BusinessCard({
         </div>
         <div className="min-w-0 flex-1 leading-tight">
           <div className="truncate text-sm font-semibold text-ink">{businessName}</div>
-          <div className="truncate text-[11px] text-ink-muted">{rubro}</div>
+          <div className="truncate text-[11px] text-ink-muted">{rubroLabel(rubro)}</div>
         </div>
         <ThemeToggle />
       </div>

@@ -119,6 +119,9 @@ export interface RuleDefaults {
   // para decidir a quién alcanza; es para que la tarjeta diga "Se hicieron
   // Corte + Barba hace 15 días" en vez de mostrar un id.
   serviceNames?: Record<string, string>;
+  // Verbo con el que se describe la campaña por ítem. Un servicio "se hace",
+  // un producto "se compra"; el texto sale del rubro del negocio.
+  catalogVerb?: string;
 }
 
 export function matchesCampaign(
@@ -186,7 +189,7 @@ export function describeTrigger(rule: CampaignRule, defaults: RuleDefaults): str
         rule.triggerDays ??
         defaults.serviceRecompraDays?.[rule.serviceId] ??
         defaults.recompraDays;
-      const base = `Se hicieron ${name} hace ${d} días o más`;
+      const base = `${defaults.catalogVerb ?? "Compraron"} ${name} hace ${d} días o más`;
       return rule.excludeInactive ? `${base} (sin los inactivos)` : base;
     }
     case "days-since-signup": {

@@ -68,6 +68,7 @@ npm run db:reset     # db push --force-reset + db:seed
 npm run db:migrate-campaigns   # consolida Template (viejo) en Campaign; idempotente, no borra nada
 npm run db:migrate-sales       # rellena Purchase.subtotal en ventas anteriores a los ítems; idempotente
 npm run db:migrate-modules     # fusiona el módulo "reportes" dentro de "caja"; idempotente
+npm run db:migrate-rubros      # pasa Business.rubro de texto libre a códigos + fija catalogMode; idempotente
 npm run icons:generate    # regenera íconos PWA + og.png desde public/logo.svg via sharp
 node scripts/pdf-to-svg.cjs   # regenera public/logo*.svg desde el PDF del manual de marca
 ```
@@ -210,9 +211,44 @@ regex, no con `replaceAll` literal: una variable mal escrita queda **visible** e
 mensaje (`{nombree}`) en vez de desaparecer, así el negocio ve el error antes de
 mandárselo a un cliente. `{puntos}` solo trae dato real si el módulo Puntos está activo.
 
+### Rubro y vocabulario: el sistema no es de barberías
+
+El CRM apunta a **cualquier negocio con clientela que vuelve**, no solo a los
+que dan servicios. Un kiosco no vende "servicios" y un consultorio no vende
+"productos", así que la interfaz no puede tener el vocabulario escrito a mano.
+
+`Business.rubro` es un **código** de `RUBROS` (`lib/rubros.ts`), no texto libre
+como antes. De él sale `Business.catalogMode`: `productos` | `servicios` |
+`ambos`. Ese modo decide cómo se llama todo: el ítem del menú, el título de la
+pantalla, la pregunta de quién hizo la venta, el disparador de campaña, el corte
+del reporte y hasta el verbo con que se describe una campaña ("Se hicieron
+Corte + Barba" vs "Compraron Alimento 15 kg").
+
+Todo ese texto vive en **un solo lugar**: `catalogWords(mode)` en
+`lib/rubros.ts`. Si hay que agregar una palabra nueva, va ahí y no en la
+pantalla — el archivo es puro justamente para que lo puedan importar las
+pantallas client.
+
+El modo **nace del rubro** al crear el negocio y el superadmin lo puede forzar
+aparte desde `/admin/negocios/[id]` (una barbería que solo quiere ver
+servicios). Cuando el dueño cambia su rubro desde `/configuracion`, el modo lo
+sigue **solo si nadie lo forzó**: si el superadmin lo había cambiado a mano, esa
+decisión no se pisa. Un rubro desconocido cae en `ambos`, que es el que no
+esconde nada — es preferible mostrarle "Productos y servicios" a un consultorio
+que esconderle los productos a un kiosco.
+
+`Service.kind` (`producto` | `servicio`) solo se elige en los negocios de modo
+`ambos`; en los demás lo fija el modo, así un kiosco no puede terminar con
+"servicios" cargados.
+
+⚠️ La ruta del catálogo es **`/catalogo`** y pertenece al plan base. El módulo
+que antes se llamaba "Catálogo digital" pasó a `/vidriera` ("Vidriera digital")
+porque es otra cosa: la página **pública** que el negocio comparte, no su lista
+de precios interna.
+
 ### Servicios y venta con ítems
 
-`Service` es un producto o servicio con precio predefinido. Es del **plan base**,
+`Service` es un producto o servicio con precio predefinido (pantalla `/catalogo`). Es del **plan base**,
 no de un módulo: sin esto las campañas no pueden filtrar por *qué* compró el
 cliente, que es lo que hace que la fidelización sirva de verdad.
 

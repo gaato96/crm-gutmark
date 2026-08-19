@@ -35,6 +35,7 @@ export default async function ReportesPage({
         anteriorLabel={anterior.label}
         data={comparacion}
         comisiones={comisiones}
+        catalogMode={biz.catalogMode}
       />
     </div>
   );

@@ -67,7 +67,8 @@ async function main() {
   const biz = await db.business.create({
     data: {
       name: "Perfumería Bella",
-      rubro: "Perfumería y cosmética",
+      rubro: "perfumeria",
+      catalogMode: "productos",
       inactivityDays: 60,
       recompraDays: 45,
       vipMinSpend: 150000,
@@ -276,10 +277,10 @@ async function main() {
   // Recompra propia por servicio: es lo que hace que la campaña "escribile a
   // los 15 días al que se hizo corte + barba" funcione sin configurar nada más.
   const servicios = [
-    { name: "Perfume importado", price: 45000, category: "Perfumería", recompraDays: 90 },
-    { name: "Crema facial", price: 28000, category: "Cosmética", recompraDays: 45 },
-    { name: "Set de regalo", price: 62000, category: "Regalos", recompraDays: null },
-    { name: "Labial", price: 15000, category: "Cosmética", recompraDays: 60 },
+    { name: "Perfume importado", price: 45000, category: "Perfumería", recompraDays: 90, kind: "producto" },
+    { name: "Crema facial", price: 28000, category: "Cosmética", recompraDays: 45, kind: "producto" },
+    { name: "Set de regalo", price: 62000, category: "Regalos", recompraDays: null, kind: "producto" },
+    { name: "Labial", price: 15000, category: "Cosmética", recompraDays: 60, kind: "producto" },
   ];
   await db.service.createMany({
     data: servicios.map((sv, i) => ({ businessId: biz.id, sortOrder: i, ...sv })),
@@ -326,7 +327,7 @@ async function main() {
     create: {
       id: ADMIN_BUSINESS_ID,
       name: "Vuelvo CRM (interno)",
-      rubro: "Administración",
+      rubro: "otro",
       // No es un cliente real: no debe figurar como deudor en /admin.
       billingExempt: true,
     },

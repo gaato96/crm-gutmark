@@ -11,7 +11,12 @@ datasource db {
 model Business {
   id            String   @id @default(cuid())
   name          String
-  rubro         String   @default("General")
+  // Código de RUBROS en lib/rubros.ts. Es la vertical del negocio.
+  rubro         String   @default("otro")
+  // "productos" | "servicios" | "ambos". Decide el vocabulario de toda la
+  // interfaz: un kiosco no vende "servicios" y un consultorio no vende
+  // "productos". Nace del rubro y el superadmin lo puede forzar aparte.
+  catalogMode   String   @default("ambos")
   timezone      String   @default("America/Argentina/Buenos_Aires")
   // Días sin comprar para considerar a un cliente "inactivo"
   inactivityDays Int     @default(60)
@@ -149,6 +154,10 @@ model Service {
   businessId  String
   name        String
   description String  @default("")
+  // "producto" | "servicio". Solo se elige en los negocios de modo "ambos";
+  // en los demás lo fija el modo. Sirve para separar en los reportes cuánto
+  // vino de vender cosas y cuánto de prestar servicios.
+  kind        String  @default("servicio")
   price       Float
   // Agrupador libre que escribe el negocio ("Cortes", "Color", "Productos").
   category    String  @default("")

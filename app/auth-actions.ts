@@ -14,6 +14,7 @@ import {
   revokeOtherSessions,
 } from "@/lib/auth";
 import { createDefaultCampaigns } from "@/lib/default-campaigns";
+import { isRubroCode, modeForRubro } from "@/lib/rubros";
 
 export interface AuthState {
   error?: string;
@@ -34,7 +35,8 @@ export async function register(
   formData: FormData
 ): Promise<AuthState> {
   const businessName = clean(formData.get("businessName"));
-  const rubro = clean(formData.get("rubro")) || "General";
+  const rubroRaw = clean(formData.get("rubro"));
+  const rubro = isRubroCode(rubroRaw) ? rubroRaw : "otro";
   const name = clean(formData.get("name"));
   const email = clean(formData.get("email")).toLowerCase();
   const password = clean(formData.get("password"));
@@ -47,7 +49,9 @@ export async function register(
   if (existing) return { error: "Ya existe una cuenta con ese email." };
 
   const business = await db.business.create({
-    data: { name: businessName, rubro },
+    // El modo nace del rubro: un kiosco arranca viendo "Productos" y un
+    // consultorio "Servicios", sin que nadie tenga que configurarlo.
+    data: { name: businessName, rubro, catalogMode: modeForRubro(rubro) },
   });
   const user = await db.user.create({
     data: {

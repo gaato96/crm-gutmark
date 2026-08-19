@@ -58,7 +58,9 @@ export const MODULE_NAV: {
   { code: "caja", href: "/caja", label: "Caja", icon: Wallet, implemented: true },
   { code: "caja", href: "/reportes", label: "Reportes", icon: BarChart3, implemented: true },
   { code: "stock", href: "/stock", label: "Stock", icon: Package, implemented: false },
-  { code: "catalogo", href: "/catalogo", label: "Catálogo", icon: LayoutGrid, implemented: false },
+    // /catalogo lo usa la lista de precios del plan base. Este módulo es la
+  // vidriera PÚBLICA que el negocio comparte, que es otra cosa.
+  { code: "catalogo", href: "/vidriera", label: "Vidriera digital", icon: LayoutGrid, implemented: false },
   { code: "turnos", href: "/turnos", label: "Turnos", icon: CalendarClock, implemented: false },
   { code: "cuenta-corriente", href: "/cuenta-corriente", label: "Cuenta corriente", icon: BookUser, implemented: false },
   { code: "gastos", href: "/gastos", label: "Gastos", icon: Receipt, implemented: false },
@@ -140,8 +142,9 @@ export const MODULE_SEED: {
   },
   {
     code: "catalogo",
-    name: "Catálogo digital",
-    description: "Vidriera visual de productos, tipo scroll, para compartir con clientes.",
+    name: "Vidriera digital",
+    description:
+      "Página pública con lo que vendés, para compartir por WhatsApp o poner en la bio de Instagram.",
     monthlyPrice: 14900,
     sortOrder: 80,
   },

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Check, Store, SlidersHorizontal } from "lucide-react";
 import { updateBusiness } from "@/app/actions";
 import { SubmitButton } from "./submit-button";
+import { RubroSelect } from "./rubro-select";
 
 export interface BusinessData {
   name: string;
@@ -35,10 +36,7 @@ export function ConfigForm({ business }: { business: BusinessData }) {
             <label className="label">Nombre del negocio</label>
             <input name="name" defaultValue={business.name} className="input" required />
           </div>
-          <div>
-            <label className="label">Rubro</label>
-            <input name="rubro" defaultValue={business.rubro} className="input" />
-          </div>
+          <RubroSelect defaultValue={business.rubro} />
         </div>
       </div>
 
