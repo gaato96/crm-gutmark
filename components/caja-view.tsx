@@ -45,7 +45,14 @@ export interface CajaData {
     description: string;
     createdAt: string;
   }[];
-  empleados: { id: string; name: string; commissionPct: number; active: boolean; ventas: number }[];
+  empleados: {
+    id: string;
+    name: string;
+    commissionValue: number;
+    commissionKind: string;
+    active: boolean;
+    ventas: number;
+  }[];
   reglas: {
     id: string;
     name: string;
@@ -508,7 +515,7 @@ function EmpleadoCard({
       <div className="mb-1 flex items-start justify-between gap-2">
         <h3 className="min-w-0 flex-1 truncate font-display font-bold text-ink">{e.name}</h3>
         <span className="shrink-0 font-display font-bold text-accent-700 dark:text-accent-300">
-          {e.commissionPct}%
+          {e.commissionKind === "fixed" ? formatMoney(e.commissionValue) : `${e.commissionValue}%`}
         </span>
       </div>
       <p className="mb-3 text-xs text-ink-faint">
@@ -572,7 +579,7 @@ function EmpleadoEditor({
       <h3 className="mb-4 font-display font-bold text-ink">
         {empleado ? `Editar ${empleado.name}` : "Nuevo integrante"}
       </h3>
-      <div className="grid gap-4 sm:grid-cols-[2fr_1fr_auto] sm:items-end">
+      <div className="grid gap-4 sm:grid-cols-[2fr_1fr_1fr_auto] sm:items-end">
         <div>
           <label className="label" htmlFor="emp-name">
             Nombre
@@ -588,19 +595,36 @@ function EmpleadoEditor({
           />
         </div>
         <div>
-          <label className="label" htmlFor="emp-pct">
-            Comisión (%)
+          <label className="label" htmlFor="emp-kind">
+            Comisión
+          </label>
+          <select
+            id="emp-kind"
+            name="commissionKind"
+            defaultValue={empleado?.commissionKind ?? "percent"}
+            className="input"
+          >
+            <option value="percent">Porcentaje</option>
+            <option value="fixed">Monto fijo</option>
+          </select>
+        </div>
+        <div>
+          <label className="label" htmlFor="emp-value">
+            Valor
           </label>
           <input
-            id="emp-pct"
-            name="commissionPct"
+            id="emp-value"
+            name="commissionValue"
             type="number"
             min={0}
-            max={100}
             step="any"
-            defaultValue={empleado?.commissionPct ?? 40}
+            defaultValue={empleado?.commissionValue ?? 40}
             className="input"
           />
+          <p className="mt-1.5 text-xs text-ink-muted">
+            El porcentaje se calcula sobre lo cobrado; el monto fijo se paga igual sin importar
+            cuánto salió la venta.
+          </p>
         </div>
         <div className="flex gap-2">
           <button type="button" onClick={onClose} className="btn-secondary">

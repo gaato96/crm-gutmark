@@ -69,6 +69,7 @@ npm run db:migrate-campaigns   # consolida Template (viejo) en Campaign; idempot
 npm run db:migrate-sales       # rellena Purchase.subtotal en ventas anteriores a los ítems; idempotente
 npm run db:migrate-modules     # fusiona el módulo "reportes" dentro de "caja"; idempotente
 npm run db:migrate-rubros      # pasa Business.rubro de texto libre a códigos + fija catalogMode; idempotente
+npm run db:migrate-trigger-units  # triggerDays→triggerValue+unidad y commissionPct→valor+tipo; idempotente
 npm run icons:generate    # regenera íconos PWA + og.png desde public/logo.svg via sharp
 node scripts/pdf-to-svg.cjs   # regenera public/logo*.svg desde el PDF del manual de marca
 ```
@@ -184,6 +185,11 @@ duplicados en `/campanas`, `/recordatorios` y `buildDashboard`. `Template` sigue
 schema hasta confirmar que todos los negocios pasaron por `npm run db:migrate-campaigns`
 (idempotente, respeta el texto que el negocio ya había escrito); después se borra.
 
+⚠️ Lo mismo pasa con `Campaign.triggerDays` y `Employee.commissionPct`: quedan en
+el schema, ya migradas y sin uso, hasta que el código que las reemplaza esté
+desplegado. Borrarlas antes rompe la versión que está corriendo en producción,
+que todavía las lee.
+
 **No hay cron.** Igual que el segmento, la audiencia no se materializa: se calcula en
 cada lectura con `matchesCampaign()` de `lib/campaigns.ts`. Ese archivo es **puro** a
 propósito — sin `server-only`, sin Prisma — porque `components/campaign-editor.tsx` es
@@ -193,7 +199,23 @@ por ahí: si alguna vuelve a filtrar clientes por su cuenta, los números dejan 
 entre sí (que es exactamente el bug que había — el dashboard sumaba cumpleaños + recompra
 por separado y contaba dos veces a quien caía en ambas).
 
-`triggerDays` en `null` **no** significa cero: significa "usar el default". La campaña de
+**El tiempo se mide en horas, siempre.** Una campaña guarda `triggerValue` más
+`triggerUnit` (`dias` | `horas`), y `matchesCampaign` convierte todo a horas una
+sola vez con `toHours()`. Tener una única unidad de comparación evita dos caminos
+de cálculo que se puedan desincronizar. Por eso `EnrichedCustomer` lleva
+`hoursSinceLast` y `hoursSinceService` además de los días, que quedan para
+mostrar en pantalla.
+
+No todos los disparadores admiten horas: `TRIGGER_META.allowsHours` lo declara.
+Un cumpleaños o la antigüedad de un cliente se miden en días — nadie arma una
+campaña para "los que cumplen en 3 horas". La recompra sí: dos horas después del
+servicio, preguntar cómo salió.
+
+⚠️ En horas **no se puede heredar** el valor del ítem: `Service.recompraDays`
+está en días, así que dejar el campo vacío daría 15 días donde el negocio quiso
+15 horas. El server rechaza esa combinación.
+
+`triggerValue` en `null` **no** significa cero: significa "usar el default". La campaña de
 recompra de fábrica lo deja en null a propósito para seguir el `recompraDays` de
 Configuración en vez de duplicar el valor. `excludeInactive` existe porque el mensaje de
 "hace poco que no venís" no aplica a alguien que ya se dio por perdido.
@@ -342,8 +364,10 @@ calculados. Si mañana se le sube la comisión a un barbero, lo que se le debía
 los cortes del mes pasado no cambia. Por eso la etiqueta dice "Comisión Juan" en
 texto y no se arma leyendo el empleado al mostrar.
 
-La comisión sale de `Employee.commissionPct` y no de una `CostRule`, porque
-depende de quién atendió y no de la venta. Las `CostRule` son para lo que
+La comisión sale de `Employee.commissionValue` + `commissionKind` (`percent` |
+`fixed`) y no de una `CostRule`, porque depende de quién atendió y no de la
+venta. Un monto fijo se paga igual sin importar cuánto salió la venta ($2.000
+por corte); un porcentaje se calcula sobre lo cobrado. Las `CostRule` son para lo que
 descuenta un tercero (Mercado Pago, impuesto al débito) y pueden atarse a un
 método de pago: cobrar la comisión de la pasarela en una venta en efectivo sería
 un error caro y silencioso.

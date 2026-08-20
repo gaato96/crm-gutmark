@@ -77,7 +77,8 @@ export default async function CajaPage() {
     empleados: empleados.map((e) => ({
       id: e.id,
       name: e.name,
-      commissionPct: e.commissionPct,
+      commissionValue: e.commissionValue,
+      commissionKind: e.commissionKind,
       active: e.active,
       ventas: ventasPorEmpleado.get(e.id) ?? 0,
     })),

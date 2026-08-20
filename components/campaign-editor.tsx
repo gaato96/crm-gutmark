@@ -5,6 +5,7 @@ import { MessageCircle, Mail, X, Lock } from "lucide-react";
 import {
   TRIGGER_TYPES,
   TRIGGER_META,
+  TRIGGER_UNITS,
   type TriggerType,
   isTriggerType,
 } from "@/lib/campaigns";
@@ -23,7 +24,8 @@ export interface CampaignItem {
   active: boolean;
   builtin: string | null;
   triggerType: string;
-  triggerDays: number | null;
+  triggerValue: number | null;
+  triggerUnit: string;
   segment: string | null;
   minSpend: number | null;
   serviceId: string | null;
@@ -171,16 +173,37 @@ export function CampaignEditor({
                 <label className="label" htmlFor="campaign-days">
                   {meta.daysLabel}
                 </label>
-                <input
-                  id="campaign-days"
-                  name="triggerDays"
-                  type="number"
-                  min={0}
-                  max={3650}
-                  defaultValue={campaign?.triggerDays ?? meta.defaultDays}
-                  disabled={lockedTrigger}
-                  className="input disabled:opacity-60"
-                />
+                <div className="flex gap-2">
+                  <input
+                    id="campaign-days"
+                    name="triggerValue"
+                    type="number"
+                    min={0}
+                    max={3650}
+                    defaultValue={campaign?.triggerValue ?? meta.defaultDays}
+                    disabled={lockedTrigger}
+                    className="input disabled:opacity-60"
+                  />
+                  {meta.allowsHours ? (
+                    <select
+                      name="triggerUnit"
+                      defaultValue={campaign?.triggerUnit ?? "dias"}
+                      disabled={lockedTrigger}
+                      className="input w-32 disabled:opacity-60"
+                      aria-label="Unidad de tiempo"
+                    >
+                      {TRIGGER_UNITS.map((u) => (
+                        <option key={u} value={u}>
+                          {u === "horas" ? "horas" : "días"}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className="grid place-items-center px-2 text-sm text-ink-muted">
+                      días
+                    </span>
+                  )}
+                </div>
               </div>
             )}
 
@@ -237,19 +260,35 @@ export function CampaignEditor({
                   <label className="label" htmlFor="campaign-days">
                     {meta.daysLabel}
                   </label>
-                  <input
-                    id="campaign-days"
-                    name="triggerDays"
-                    type="number"
-                    min={0}
-                    max={3650}
-                    defaultValue={campaign?.triggerDays ?? ""}
-                    placeholder={String(defaultServiceDays ?? "")}
-                    disabled={lockedTrigger}
-                    className="input disabled:opacity-60"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      id="campaign-days"
+                      name="triggerValue"
+                      type="number"
+                      min={0}
+                      max={3650}
+                      defaultValue={campaign?.triggerValue ?? ""}
+                      placeholder={String(defaultServiceDays ?? "")}
+                      disabled={lockedTrigger}
+                      className="input disabled:opacity-60"
+                    />
+                    <select
+                      name="triggerUnit"
+                      defaultValue={campaign?.triggerUnit ?? "dias"}
+                      disabled={lockedTrigger}
+                      className="input w-32 disabled:opacity-60"
+                      aria-label="Unidad de tiempo"
+                    >
+                      {TRIGGER_UNITS.map((u) => (
+                        <option key={u} value={u}>
+                          {u === "horas" ? "horas" : "días"}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                   <p className="mt-1.5 text-xs text-ink-muted">
-                    Vacío = usa la recompra que cargaste en el servicio.
+                    En horas sirve para el rato justo después: “dos horas después del turno,
+                    preguntale cómo le quedó”. Vacío = usa la recompra del ítem, en días.
                   </p>
                 </div>
               </>

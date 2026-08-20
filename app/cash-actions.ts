@@ -157,9 +157,17 @@ export async function saveEmployee(
   if (!name) return { error: "Poné el nombre del empleado." };
   if (name.length > 60) return { error: "El nombre no puede pasar de 60 caracteres." };
 
-  const pct = amountOf(formData.get("commissionPct"));
-  if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
-    return { error: "La comisión tiene que estar entre 0 y 100." };
+  const kind = clean(formData.get("commissionKind")) || "percent";
+  if (kind !== "percent" && kind !== "fixed") {
+    return { error: "Elegí si la comisión es un porcentaje o un monto fijo." };
+  }
+
+  const value = amountOf(formData.get("commissionValue"));
+  if (!Number.isFinite(value) || value < 0) {
+    return { error: "La comisión no puede ser negativa." };
+  }
+  if (kind === "percent" && value > 100) {
+    return { error: "Un porcentaje no puede superar 100." };
   }
 
   if (id) {
@@ -170,13 +178,19 @@ export async function saveEmployee(
     if (!owned) return { error: "Empleado no encontrado." };
     await db.employee.update({
       where: { id: owned.id },
-      data: { name, commissionPct: pct },
+      data: { name, commissionValue: value, commissionKind: kind },
     });
   } else {
     const count = await db.employee.count({ where: { businessId } });
     if (count >= 50) return { error: "Llegaste al máximo de 50 empleados." };
     await db.employee.create({
-      data: { businessId, name, commissionPct: pct, sortOrder: count },
+      data: {
+        businessId,
+        name,
+        commissionValue: value,
+        commissionKind: kind,
+        sortOrder: count,
+      },
     });
   }
 

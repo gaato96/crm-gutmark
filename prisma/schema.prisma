@@ -246,6 +246,14 @@ model Campaign {
   // Disparador. Ver TRIGGER_META en lib/campaigns.ts para qué campo usa cada
   // tipo; los que no aplican quedan en null.
   triggerType String
+  // Cuánto tiempo tiene que pasar. La unidad la fija `triggerUnit`: hay
+  // campañas que se miden en días (volvé a cortarte a los 15) y otras en horas
+  // (dos horas después del servicio, preguntá cómo salió).
+  triggerValue Int?
+  // "dias" | "horas"
+  triggerUnit  String @default("dias")
+  // OBSOLETA: la reemplazó triggerValue + triggerUnit. Se mantiene hasta
+  // confirmar que todos los negocios pasaron por db:migrate-trigger-units.
   triggerDays Int?
   segment     String?
   minSpend    Float?
@@ -393,8 +401,13 @@ model Employee {
   id         String  @id @default(cuid())
   businessId String
   name       String
-  // Porcentaje de cada venta que se lleva. 40 = 40%. En 0 no genera comisión,
-  // que es el caso del dueño cuando atiende él mismo.
+  // Cuánto se lleva por venta. Si `commissionKind` es "percent", es un
+  // porcentaje (40 = 40%); si es "fixed", es un importe por venta. En 0 no
+  // genera comisión, que es el caso del dueño cuando atiende él mismo.
+  commissionValue Float @default(0)
+  // "percent" | "fixed" — mismo par que usa CostRule.
+  commissionKind  String @default("percent")
+  // OBSOLETA: la reemplazó commissionValue + commissionKind.
   commissionPct Float @default(0)
   active     Boolean  @default(true)
   sortOrder  Int      @default(0)

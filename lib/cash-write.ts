@@ -42,7 +42,7 @@ export async function applySaleSideEffects(ctx: SaleCostContext): Promise<string
     ctx.employeeId
       ? db.employee.findFirst({
           where: { id: ctx.employeeId, businessId: ctx.businessId },
-          select: { id: true, name: true, commissionPct: true },
+          select: { id: true, name: true, commissionValue: true, commissionKind: true },
         })
       : Promise.resolve(null),
     db.costRule.findMany({ where: { businessId: ctx.businessId, active: true } }),

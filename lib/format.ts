@@ -25,6 +25,15 @@ export function formatDateShort(date: Date | string | null | undefined): string 
   }).format(d);
 }
 
+// Horas transcurridas. Las campanas se comparan siempre en horas: es la
+// unidad mas fina que maneja el sistema, y trabajar con una sola evita tener
+// dos caminos de calculo que se puedan desincronizar.
+export function hoursSince(date: Date | string | null | undefined): number | null {
+  if (!date) return null;
+  const d = typeof date === "string" ? new Date(date) : date;
+  return Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60));
+}
+
 export function daysSince(date: Date | string | null | undefined): number | null {
   if (!date) return null;
   const d = typeof date === "string" ? new Date(date) : date;

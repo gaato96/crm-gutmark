@@ -20,7 +20,7 @@ import {
   getServices,
   ruleDefaults,
 } from "@/lib/queries";
-import { formatMoney, formatDate, daysSince } from "@/lib/format";
+import { formatMoney, formatDate, daysSince, hoursSince } from "@/lib/format";
 import {
   computeSegment,
   isVip,
@@ -117,10 +117,13 @@ export default async function ClienteDetailPage({
     _max: { date: true },
   });
   const daysSinceService: Record<string, number> = {};
+  const hoursSinceService: Record<string, number> = {};
   for (const row of serviceRecency) {
     if (!row.serviceId || !row._max.date) continue;
     const d = daysSince(row._max.date);
+    const h = hoursSince(row._max.date);
     if (d !== null) daysSinceService[row.serviceId] = d;
+    if (h !== null) hoursSinceService[row.serviceId] = h;
   }
 
   const target = {
@@ -130,6 +133,8 @@ export default async function ClienteDetailPage({
     createdAt: customer.createdAt,
     totalSpent,
     daysSinceService,
+    hoursSinceLast: hoursSince(customer.lastPurchaseAt),
+    hoursSinceService,
   };
   const suggested =
     campaigns.find((c) => c.active && matchesCampaign(target, c, ruleDefaults(biz, services))) ?? null;

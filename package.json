@@ -14,7 +14,8 @@
     "icons:generate": "node scripts/generate-icons.cjs",
     "db:migrate-sales": "tsx scripts/migrate-sales.ts",
     "db:migrate-modules": "tsx scripts/migrate-modules.ts",
-    "db:migrate-rubros": "tsx scripts/migrate-rubros.ts"
+    "db:migrate-rubros": "tsx scripts/migrate-rubros.ts",
+    "db:migrate-trigger-units": "tsx scripts/migrate-trigger-units.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

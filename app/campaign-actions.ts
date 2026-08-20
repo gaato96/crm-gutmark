@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { getCurrentBusiness } from "@/lib/queries";
-import { isTriggerType, TRIGGER_META } from "@/lib/campaigns";
+import { isTriggerType, isTriggerUnit, TRIGGER_META } from "@/lib/campaigns";
 import { SEGMENT_META } from "@/lib/segmentation";
 
 export interface CampaignFormState {
@@ -39,7 +39,8 @@ interface TextFields {
 
 interface TriggerFields {
   triggerType: string;
-  triggerDays: number | null;
+  triggerValue: number | null;
+  triggerUnit: string;
   segment: string | null;
   minSpend: number | null;
   serviceId: string | null;
@@ -85,13 +86,24 @@ async function parseTrigger(
   if (!isTriggerType(triggerType)) return { error: "Elegí un disparador válido." };
 
   const meta = TRIGGER_META[triggerType];
-  const days = optionalInt(formData.get("triggerDays"));
+  const value = optionalInt(formData.get("triggerValue"));
   const segment = clean(formData.get("segment"));
   const minSpend = optionalFloat(formData.get("minSpend"));
   const serviceId = clean(formData.get("serviceId"));
 
-  if ((meta.field === "days" || meta.field === "service") && days !== null && (days < 0 || days > 3650)) {
-    return { error: "Los días tienen que estar entre 0 y 3650." };
+  // Solo algunos disparadores admiten horas: no existe "cumplen años en 3
+  // horas". En los demás la unidad se fuerza a días aunque llegue otra cosa.
+  const unitRaw = clean(formData.get("triggerUnit"));
+  const unit = meta.allowsHours && isTriggerUnit(unitRaw) ? unitRaw : "dias";
+
+  const usaTiempo = meta.field === "days" || meta.field === "service";
+  if (usaTiempo && value !== null && (value < 0 || value > 3650)) {
+    return { error: "El tiempo tiene que estar entre 0 y 3650." };
+  }
+  // En horas no se puede heredar: el valor por defecto del ítem está en días y
+  // dejarlo vacío daría 15 días donde el negocio quiso 15 horas.
+  if (usaTiempo && unit === "horas" && value === null) {
+    return { error: "Si medís en horas, poné cuántas." };
   }
   if (meta.field === "segment" && !(segment in SEGMENT_META)) {
     return { error: "Elegí un segmento válido." };
@@ -115,7 +127,8 @@ async function parseTrigger(
       triggerType,
       // Solo se guarda el campo que el disparador usa; el resto va a null para
       // que no queden valores viejos decidiendo audiencias de forma invisible.
-      triggerDays: meta.field === "days" || meta.field === "service" ? days : null,
+      triggerValue: usaTiempo ? value : null,
+      triggerUnit: unit,
       segment: meta.field === "segment" ? segment : null,
       minSpend: meta.field === "amount" ? minSpend : null,
       serviceId: meta.field === "service" ? serviceId : null,
@@ -236,10 +249,11 @@ export async function duplicateCampaign(id: string) {
       description: source.description,
       active: false,
       triggerType: source.triggerType,
-      triggerDays: source.triggerDays,
+      triggerValue: source.triggerValue,
       segment: source.segment,
       minSpend: source.minSpend,
       serviceId: source.serviceId,
+      triggerUnit: source.triggerUnit,
       excludeInactive: source.excludeInactive,
       whatsappBody: source.whatsappBody,
       emailSubject: source.emailSubject,

@@ -59,19 +59,31 @@ export interface ComputedCost {
 export function computeSaleCosts(params: {
   total: number;
   paymentMethod: string;
-  employee: { id: string; name: string; commissionPct: number } | null;
+  employee: {
+    id: string;
+    name: string;
+    commissionValue: number;
+    commissionKind: string;
+  } | null;
   rules: CostRuleLike[];
 }): ComputedCost[] {
   const costs: ComputedCost[] = [];
   const { total, paymentMethod, employee, rules } = params;
 
-  if (employee && employee.commissionPct > 0) {
+  if (employee && employee.commissionValue > 0) {
+    // Un monto fijo se paga igual sin importar cuánto salió la venta (por
+    // ejemplo, $2.000 por corte). Un porcentaje se calcula sobre lo cobrado.
+    const amount =
+      employee.commissionKind === "fixed"
+        ? round2(employee.commissionValue)
+        : round2((total * employee.commissionValue) / 100);
+
     costs.push({
       kind: "comision",
       // El nombre queda congelado en el texto: si mañana se va y lo borran, el
       // costo del mes pasado tiene que seguir diciendo de quién era.
       label: `Comisión ${employee.name}`,
-      amount: round2((total * employee.commissionPct) / 100),
+      amount,
       employeeId: employee.id,
       costRuleId: null,
     });

@@ -10,7 +10,7 @@ import {
   daysToBirthday,
   birthdayThisMonth,
 } from "./segmentation";
-import { daysSince } from "./format";
+import { daysSince, hoursSince } from "./format";
 import { matchesCampaign, CampaignRule, RuleDefaults } from "./campaigns";
 import { catalogWords } from "./rubros";
 import type { Campaign, Service } from "@prisma/client";
@@ -37,6 +37,10 @@ export interface EnrichedCustomer {
   // Días desde la última vez que compró cada servicio. Vacío si el negocio
   // todavía no cargó servicios o si el cliente nunca compró ninguno.
   daysSinceService: Record<string, number>;
+  // Horas: es lo que compara el motor de campanas, que ahora admite
+  // disparadores por hora ("dos horas despues del servicio").
+  hoursSinceLast: number | null;
+  hoursSinceService: Record<string, number>;
 }
 
 // Devuelve el negocio del usuario autenticado. Si no hay sesión, redirige al login.
@@ -82,13 +86,18 @@ export async function getEnrichedCustomers(
   ]);
 
   const byCustomer = new Map<string, Record<string, number>>();
+  const byCustomerHours = new Map<string, Record<string, number>>();
   for (const row of serviceRecency) {
     if (!row.serviceId || !row._max.date) continue;
     const days = daysSince(row._max.date);
-    if (days === null) continue;
+    const hours = hoursSince(row._max.date);
+    if (days === null || hours === null) continue;
     const entry = byCustomer.get(row.customerId) ?? {};
     entry[row.serviceId] = days;
     byCustomer.set(row.customerId, entry);
+    const entryH = byCustomerHours.get(row.customerId) ?? {};
+    entryH[row.serviceId] = hours;
+    byCustomerHours.set(row.customerId, entryH);
   }
 
   return customers.map((c) => {
@@ -121,6 +130,8 @@ export async function getEnrichedCustomers(
       birthdayInDays: daysToBirthday(c.birthdate),
       birthdayThisMonth: birthdayThisMonth(c.birthdate),
       daysSinceService: byCustomer.get(c.id) ?? {},
+      hoursSinceLast: hoursSince(c.lastPurchaseAt),
+      hoursSinceService: byCustomerHours.get(c.id) ?? {},
     };
   });
 }
