@@ -9,6 +9,7 @@ export const TEMPLATE_VARS: { key: string; label: string }[] = [
   { key: "total_gastado", label: "Total gastado" },
   { key: "puntos", label: "Puntos disponibles" },
   { key: "cumple", label: "Fecha de cumpleaños" },
+  { key: "servicio", label: "Lo que compró (disparador por servicio)" },
 ];
 
 // `nombre` y `negocio` son las únicas obligatorias: el resto puede no aplicar
@@ -23,6 +24,10 @@ export interface TemplateVars {
   total_gastado?: string;
   puntos?: string;
   cumple?: string;
+  // Nombre del servicio/producto que disparó la campaña. Solo tiene valor con
+  // el disparador por servicio — y sobre todo con "cualquier servicio", donde
+  // cada cliente puede deberle la recompra de uno distinto.
+  servicio?: string;
 }
 
 // Reemplaza {variables} en el cuerpo de una campaña.
@@ -42,6 +47,7 @@ export function renderTemplate(body: string, vars: TemplateVars): string {
     total_gastado: vars.total_gastado ?? "",
     puntos: vars.puntos ?? "",
     cumple: vars.cumple ?? "",
+    servicio: vars.servicio ?? "",
   };
 
   return body.replace(/\{([A-Za-zÁÉÍÓÚÑáéíóúñ_][\wÁÉÍÓÚÑáéíóúñ]*)\}/g, (match, raw: string) => {

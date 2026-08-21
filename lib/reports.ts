@@ -168,8 +168,10 @@ export async function buildComparison(
   };
 }
 
-// Cuánto se le debe a cada empleado en el período: la suma de sus comisiones.
-// Es la respuesta a "cuánto le tengo que pagar hoy a cada uno".
+// Cuánto se le debe a cada empleado en el período: la suma de sus comisiones
+// TODAVÍA NO PAGADAS. Es la respuesta a "cuánto le tengo que pagar hoy a cada
+// uno" — si ya se le pagó una venta del período, no tiene sentido que siga
+// apareciendo acá.
 export async function commissionsByEmployee(
   businessId: string,
   period: Period
@@ -179,6 +181,7 @@ export async function commissionsByEmployee(
       businessId,
       kind: "comision",
       date: { gte: period.from, lt: period.to },
+      paidAt: null,
     },
     select: { employeeId: true, label: true, amount: true, employee: { select: { name: true } } },
   });
@@ -199,4 +202,17 @@ export async function commissionsByEmployee(
   }
 
   return [...map.values()].sort((a, b) => b.amount - a.amount);
+}
+
+// Cuánto le debe el negocio a cada empleado en total, sin cortar por período:
+// la suma de TODAS sus comisiones sin pagar desde que existe. Es lo que se
+// muestra en la tarjeta de cada integrante del equipo, y lo que se salda de
+// un saque al tocar "Marcar pagado".
+export async function commissionDebtByEmployee(businessId: string): Promise<Map<string, number>> {
+  const rows = await db.saleCost.groupBy({
+    by: ["employeeId"],
+    where: { businessId, kind: "comision", paidAt: null, employeeId: { not: null } },
+    _sum: { amount: true },
+  });
+  return new Map(rows.map((r) => [r.employeeId!, round2(r._sum.amount ?? 0)]));
 }

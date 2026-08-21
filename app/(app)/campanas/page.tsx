@@ -8,7 +8,7 @@ import {
   ruleDefaults,
   toConfig,
 } from "@/lib/queries";
-import { describeTrigger } from "@/lib/campaigns";
+import { describeTrigger, matchedServiceId } from "@/lib/campaigns";
 import { buildCampaignMessage } from "@/lib/build-message";
 import { pointsBalancesByCustomer } from "@/lib/points";
 import { PageHeader } from "@/components/ui";
@@ -47,7 +47,13 @@ export default async function CampanasPage() {
         name: cu.name,
         phone: cu.phone,
         email: cu.email,
-        ...buildCampaignMessage(c, cu, biz.name, balances.get(cu.id)),
+        ...buildCampaignMessage(
+          c,
+          cu,
+          biz.name,
+          balances.get(cu.id),
+          defaults.serviceNames?.[matchedServiceId(cu, c, defaults) ?? ""]
+        ),
       })),
     }));
 
@@ -63,6 +69,7 @@ export default async function CampanasPage() {
     segment: c.segment,
     minSpend: c.minSpend,
     serviceId: c.serviceId,
+    allServices: c.allServices,
     excludeInactive: c.excludeInactive,
     whatsappBody: c.whatsappBody,
     emailSubject: c.emailSubject,

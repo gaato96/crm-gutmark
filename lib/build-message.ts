@@ -28,7 +28,8 @@ export interface BuiltMessage {
 export function customerVars(
   c: MessageCustomer,
   businessName: string,
-  points?: number
+  points?: number,
+  serviceName?: string
 ): TemplateVars {
   return {
     nombre: c.name,
@@ -40,6 +41,7 @@ export function customerVars(
     // vez de vacía, para que el mensaje no se lea cortado si alguien la usó.
     puntos: String(points ?? 0),
     cumple: c.birthdate ? formatDate(c.birthdate) : "—",
+    servicio: serviceName ?? "",
   };
 }
 
@@ -50,9 +52,10 @@ export function buildCampaignMessage(
   campaign: CampaignLike,
   c: MessageCustomer,
   businessName: string,
-  points?: number
+  points?: number,
+  serviceName?: string
 ): BuiltMessage {
-  const vars = customerVars(c, businessName, points);
+  const vars = customerVars(c, businessName, points, serviceName);
   const first = vars.nombre.trim().split(/\s+/)[0] ?? vars.nombre;
   const generic = `¡Hola ${first}! Gracias por elegir ${businessName}. Ante cualquier cosa, escribinos. 💚`;
 

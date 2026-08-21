@@ -9,7 +9,7 @@ import {
   ruleDefaults,
   toConfig,
 } from "@/lib/queries";
-import { describeTrigger } from "@/lib/campaigns";
+import { describeTrigger, matchedServiceId } from "@/lib/campaigns";
 import { buildCampaignMessage } from "@/lib/build-message";
 import { pointsBalancesByCustomer } from "@/lib/points";
 import { PageHeader } from "@/components/ui";
@@ -46,7 +46,13 @@ export default async function RecordatoriosPage() {
         label: describeTrigger(c, defaults),
         recipients: recipients.map((cu) => ({
           customer: cu,
-          message: buildCampaignMessage(c, cu, biz.name, balances.get(cu.id)),
+          message: buildCampaignMessage(
+            c,
+            cu,
+            biz.name,
+            balances.get(cu.id),
+            defaults.serviceNames?.[matchedServiceId(cu, c, defaults) ?? ""]
+          ),
           hint: hintFor(c.triggerType, cu.birthdayInDays, cu.daysSinceLast),
         })),
       };

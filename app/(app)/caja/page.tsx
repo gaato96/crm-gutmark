@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { getCurrentBusiness } from "@/lib/queries";
 import { currentCashSession } from "@/lib/cash-write";
 import { cashExpected, periodRange } from "@/lib/cash";
-import { commissionsByEmployee } from "@/lib/reports";
+import { commissionsByEmployee, commissionDebtByEmployee } from "@/lib/reports";
 import { PageHeader } from "@/components/ui";
 import { CajaView, type CajaData } from "@/components/caja-view";
 
@@ -32,7 +32,7 @@ export default async function CajaPage() {
       })
     : null;
 
-  const [empleados, reglas, cierres, comisionesHoy] = await Promise.all([
+  const [empleados, reglas, cierres, comisionesHoy, deudaPorEmpleado] = await Promise.all([
     db.employee.findMany({
       where: { businessId: biz.id },
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
@@ -47,6 +47,7 @@ export default async function CajaPage() {
       take: 10,
     }),
     commissionsByEmployee(biz.id, periodRange("semana")),
+    commissionDebtByEmployee(biz.id),
   ]);
 
   const usados = await db.saleCost.groupBy({
@@ -81,6 +82,7 @@ export default async function CajaPage() {
       commissionKind: e.commissionKind,
       active: e.active,
       ventas: ventasPorEmpleado.get(e.id) ?? 0,
+      debe: deudaPorEmpleado.get(e.id) ?? 0,
     })),
     reglas: reglas.map((r) => ({
       id: r.id,

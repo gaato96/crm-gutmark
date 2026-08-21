@@ -42,6 +42,12 @@ export function isTriggerType(v: string): v is TriggerType {
   return (TRIGGER_TYPES as readonly string[]).includes(v);
 }
 
+// Sentinela que usa el <select> del editor para "cualquier servicio" — nunca
+// viaja al servidor como `serviceId`, porque esa columna tiene FK a Service y
+// "cualquiera" no es un id real. El server lo traduce a `allServices: true` +
+// `serviceId: null` antes de guardar (ver parseTrigger en campaign-actions.ts).
+export const ALL_SERVICES = "__all__";
+
 // `field` dice qué control extra mostrar en el editor y qué columna guardar.
 // Los disparadores sin campo extra no necesitan más que el tipo.
 export const TRIGGER_META: Record<
@@ -114,6 +120,9 @@ export interface CampaignRule {
   segment: string | null;
   minSpend: number | null;
   serviceId: string | null;
+  // "Cualquier servicio". Mutuamente excluyente con serviceId: cuando es
+  // true, serviceId viaja en null.
+  allServices: boolean;
   excludeInactive: boolean;
 }
 
@@ -152,6 +161,9 @@ export interface RuleDefaults {
   // Verbo con el que se describe la campaña por ítem. Un servicio "se hace",
   // un producto "se compra"; el texto sale del rubro del negocio.
   catalogVerb?: string;
+  // "servicio" / "producto" / "ítem", para describir el disparador "cualquier
+  // servicio" sin tener que repetir el catálogo completo en el texto.
+  catalogSingular?: string;
 }
 
 export function matchesCampaign(
@@ -175,16 +187,23 @@ export function matchesCampaign(
       return c.hoursSinceLast !== null && c.hoursSinceLast >= minHours;
     }
     case "service-recompra": {
-      if (!rule.serviceId) return false;
-      const sinceHours = c.hoursSinceService?.[rule.serviceId];
-      // Nunca compró ese servicio: no entra. La campaña habla de volver a algo
-      // concreto, no tendría sentido mandársela a quien nunca lo probó.
-      if (sinceHours === undefined) return false;
-      const waitHours =
-        rule.triggerValue !== null
-          ? toHours(rule.triggerValue, rule.triggerUnit)
-          : (defaults.serviceRecompraDays?.[rule.serviceId] ?? defaults.recompraDays) * 24;
-      return sinceHours >= waitHours;
+      if (!rule.allServices && !rule.serviceId) return false;
+      // "Cualquier servicio": alcanza con que UNO de los que el cliente compró
+      // ya haya pasado su tiempo de recompra. Con un solo servicio, esto se
+      // reduce al caso de antes (una sola id para recorrer).
+      const ids = rule.allServices ? Object.keys(c.hoursSinceService ?? {}) : [rule.serviceId!];
+      for (const id of ids) {
+        const sinceHours = c.hoursSinceService?.[id];
+        // Nunca compró ese servicio: no cuenta. La campaña habla de volver a
+        // algo concreto, no tendría sentido mandársela a quien nunca lo probó.
+        if (sinceHours === undefined) continue;
+        const waitHours =
+          rule.triggerValue !== null
+            ? toHours(rule.triggerValue, rule.triggerUnit)
+            : (defaults.serviceRecompraDays?.[id] ?? defaults.recompraDays) * 24;
+        if (sinceHours >= waitHours) return true;
+      }
+      return false;
     }
     case "days-since-signup": {
       // La antiguedad tambien se mide en dias: en horas no significa nada.
@@ -205,6 +224,33 @@ export function matchesCampaign(
   }
 }
 
+// Para "cualquier servicio", cuál fue el que disparó la campaña para ESTE
+// cliente en particular — hace falta para poder escribir "{servicio}" en el
+// mensaje. Si tiene varios vencidos a la vez, se elige el más atrasado (el
+// que más urge). Con un solo servicio elegido, siempre es ese.
+export function matchedServiceId(
+  c: CampaignTarget,
+  rule: CampaignRule,
+  defaults: RuleDefaults
+): string | null {
+  if (rule.triggerType !== "service-recompra" || (!rule.allServices && !rule.serviceId)) return null;
+  const ids = rule.allServices ? Object.keys(c.hoursSinceService ?? {}) : [rule.serviceId!];
+
+  let best: { id: string; overdueHours: number } | null = null;
+  for (const id of ids) {
+    const sinceHours = c.hoursSinceService?.[id];
+    if (sinceHours === undefined) continue;
+    const waitHours =
+      rule.triggerValue !== null
+        ? toHours(rule.triggerValue, rule.triggerUnit)
+        : (defaults.serviceRecompraDays?.[id] ?? defaults.recompraDays) * 24;
+    if (sinceHours < waitHours) continue;
+    const overdueHours = sinceHours - waitHours;
+    if (!best || overdueHours > best.overdueHours) best = { id, overdueHours };
+  }
+  return best?.id ?? null;
+}
+
 // Resumen legible del disparador, para las tarjetas de la lista de campañas.
 export function describeTrigger(rule: CampaignRule, defaults: RuleDefaults): string {
   switch (rule.triggerType) {
@@ -219,14 +265,27 @@ export function describeTrigger(rule: CampaignRule, defaults: RuleDefaults): str
       return rule.excludeInactive ? `${base} (sin los inactivos)` : base;
     }
     case "service-recompra": {
-      if (!rule.serviceId) return "Sin servicio elegido (no alcanza a nadie)";
-      const name = defaults.serviceNames?.[rule.serviceId] ?? "ese servicio";
+      if (!rule.allServices && !rule.serviceId) return "Sin servicio elegido (no alcanza a nadie)";
+      const verb = defaults.catalogVerb ?? "Compraron";
+
+      if (rule.allServices) {
+        const singular = defaults.catalogSingular ?? "ítem";
+        // Sin valor propio, cada servicio usa su propia recompra: no hay un
+        // único número que mostrar acá, así que el texto queda genérico.
+        const base =
+          rule.triggerValue === null
+            ? `${verb} cualquier ${singular} y ya pasó su tiempo de recompra`
+            : `${verb} cualquier ${singular} hace ${rule.triggerValue} ${unitLabel(rule.triggerUnit, rule.triggerValue)} o más`;
+        return rule.excludeInactive ? `${base} (sin los inactivos)` : base;
+      }
+
+      const name = defaults.serviceNames?.[rule.serviceId!] ?? "ese servicio";
       const v =
         rule.triggerValue ??
-        defaults.serviceRecompraDays?.[rule.serviceId] ??
+        defaults.serviceRecompraDays?.[rule.serviceId!] ??
         defaults.recompraDays;
       const u = rule.triggerValue !== null ? rule.triggerUnit : "dias";
-      const base = `${defaults.catalogVerb ?? "Compraron"} ${name} hace ${v} ${unitLabel(u, v)} o más`;
+      const base = `${verb} ${name} hace ${v} ${unitLabel(u, v)} o más`;
       return rule.excludeInactive ? `${base} (sin los inactivos)` : base;
     }
     case "days-since-signup": {

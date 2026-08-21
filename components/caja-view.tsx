@@ -16,6 +16,7 @@ import {
   Eye,
   AlertTriangle,
   CheckCircle2,
+  Banknote,
 } from "lucide-react";
 import {
   openCashSession,
@@ -27,6 +28,7 @@ import {
   saveCostRule,
   toggleCostRule,
   deleteCostRule,
+  payEmployeeCommission,
   type CashFormState,
 } from "@/app/cash-actions";
 import { formatMoney, formatDate } from "@/lib/format";
@@ -52,6 +54,8 @@ export interface CajaData {
     commissionKind: string;
     active: boolean;
     ventas: number;
+    // Comisiones generadas y todavía sin pagar, sumadas desde siempre.
+    debe: number;
   }[];
   reglas: {
     id: string;
@@ -500,6 +504,7 @@ function EmpleadoCard({
 }) {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
+  const [paying, setPaying] = useState(false);
 
   async function run(fn: () => Promise<unknown>) {
     setBusy(true);
@@ -521,44 +526,114 @@ function EmpleadoCard({
       <p className="mb-3 text-xs text-ink-faint">
         {e.ventas === 0 ? "Sin ventas registradas" : `${e.ventas} ventas con comisión`}
       </p>
-      {note && <p className="mb-2 text-xs text-amber-700 dark:text-amber-300">{note}</p>}
-      <div className="flex flex-wrap gap-2">
-        <button onClick={onEdit} disabled={busy} className="btn-secondary !py-1.5 text-xs">
-          <Pencil className="h-3.5 w-3.5" /> Editar
-        </button>
-        <button
-          onClick={() => run(() => toggleEmployee(e.id, !e.active))}
-          disabled={busy}
-          className="btn-ghost !py-1.5 text-xs"
-        >
-          {e.active ? (
-            <>
-              <EyeOff className="h-3.5 w-3.5" /> Ocultar
-            </>
-          ) : (
-            <>
-              <Eye className="h-3.5 w-3.5" /> Activar
-            </>
-          )}
-        </button>
-        <button
-          onClick={() => {
-            const msg = e.ventas
-              ? `${e.name} ya tiene ventas con comisión. Borrarlo perdería ese historial, así que se va a desactivar. ¿Seguimos?`
-              : `¿Borrar a ${e.name}?`;
-            if (!confirm(msg)) return;
-            run(async () => {
-              const r = await deleteEmployee(e.id);
-              if (r.deactivated) setNote("Tenía comisiones registradas: se desactivó.");
-            });
-          }}
-          disabled={busy}
-          className="btn-ghost !py-1.5 text-xs text-rose-600 hover:bg-rose-500/10 dark:text-rose-400"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
+
+      <div
+        className={`mb-3 flex items-center justify-between rounded-lg px-3 py-2 text-sm ${
+          e.debe > 0
+            ? "bg-amber-500/10 text-amber-800 dark:text-amber-300"
+            : "bg-brand-500/10 text-brand-700 dark:text-brand-300"
+        }`}
+      >
+        <span className="font-medium">{e.debe > 0 ? "Le debés" : "Al día"}</span>
+        {e.debe > 0 && <span className="font-display font-bold">{formatMoney(e.debe)}</span>}
       </div>
+
+      {paying ? (
+        <PagarComisionForm e={e} onClose={() => setPaying(false)} />
+      ) : (
+        <>
+          {note && <p className="mb-2 text-xs text-amber-700 dark:text-amber-300">{note}</p>}
+          <div className="flex flex-wrap gap-2">
+            {e.debe > 0 && (
+              <button
+                onClick={() => setPaying(true)}
+                disabled={busy}
+                className="btn-primary !py-1.5 text-xs"
+              >
+                <Banknote className="h-3.5 w-3.5" /> Marcar pagado
+              </button>
+            )}
+            <button onClick={onEdit} disabled={busy} className="btn-secondary !py-1.5 text-xs">
+              <Pencil className="h-3.5 w-3.5" /> Editar
+            </button>
+            <button
+              onClick={() => run(() => toggleEmployee(e.id, !e.active))}
+              disabled={busy}
+              className="btn-ghost !py-1.5 text-xs"
+            >
+              {e.active ? (
+                <>
+                  <EyeOff className="h-3.5 w-3.5" /> Ocultar
+                </>
+              ) : (
+                <>
+                  <Eye className="h-3.5 w-3.5" /> Activar
+                </>
+              )}
+            </button>
+            <button
+              onClick={() => {
+                const msg = e.ventas
+                  ? `${e.name} ya tiene ventas con comisión. Borrarlo perdería ese historial, así que se va a desactivar. ¿Seguimos?`
+                  : `¿Borrar a ${e.name}?`;
+                if (!confirm(msg)) return;
+                run(async () => {
+                  const r = await deleteEmployee(e.id);
+                  if (r.deactivated) setNote("Tenía comisiones registradas: se desactivó.");
+                });
+              }}
+              disabled={busy}
+              className="btn-ghost !py-1.5 text-xs text-rose-600 hover:bg-rose-500/10 dark:text-rose-400"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </>
+      )}
     </div>
+  );
+}
+
+// Paga TODO lo pendiente de una: no hay pagos parciales, porque lo que se
+// quiere llevar es "cuánto le debo ahora", no un historial de montos sueltos.
+function PagarComisionForm({
+  e,
+  onClose,
+}: {
+  e: CajaData["empleados"][number];
+  onClose: () => void;
+}) {
+  const [state, action] = useActionState(payEmployeeCommission.bind(null, e.id), EMPTY);
+
+  useEffect(() => {
+    if (state.ok) onClose();
+  }, [state.ok, onClose]);
+
+  return (
+    <form action={action} className="rounded-lg bg-surface-2 p-3">
+      <p className="mb-2 text-xs text-ink-soft">
+        Vas a marcar {formatMoney(e.debe)} como pagado a {e.name}. Si hay una caja abierta, se
+        carga solo el egreso.
+      </p>
+      <div className="mb-2">
+        <select name="paymentMethod" defaultValue="efectivo" className="input !py-1.5 text-xs">
+          {PAYMENT_METHODS.map((m) => (
+            <option key={m.code} value={m.code}>
+              {m.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      {state.error && (
+        <p className="mb-2 text-xs text-rose-600 dark:text-rose-400">{state.error}</p>
+      )}
+      <div className="flex gap-2">
+        <button type="button" onClick={onClose} className="btn-secondary !py-1.5 text-xs">
+          Cancelar
+        </button>
+        <SubmitButton className="btn-primary !py-1.5 text-xs">Confirmar pago</SubmitButton>
+      </div>
+    </form>
   );
 }
 

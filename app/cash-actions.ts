@@ -198,6 +198,64 @@ export async function saveEmployee(
   return { ok: true };
 }
 
+// Salda TODO lo pendiente de un empleado de una vez: marca cada SaleCost de
+// comisión sin pagar como pagada y, si hay una caja abierta, carga el egreso
+// correspondiente sola — así el dueño no tiene que cargarlo a mano aparte y
+// después acordarse de descontarlo de la deuda. Sin caja abierta igual se
+// marca como pagado (puede haber pagado por transferencia), pero no queda
+// movimiento de caja: no hay sesión donde colgarlo.
+export async function payEmployeeCommission(
+  employeeId: string,
+  _prev: CashFormState,
+  formData: FormData
+): Promise<CashFormState> {
+  const session = await requireModule("caja");
+  const businessId = session.business.id;
+
+  const employee = await db.employee.findFirst({
+    where: { id: employeeId, businessId },
+    select: { id: true, name: true },
+  });
+  if (!employee) return { error: "Empleado no encontrado." };
+
+  const pending = await db.saleCost.findMany({
+    where: { businessId, employeeId: employee.id, kind: "comision", paidAt: null },
+    select: { id: true, amount: true },
+  });
+  if (pending.length === 0) return { error: "No tiene comisiones pendientes de pago." };
+
+  const paymentMethod = clean(formData.get("paymentMethod")) || "efectivo";
+  if (!isPaymentMethod(paymentMethod)) return { error: "Método de pago inválido." };
+
+  const total = round2(pending.reduce((s, c) => s + c.amount, 0));
+  const now = new Date();
+  const abierta = await currentCashSession(businessId);
+
+  await db.$transaction([
+    db.saleCost.updateMany({
+      where: { id: { in: pending.map((p) => p.id) } },
+      data: { paidAt: now },
+    }),
+    ...(abierta
+      ? [
+          db.cashMovement.create({
+            data: {
+              businessId,
+              sessionId: abierta.id,
+              kind: "egreso",
+              amount: signedAmount("egreso", total),
+              paymentMethod,
+              description: `Pago comisión ${employee.name}`,
+            },
+          }),
+        ]
+      : []),
+  ]);
+
+  revalidate();
+  return { ok: true };
+}
+
 export async function toggleEmployee(id: string, active: boolean) {
   const session = await requireModule("caja");
   const owned = await db.employee.findFirst({

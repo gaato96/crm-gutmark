@@ -259,8 +259,13 @@ model Campaign {
   minSpend    Float?
   // Para triggerType = "service-recompra": qué servicio tiene que haber
   // comprado. Si el servicio se borra, la campaña queda sin disparador y no
-  // alcanza a nadie (mejor que alcanzar a todos por error).
+  // alcanza a nadie (mejor que alcanzar a todos por error). Null también
+  // cuando `allServices` es true: son mutuamente excluyentes.
   serviceId   String?
+  // "Cualquier servicio", para no tener que armar una campaña por cada ítem
+  // del catálogo. No es parte de `serviceId` porque esa columna tiene FK a
+  // Service — "cualquiera" no es un id real que se pueda referenciar.
+  allServices Boolean @default(false)
   // Para los disparadores por tiempo: no incluir a quien ya se dio por perdido.
   // El mensaje de "hace poco que no venís" no aplica a un cliente inactivo, que
   // tiene su propia campaña de reactivación.
@@ -458,6 +463,10 @@ model SaleCost {
   employeeId String?
   costRuleId String?
   date       DateTime
+  // Cuándo se le pagó al empleado esta comisión. Null = todavía se la debe.
+  // Se paga en bloque desde el equipo (todo lo pendiente de un empleado a la
+  // vez), no venta por venta — por eso no hace falta más que una fecha acá.
+  paidAt     DateTime?
 
   business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
   purchase Purchase  @relation(fields: [purchaseId], references: [id], onDelete: Cascade)

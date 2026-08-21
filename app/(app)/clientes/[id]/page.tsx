@@ -28,7 +28,7 @@ import {
   daysToBirthday,
   ageTurning,
 } from "@/lib/segmentation";
-import { matchesCampaign } from "@/lib/campaigns";
+import { matchesCampaign, matchedServiceId } from "@/lib/campaigns";
 import { catalogWords } from "@/lib/rubros";
 import { paymentLabel } from "@/lib/sales";
 import { buildCampaignMessage } from "@/lib/build-message";
@@ -136,8 +136,8 @@ export default async function ClienteDetailPage({
     hoursSinceLast: hoursSince(customer.lastPurchaseAt),
     hoursSinceService,
   };
-  const suggested =
-    campaigns.find((c) => c.active && matchesCampaign(target, c, ruleDefaults(biz, services))) ?? null;
+  const defaults = ruleDefaults(biz, services);
+  const suggested = campaigns.find((c) => c.active && matchesCampaign(target, c, defaults)) ?? null;
 
   const reason = suggested
     ? suggested.triggerType === "birthday" && bdayIn !== null
@@ -158,7 +158,8 @@ export default async function ClienteDetailPage({
       birthdate: customer.birthdate,
     },
     biz.name,
-    pointsEnabled ? pointsBalanceValue : undefined
+    pointsEnabled ? pointsBalanceValue : undefined,
+    suggested ? defaults.serviceNames?.[matchedServiceId(target, suggested, defaults) ?? ""] : undefined
   );
 
   return (

@@ -233,6 +233,19 @@ regex, no con `replaceAll` literal: una variable mal escrita queda **visible** e
 mensaje (`{nombree}`) en vez de desaparecer, así el negocio ve el error antes de
 mandárselo a un cliente. `{puntos}` solo trae dato real si el módulo Puntos está activo.
 
+**"Cualquier servicio"** (`Campaign.allServices`) evita tener que armar una campaña
+por cada ítem del catálogo: alcanza con que UNO de los que el cliente compró ya
+haya pasado su tiempo de recompra (cada ítem con el suyo propio, si `triggerValue`
+queda vacío). ⚠️ No es un valor de `serviceId`: esa columna tiene FK a `Service`, así
+que "cualquiera" no es un id que se pueda guardar ahí — por eso es una columna booleana
+aparte, mutuamente excluyente con `serviceId`. El `<select>` del editor sí usa un
+sentinela de solo-UI (`ALL_SERVICES` en `lib/campaigns.ts`) para representar la opción;
+`parseTrigger` en `app/campaign-actions.ts` lo traduce a `allServices: true` +
+`serviceId: null` antes de guardar — nunca llega a la base tal cual. Como la audiencia
+mezcla clientes con servicios distintos, el mensaje no puede nombrar uno fijo: por eso
+existe la variable `{servicio}`, resuelta por cliente con `matchedServiceId()` (el
+servicio vencido más atrasado, si hay varios a la vez).
+
 ### Rubro y vocabulario: el sistema no es de barberías
 
 El CRM apunta a **cualquier negocio con clientela que vuelve**, no solo a los
@@ -399,6 +412,21 @@ el negocio no lo tiene contratado.
 Los empleados **no** son usuarios: no tienen login. Son registros para saber
 quién hizo cada venta y cuánto se le debe. Darles cuenta propia implicaría
 permisos por rol dentro del negocio, que es otro problema (ver `docs/roadmap.md`).
+
+**Comisiones: se deben hasta que se pagan.** `SaleCost.paidAt` (`null` = todavía
+sin pagar) es lo único que distingue "ya se lo di" de "se lo debo". Nada lo
+pone en `null` de vuelta: una vez pagada, una comisión queda pagada para
+siempre — no hay pagos parciales ni "despagar". `payEmployeeCommission()`
+(`app/cash-actions.ts`) salda **todo** lo pendiente de un empleado de una sola
+vez (no vale la pena trackear qué venta puntual se pagó primero) y, si hay una
+caja abierta, carga sola el `CashMovement` de egreso correspondiente — así el
+dueño no tiene que cargarlo a mano y después acordarse de descontarlo de la
+deuda. Sin caja abierta igual marca como pagado (pudo haber pagado por
+transferencia) pero no queda movimiento de caja, porque `CashMovement.sessionId`
+es obligatorio y no hay dónde colgarlo. `commissionDebtByEmployee()`
+(`lib/reports.ts`) es la deuda total histórica (para la tarjeta de cada
+integrante del equipo); `commissionsByEmployee()` ahora también filtra
+`paidAt: null`, así que "A pagar esta semana" dejó de contar lo que ya se saldó.
 
 ### Theming: CSS variables, no dark: className soup
 

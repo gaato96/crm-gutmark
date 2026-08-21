@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { getCurrentBusiness } from "@/lib/queries";
-import { isTriggerType, isTriggerUnit, TRIGGER_META } from "@/lib/campaigns";
+import { isTriggerType, isTriggerUnit, TRIGGER_META, ALL_SERVICES } from "@/lib/campaigns";
 import { SEGMENT_META } from "@/lib/segmentation";
 
 export interface CampaignFormState {
@@ -44,6 +44,7 @@ interface TriggerFields {
   segment: string | null;
   minSpend: number | null;
   serviceId: string | null;
+  allServices: boolean;
   excludeInactive: boolean;
 }
 
@@ -111,15 +112,19 @@ async function parseTrigger(
   if (meta.field === "amount" && (minSpend === null || minSpend < 0)) {
     return { error: "Poné un monto válido para el gasto acumulado." };
   }
+  const isAllServices = meta.field === "service" && serviceId === ALL_SERVICES;
   if (meta.field === "service") {
     if (!serviceId) return { error: "Elegí el servicio que dispara la campaña." };
-    // El servicio tiene que ser de este negocio: si no, una campaña podría
-    // quedar apuntando al catálogo de otro.
-    const owned = await db.service.findFirst({
-      where: { id: serviceId, businessId },
-      select: { id: true },
-    });
-    if (!owned) return { error: "Ese servicio no existe en tu catálogo." };
+    // "Cualquier servicio" no es un id real: no hay nada que verificar contra
+    // el catálogo. Para uno puntual, sí tiene que ser de este negocio — si no,
+    // una campaña podría quedar apuntando al catálogo de otro.
+    if (!isAllServices) {
+      const owned = await db.service.findFirst({
+        where: { id: serviceId, businessId },
+        select: { id: true },
+      });
+      if (!owned) return { error: "Ese servicio no existe en tu catálogo." };
+    }
   }
 
   return {
@@ -131,7 +136,10 @@ async function parseTrigger(
       triggerUnit: unit,
       segment: meta.field === "segment" ? segment : null,
       minSpend: meta.field === "amount" ? minSpend : null,
-      serviceId: meta.field === "service" ? serviceId : null,
+      // "all" es un valor del <select> que nunca se guarda como serviceId: esa
+      // columna tiene FK a Service. Se traduce a allServices + serviceId null.
+      serviceId: meta.field === "service" && !isAllServices ? serviceId : null,
+      allServices: isAllServices,
       excludeInactive: clean(formData.get("excludeInactive")) === "on",
     },
   };
@@ -253,6 +261,7 @@ export async function duplicateCampaign(id: string) {
       segment: source.segment,
       minSpend: source.minSpend,
       serviceId: source.serviceId,
+      allServices: source.allServices,
       triggerUnit: source.triggerUnit,
       excludeInactive: source.excludeInactive,
       whatsappBody: source.whatsappBody,

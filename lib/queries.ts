@@ -159,13 +159,15 @@ export function ruleDefaults(
     serviceRecompraDays[s.id] = s.recompraDays;
     serviceNames[s.id] = s.name;
   }
+  const words = catalogWords(biz.catalogMode ?? "ambos");
   return {
     recompraDays: biz.recompraDays,
     serviceRecompraDays,
     serviceNames,
     // "Se hicieron Corte + Barba" en una barbería, "Compraron Alimento 15 kg"
     // en un pet shop. Lo resuelve describeTrigger.
-    catalogVerb: catalogWords(biz.catalogMode ?? "ambos").triggerVerb,
+    catalogVerb: words.triggerVerb,
+    catalogSingular: words.singular,
   };
 }
 

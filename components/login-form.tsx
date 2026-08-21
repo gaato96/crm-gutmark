@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AlertCircle } from "lucide-react";
 import { login, AuthState } from "@/app/auth-actions";
 import { SubmitButton } from "./submit-button";
+import { PasswordInput } from "@/components/password-input";
 
 export function LoginForm() {
   const [state, action] = useActionState<AuthState, FormData>(login, {});
@@ -25,7 +26,7 @@ export function LoginForm() {
           <label className="label" htmlFor="password">
             Contraseña
           </label>
-          <input id="password" name="password" type="password" required className="input" />
+          <PasswordInput id="password" name="password" required autoComplete="current-password" />
         </div>
 
         {state.error && (

@@ -6,6 +6,7 @@ import { AlertCircle } from "lucide-react";
 import { register, AuthState } from "@/app/auth-actions";
 import { SubmitButton } from "./submit-button";
 import { RubroSelect } from "@/components/rubro-select";
+import { PasswordInput } from "@/components/password-input";
 
 export function RegisterForm() {
   const [state, action] = useActionState<AuthState, FormData>(register, {});
@@ -48,13 +49,12 @@ export function RegisterForm() {
           <label className="label" htmlFor="password">
             Contraseña *
           </label>
-          <input
+          <PasswordInput
             id="password"
             name="password"
-            type="password"
             required
             minLength={6}
-            className="input"
+            autoComplete="new-password"
             placeholder="Mínimo 6 caracteres"
           />
         </div>

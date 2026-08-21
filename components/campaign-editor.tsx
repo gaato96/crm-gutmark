@@ -6,6 +6,7 @@ import {
   TRIGGER_TYPES,
   TRIGGER_META,
   TRIGGER_UNITS,
+  ALL_SERVICES,
   type TriggerType,
   isTriggerType,
 } from "@/lib/campaigns";
@@ -29,6 +30,7 @@ export interface CampaignItem {
   segment: string | null;
   minSpend: number | null;
   serviceId: string | null;
+  allServices: boolean;
   excludeInactive: boolean;
   whatsappBody: string;
   emailSubject: string;
@@ -70,10 +72,12 @@ export function CampaignEditor({
   // que el negocio ya cargó en ese servicio, así se ve qué valor va a usar si
   // deja el campo vacío.
   const [serviceId, setServiceId] = useState<string>(
-    campaign?.serviceId ?? ""
+    campaign?.allServices ? ALL_SERVICES : campaign?.serviceId ?? ""
   );
-  const defaultServiceDays =
-    services.find((sv) => sv.id === (serviceId || services[0]?.id))?.recompraDays ?? null;
+  const isAllServices = (serviceId || services[0]?.id) === ALL_SERVICES;
+  const defaultServiceDays = isAllServices
+    ? null
+    : services.find((sv) => sv.id === (serviceId || services[0]?.id))?.recompraDays ?? null;
   // Las de fábrica se editan en el texto pero no en el disparador: el resto de
   // la app las busca por `builtin` esperando esa semántica. El server hace
   // valer lo mismo, esto es solo para que se vea por qué está bloqueado.
@@ -248,6 +252,7 @@ export function CampaignEditor({
                       disabled={lockedTrigger}
                       className="input disabled:opacity-60"
                     >
+                      <option value={ALL_SERVICES}>Todos los {words.plural}</option>
                       {services.map((sv) => (
                         <option key={sv.id} value={sv.id}>
                           {sv.name}
@@ -288,8 +293,19 @@ export function CampaignEditor({
                   </div>
                   <p className="mt-1.5 text-xs text-ink-muted">
                     En horas sirve para el rato justo después: “dos horas después del turno,
-                    preguntale cómo le quedó”. Vacío = usa la recompra del ítem, en días.
+                    preguntale cómo le quedó”.{" "}
+                    {isAllServices
+                      ? "Vacío = cada ítem usa su propia recompra, en días."
+                      : "Vacío = usa la recompra del ítem, en días."}
                   </p>
+                  {isAllServices && (
+                    <p className="mt-1.5 text-xs text-ink-muted">
+                      Se le manda a quien le venció la recompra de <strong>cualquiera</strong> de
+                      tus {words.plural} — no hace falta una campaña por cada uno. El mensaje
+                      puede usar <span className="font-mono">{"{servicio}"}</span> para nombrar el
+                      que le tocó a cada cliente.
+                    </p>
+                  )}
                 </div>
               </>
             )}

@@ -5,6 +5,7 @@ import { AlertCircle, Check, KeyRound } from "lucide-react";
 import { changePassword, ChangePasswordState } from "@/app/auth-actions";
 import { SubmitButton } from "./submit-button";
 import { SectionTitle } from "./ui";
+import { PasswordInput } from "@/components/password-input";
 
 export function ChangePasswordForm() {
   const [state, action] = useActionState<ChangePasswordState, FormData>(changePassword, {});
@@ -22,13 +23,11 @@ export function ChangePasswordForm() {
           <label className="label" htmlFor="currentPassword">
             Contraseña actual
           </label>
-          <input
+          <PasswordInput
             id="currentPassword"
             name="currentPassword"
-            type="password"
             required
             autoComplete="current-password"
-            className="input"
           />
         </div>
 
@@ -36,14 +35,12 @@ export function ChangePasswordForm() {
           <label className="label" htmlFor="newPassword">
             Contraseña nueva
           </label>
-          <input
+          <PasswordInput
             id="newPassword"
             name="newPassword"
-            type="password"
             required
             minLength={8}
             autoComplete="new-password"
-            className="input"
             placeholder="Mínimo 8 caracteres"
           />
         </div>
@@ -52,14 +49,12 @@ export function ChangePasswordForm() {
           <label className="label" htmlFor="confirmPassword">
             Confirmar contraseña nueva
           </label>
-          <input
+          <PasswordInput
             id="confirmPassword"
             name="confirmPassword"
-            type="password"
             required
             minLength={8}
             autoComplete="new-password"
-            className="input"
           />
         </div>
 
