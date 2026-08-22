@@ -255,43 +255,50 @@ export function QuickSaleModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-start justify-center px-4 pt-[10vh] sm:items-center sm:pt-0">
+    <div className="fixed inset-0 z-[60] overflow-y-auto">
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm animate-fade-in"
+        className="fixed inset-0 bg-slate-950/50 backdrop-blur-sm animate-fade-in"
         onClick={handleClose}
       />
-      <div className="relative w-full max-w-md overflow-hidden rounded-2xl border border-line bg-surface shadow-pop animate-scale-in">
-        {/* Header */}
-        <div className="flex items-center gap-3 border-b border-line-soft px-5 py-4">
-          {stage === "amount" && (
+      <div className="relative flex min-h-full items-start justify-center p-4 sm:items-center">
+        <div className="relative flex max-h-[calc(100dvh-2rem)] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-pop animate-scale-in">
+          {/* Header */}
+          <div className="flex shrink-0 items-center gap-3 border-b border-line-soft px-5 py-4">
+            {stage === "amount" && (
+              <button
+                onClick={() => {
+                  setStage("pick");
+                  setError("");
+                }}
+                className="rounded-lg p-1 text-ink-muted transition hover:bg-surface-2 hover:text-ink"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </button>
+            )}
+            <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-brand-500/10 text-brand-600">
+              <ShoppingBag className="h-4 w-4" />
+            </div>
+            <h2 className="flex-1 text-sm font-bold text-ink">
+              {stage === "pick" && "Nueva venta"}
+              {stage === "amount" && selected?.name}
+              {stage === "new-customer" && "Cliente nuevo + venta"}
+              {stage === "done" && "¡Listo!"}
+            </h2>
             <button
-              onClick={() => {
-                setStage("pick");
-                setError("");
-              }}
-              className="rounded-lg p-1 text-ink-muted transition hover:bg-surface-2 hover:text-ink"
+              onClick={handleClose}
+              className="rounded-lg p-1.5 text-ink-muted transition hover:bg-surface-2 hover:text-ink"
+              aria-label="Cerrar"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <X className="h-4 w-4" />
             </button>
-          )}
-          <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-brand-500/10 text-brand-600">
-            <ShoppingBag className="h-4 w-4" />
           </div>
-          <h2 className="flex-1 text-sm font-bold text-ink">
-            {stage === "pick" && "Nueva venta"}
-            {stage === "amount" && selected?.name}
-            {stage === "new-customer" && "Cliente nuevo + venta"}
-            {stage === "done" && "¡Listo!"}
-          </h2>
-          <button
-            onClick={handleClose}
-            className="rounded-lg p-1.5 text-ink-muted transition hover:bg-surface-2 hover:text-ink"
-            aria-label="Cerrar"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
+
+          {/* El contenido de cada etapa puede ser más alto que la pantalla (el
+              picker de ítems, el selector de empleado, el monto...): este wrapper
+              es lo único que scrollea, así el header queda siempre visible y el
+              botón de guardar siempre se puede alcanzar. */}
+          <div className="overflow-y-auto">
 
         {/* STAGE: buscar / elegir cliente */}
         {stage === "pick" && (
@@ -496,23 +503,25 @@ export function QuickSaleModal({
           </form>
         )}
 
-        {/* STAGE: listo */}
-        {stage === "done" && (
-          <div className="px-6 py-10 text-center animate-fade-in">
-            <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-brand-500/10 text-brand-600">
-              <CheckCircle2 className="h-7 w-7" />
+          {/* STAGE: listo */}
+          {stage === "done" && (
+            <div className="px-6 py-10 text-center animate-fade-in">
+              <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-brand-500/10 text-brand-600">
+                <CheckCircle2 className="h-7 w-7" />
+              </div>
+              <p className="font-semibold text-ink">{doneMessage}</p>
+              <div className="mt-6 flex justify-center gap-2">
+                <button onClick={handleClose} className="btn-secondary">
+                  Cerrar
+                </button>
+                <button onClick={registerAnother} className="btn-primary">
+                  Registrar otra venta
+                </button>
+              </div>
             </div>
-            <p className="font-semibold text-ink">{doneMessage}</p>
-            <div className="mt-6 flex justify-center gap-2">
-              <button onClick={handleClose} className="btn-secondary">
-                Cerrar
-              </button>
-              <button onClick={registerAnother} className="btn-primary">
-                Registrar otra venta
-              </button>
-            </div>
+          )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
