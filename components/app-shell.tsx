@@ -13,6 +13,7 @@ import {
   Settings,
   Blocks,
   Tags,
+  BookOpen,
   Menu,
   X,
   LogOut,
@@ -52,6 +53,7 @@ function baseNavStart(catalogMode: string): NavItem[] {
   ];
 }
 const BASE_NAV_END: NavItem[] = [
+  { href: "/guia", label: "Guía", icon: BookOpen },
   { href: "/modulos", label: "Módulos", icon: Blocks },
   { href: "/configuracion", label: "Configuración", icon: Settings },
 ];
