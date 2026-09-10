@@ -128,6 +128,10 @@ export interface SaleDetail {
   purchaseId: string;
   customerId: string;
   customerName: string;
+  // ISO. En Caja alcanza con la hora del movimiento, pero en Reportes una
+  // venta puede ser de cualquier día del período.
+  date: string;
+  paymentMethod: string;
   items: SaleItemDetail[];
   subtotal: number;
   discount: number;

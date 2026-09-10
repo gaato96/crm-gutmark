@@ -388,6 +388,19 @@ El historial de cierres se despliega **a demanda**: `getCashSessionDetail()`
 se abre la fila. Traer los diez cierres con sus ventas y sus ítems en cada
 visita a `/caja` serían cientos de filas que casi nunca se miran.
 
+Reportes muestra la misma lista, venta por venta, con `periodSales()` — que
+**no** sale de `buildPeriodReport()` a propósito: ese corre dos veces (período
+actual y anterior) y el anterior solo se usa para los deltas, así que meter la
+lista adentro duplicaría el payload al cliente para nada. Va acotada a
+`SALES_DETAIL_LIMIT` ventas: un mes cargado puede tener cientos, y el resto de
+la pantalla ya son totales.
+
+La fila desplegable es **un solo componente** (`components/sale-detail.tsx`,
+`<SaleRow>` + `<SaleDetailPanel>`) que usan las dos pantallas: la misma venta
+tiene que leerse igual en Caja y en Reportes. Lo que cambia es la línea chica
+de abajo, que cada pantalla arma con lo suyo y pasa por la prop `meta` — Caja
+pone la hora (todo es del mismo turno), Reportes la fecha.
+
 **Los costos son una foto.** `SaleCost` guarda el nombre y el importe ya
 calculados. Si mañana se le sube la comisión a un barbero, lo que se le debía por
 los cortes del mes pasado no cambia. Por eso la etiqueta dice "Comisión Juan" en

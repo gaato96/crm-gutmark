@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import {
   TrendingUp,
@@ -13,11 +14,12 @@ import {
   CreditCard,
   Minus,
 } from "lucide-react";
-import { formatMoney } from "@/lib/format";
+import { formatMoney, formatDateShort, formatTime } from "@/lib/format";
 import type { ReportComparison, ReportRow } from "@/lib/reports";
 import { paymentLabel } from "@/lib/sales";
-import type { PeriodKind } from "@/lib/cash";
+import type { PeriodKind, SaleDetail } from "@/lib/cash";
 import { catalogWords } from "@/lib/rubros";
+import { SaleRow, saleItemsLine } from "./sale-detail";
 
 export function ReportesView({
   kind,
@@ -25,6 +27,8 @@ export function ReportesView({
   anteriorLabel,
   data,
   comisiones,
+  ventas,
+  ventasLimite,
   catalogMode,
 }: {
   kind: PeriodKind;
@@ -32,6 +36,8 @@ export function ReportesView({
   anteriorLabel: string;
   data: ReportComparison;
   comisiones: { employeeId: string | null; name: string; amount: number; ventas: number }[];
+  ventas: SaleDetail[];
+  ventasLimite: number;
   catalogMode: string;
 }) {
   const words = catalogWords(catalogMode);
@@ -183,11 +189,75 @@ export function ReportesView({
             </div>
           )}
 
+          <VentasDelPeriodo ventas={ventas} total={a.ventas} limite={ventasLimite} />
+
           <div className="grid gap-4 lg:grid-cols-2">
             <Bars title="Por día de la semana" rows={a.porDiaSemana} />
             <Bars title="Por hora" rows={a.porHora} />
           </div>
         </>
+      )}
+    </div>
+  );
+}
+
+// --- Ventas del período -----------------------------------------------------
+//
+// Los cortes de arriba responden "cuánto entró"; esta lista responde "a quién y
+// qué", que es lo que se mira cuando un número no cierra.
+
+const PASO = 25;
+
+// La línea chica de cada venta: cuándo fue, qué se llevó y cómo pagó. En Caja
+// alcanza con la hora porque todo es del mismo turno; acá el período abarca
+// varios días, así que va también la fecha.
+function ventaMeta(v: SaleDetail): string {
+  const items = saleItemsLine(v);
+  return [`${formatDateShort(v.date)} ${formatTime(v.date)}`, items, paymentLabel(v.paymentMethod)]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+function VentasDelPeriodo({
+  ventas,
+  total,
+  limite,
+}: {
+  ventas: SaleDetail[];
+  total: number;
+  limite: number;
+}) {
+  const [visibles, setVisibles] = useState(PASO);
+  if (ventas.length === 0) return null;
+
+  const mostradas = ventas.slice(0, visibles);
+  // El período puede tener más ventas de las que se traen; conviene decirlo en
+  // vez de dejar creer que la lista está completa.
+  const recortado = total > ventas.length;
+
+  return (
+    <div className="card p-5">
+      <h2 className="mb-1 font-display font-bold text-ink">Ventas del período</h2>
+      <p className="mb-3 text-sm text-ink-muted">
+        {recortado
+          ? `Las últimas ${limite} de ${total} ventas. Tocá una para ver el detalle.`
+          : "Tocá una venta para ver el detalle."}
+      </p>
+
+      <ul className="divide-y divide-line-soft">
+        {mostradas.map((v) => (
+          <SaleRow key={v.purchaseId} venta={v} meta={ventaMeta(v)} />
+        ))}
+      </ul>
+
+      {visibles < ventas.length && (
+        <button
+          type="button"
+          onClick={() => setVisibles((n) => n + PASO)}
+          className="btn-secondary mt-3 w-full"
+        >
+          Ver {Math.min(PASO, ventas.length - visibles)} más
+        </button>
       )}
     </div>
   );

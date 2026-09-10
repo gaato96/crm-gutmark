@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import Link from "next/link";
 import {
   Wallet,
   Lock,
@@ -19,7 +18,6 @@ import {
   CheckCircle2,
   Banknote,
   ChevronDown,
-  Receipt,
 } from "lucide-react";
 import {
   openCashSession,
@@ -40,12 +38,12 @@ import { formatMoney, formatDate, formatTime } from "@/lib/format";
 import {
   MOVEMENT_KINDS,
   movementLabel,
-  itemsSummary,
   type CashTotals,
   type CashMovementRow,
 } from "@/lib/cash";
 import { PAYMENT_METHODS, paymentLabel } from "@/lib/sales";
 import { SubmitButton } from "./submit-button";
+import { SaleRow, saleItemsLine } from "./sale-detail";
 
 export interface CajaData {
   sesion: { id: string; openedAt: string; openingAmount: number; notes: string | null } | null;
@@ -400,129 +398,59 @@ function MovimientosList({
 }
 
 function MovimientoRow({ m }: { m: CashMovementRow }) {
-  const [abierto, setAbierto] = useState(false);
   const venta = m.venta;
   const entra = m.amount >= 0;
 
-  // En una venta el dato que se busca es a quién se le vendió; la descripción
-  // guardada siempre dice "Venta" y no distingue una fila de la otra.
-  const titulo = venta ? venta.customerName : m.description || movementLabel(m.kind);
-  const detalleItems = venta && venta.items.length > 0 ? itemsSummary(venta.items) : null;
+  // Una venta se despliega con el componente compartido con Reportes: la misma
+  // venta tiene que leerse igual en las dos pantallas. En Caja la línea chica
+  // lleva la hora, que es lo que ubica el movimiento dentro del turno.
+  if (venta) {
+    return (
+      <SaleRow
+        venta={venta}
+        meta={
+          <>
+            {saleItemsLine(venta) ?? movementLabel(m.kind)} · {paymentLabel(m.paymentMethod)} ·{" "}
+            {formatTime(m.createdAt)}
+          </>
+        }
+      />
+    );
+  }
 
-  // Todo spans: la fila de una venta se envuelve en un <button>, que solo
-  // admite contenido de frase.
-  const cabecera = (
-    <>
-      <span className="flex min-w-0 items-center gap-2.5">
+  // Un ingreso o egreso cargado a mano ya se muestra entero, así que la fila no
+  // se vuelve un botón que no hace nada.
+  return (
+    <li className="flex items-center justify-between gap-3 py-2.5">
+      <div className="flex min-w-0 items-center gap-2.5">
         <span
           className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg ${
             entra ? "bg-brand-500/10 text-brand-600" : "bg-rose-500/10 text-rose-600"
           }`}
         >
-          {venta ? (
-            <Receipt className="h-3.5 w-3.5" />
-          ) : entra ? (
+          {entra ? (
             <ArrowDownLeft className="h-3.5 w-3.5" />
           ) : (
             <ArrowUpRight className="h-3.5 w-3.5" />
           )}
         </span>
-        <span className="min-w-0">
-          <span className="block truncate text-sm font-medium text-ink">{titulo}</span>
-          <span className="block truncate text-xs text-ink-muted">
-            {detalleItems ?? movementLabel(m.kind)} · {paymentLabel(m.paymentMethod)} ·{" "}
-            {formatTime(m.createdAt)}
-          </span>
-        </span>
-      </span>
-      <span className="flex shrink-0 items-center gap-2">
-        <span
-          className={`text-sm font-semibold tabular-nums ${
-            entra ? "text-ink" : "text-rose-600 dark:text-rose-400"
-          }`}
-        >
-          {formatMoney(m.amount)}
-        </span>
-        {venta && (
-          <ChevronDown
-            className={`h-4 w-4 text-ink-faint transition-transform ${abierto ? "rotate-180" : ""}`}
-            aria-hidden
-          />
-        )}
-      </span>
-    </>
-  );
-
-  // Sin venta asociada no hay nada que desplegar (un egreso ya se muestra
-  // entero), así que la fila no se vuelve un botón que no hace nada.
-  if (!venta) {
-    return <li className="flex items-center justify-between gap-3 py-2.5">{cabecera}</li>;
-  }
-
-  return (
-    <li className="py-1">
-      <button
-        type="button"
-        onClick={() => setAbierto((v) => !v)}
-        aria-expanded={abierto}
-        className="flex w-full items-center justify-between gap-3 rounded-lg py-1.5 text-left transition hover:bg-surface-2"
-      >
-        {cabecera}
-      </button>
-      {abierto && <VentaDetalle venta={venta} />}
-    </li>
-  );
-}
-
-function VentaDetalle({ venta }: { venta: NonNullable<CashMovementRow["venta"]> }) {
-  return (
-    <div className="mb-2 ml-9 rounded-xl bg-surface-2 p-3 text-sm">
-      {venta.items.length === 0 ? (
-        <p className="text-ink-muted">
-          Esta venta se cargó sin detalle de ítems, solo con el importe.
-        </p>
-      ) : (
-        <ul className="space-y-1">
-          {venta.items.map((i) => (
-            <li key={i.id} className="flex items-baseline justify-between gap-3">
-              <span className="min-w-0 text-ink-soft">
-                <span className="tabular-nums text-ink-muted">{i.quantity}×</span> {i.name}
-                {i.quantity > 1 && (
-                  <span className="text-xs text-ink-faint"> ({formatMoney(i.unitPrice)} c/u)</span>
-                )}
-              </span>
-              <span className="shrink-0 tabular-nums text-ink">{formatMoney(i.subtotal)}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {venta.discount > 0 && (
-        <div className="mt-2 border-t border-line pt-2">
-          <Row label="Subtotal" value={formatMoney(venta.subtotal)} />
-          <Row
-            label={venta.discountNote ? `Descuento (${venta.discountNote})` : "Descuento"}
-            value={`- ${formatMoney(venta.discount)}`}
-          />
+        <div className="min-w-0">
+          <div className="truncate text-sm font-medium text-ink">
+            {m.description || movementLabel(m.kind)}
+          </div>
+          <div className="truncate text-xs text-ink-muted">
+            {movementLabel(m.kind)} · {paymentLabel(m.paymentMethod)} · {formatTime(m.createdAt)}
+          </div>
         </div>
-      )}
-
-      <div className="mt-2 border-t border-line pt-2">
-        <Row label="Total cobrado" value={formatMoney(venta.total)} strong />
       </div>
-
-      {venta.employeeName && (
-        <p className="mt-2 text-xs text-ink-muted">Atendió {venta.employeeName}</p>
-      )}
-      {venta.note && <p className="mt-1 text-xs text-ink-muted">{venta.note}</p>}
-
-      <Link
-        href={`/clientes/${venta.customerId}`}
-        className="mt-2 inline-block text-xs font-semibold text-brand-700 underline dark:text-brand-300"
+      <span
+        className={`shrink-0 text-sm font-semibold tabular-nums ${
+          entra ? "text-ink" : "text-rose-600 dark:text-rose-400"
+        }`}
       >
-        Ver ficha de {venta.customerName}
-      </Link>
-    </div>
+        {formatMoney(m.amount)}
+      </span>
+    </li>
   );
 }
 
