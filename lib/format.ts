@@ -67,3 +67,14 @@ export function avatarColor(name: string): string {
   for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
   return palette[Math.abs(hash) % palette.length];
 }
+
+// Hora del día. La lista de caja es de un turno: sin la hora, dos ventas del
+// mismo cliente son indistinguibles.
+export function formatTime(date: Date | string | null | undefined): string {
+  if (!date) return "—";
+  const d = typeof date === "string" ? new Date(date) : date;
+  return new Intl.DateTimeFormat("es-AR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(d);
+}

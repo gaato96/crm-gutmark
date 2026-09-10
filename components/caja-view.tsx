@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
+import Link from "next/link";
 import {
   Wallet,
   Lock,
@@ -17,6 +18,8 @@ import {
   AlertTriangle,
   CheckCircle2,
   Banknote,
+  ChevronDown,
+  Receipt,
 } from "lucide-react";
 import {
   openCashSession,
@@ -29,24 +32,25 @@ import {
   toggleCostRule,
   deleteCostRule,
   payEmployeeCommission,
+  getCashSessionDetail,
   type CashFormState,
+  type CashSessionDetail,
 } from "@/app/cash-actions";
-import { formatMoney, formatDate } from "@/lib/format";
-import { MOVEMENT_KINDS, movementLabel, type CashTotals } from "@/lib/cash";
+import { formatMoney, formatDate, formatTime } from "@/lib/format";
+import {
+  MOVEMENT_KINDS,
+  movementLabel,
+  itemsSummary,
+  type CashTotals,
+  type CashMovementRow,
+} from "@/lib/cash";
 import { PAYMENT_METHODS, paymentLabel } from "@/lib/sales";
 import { SubmitButton } from "./submit-button";
 
 export interface CajaData {
   sesion: { id: string; openedAt: string; openingAmount: number; notes: string | null } | null;
   totales: CashTotals | null;
-  movimientos: {
-    id: string;
-    kind: string;
-    amount: number;
-    paymentMethod: string;
-    description: string;
-    createdAt: string;
-  }[];
+  movimientos: CashMovementRow[];
   empleados: {
     id: string;
     name: string;
@@ -240,46 +244,7 @@ function CajaAbierta({ data }: { data: CajaData }) {
             </p>
           )}
 
-          {data.movimientos.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-line px-4 py-8 text-center text-sm text-ink-muted">
-              Todavía no hay movimientos. Las ventas se cargan solas.
-            </p>
-          ) : (
-            <ul className="divide-y divide-line-soft">
-              {data.movimientos.map((m) => (
-                <li key={m.id} className="flex items-center justify-between gap-3 py-2.5">
-                  <div className="flex min-w-0 items-center gap-2.5">
-                    <span
-                      className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg ${
-                        m.amount >= 0
-                          ? "bg-brand-500/10 text-brand-600"
-                          : "bg-rose-500/10 text-rose-600"
-                      }`}
-                    >
-                      {m.amount >= 0 ? (
-                        <ArrowDownLeft className="h-3.5 w-3.5" />
-                      ) : (
-                        <ArrowUpRight className="h-3.5 w-3.5" />
-                      )}
-                    </span>
-                    <div className="min-w-0">
-                      <div className="truncate text-sm text-ink">{m.description}</div>
-                      <div className="text-xs text-ink-muted">
-                        {movementLabel(m.kind)} · {paymentLabel(m.paymentMethod)}
-                      </div>
-                    </div>
-                  </div>
-                  <span
-                    className={`shrink-0 text-sm font-semibold tabular-nums ${
-                      m.amount >= 0 ? "text-ink" : "text-rose-600 dark:text-rose-400"
-                    }`}
-                  >
-                    {formatMoney(m.amount)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
+          <MovimientosList movimientos={data.movimientos} />
         </div>
 
         {/* Cierre */}
@@ -408,6 +373,159 @@ function CajaAbierta({ data }: { data: CajaData }) {
   );
 }
 
+// --- Movimientos y detalle de venta -----------------------------------------
+
+function MovimientosList({
+  movimientos,
+  vacio = "Todavía no hay movimientos. Las ventas se cargan solas.",
+}: {
+  movimientos: CashMovementRow[];
+  vacio?: string;
+}) {
+  if (movimientos.length === 0) {
+    return (
+      <p className="rounded-xl border border-dashed border-line px-4 py-8 text-center text-sm text-ink-muted">
+        {vacio}
+      </p>
+    );
+  }
+
+  return (
+    <ul className="divide-y divide-line-soft">
+      {movimientos.map((m) => (
+        <MovimientoRow key={m.id} m={m} />
+      ))}
+    </ul>
+  );
+}
+
+function MovimientoRow({ m }: { m: CashMovementRow }) {
+  const [abierto, setAbierto] = useState(false);
+  const venta = m.venta;
+  const entra = m.amount >= 0;
+
+  // En una venta el dato que se busca es a quién se le vendió; la descripción
+  // guardada siempre dice "Venta" y no distingue una fila de la otra.
+  const titulo = venta ? venta.customerName : m.description || movementLabel(m.kind);
+  const detalleItems = venta && venta.items.length > 0 ? itemsSummary(venta.items) : null;
+
+  // Todo spans: la fila de una venta se envuelve en un <button>, que solo
+  // admite contenido de frase.
+  const cabecera = (
+    <>
+      <span className="flex min-w-0 items-center gap-2.5">
+        <span
+          className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg ${
+            entra ? "bg-brand-500/10 text-brand-600" : "bg-rose-500/10 text-rose-600"
+          }`}
+        >
+          {venta ? (
+            <Receipt className="h-3.5 w-3.5" />
+          ) : entra ? (
+            <ArrowDownLeft className="h-3.5 w-3.5" />
+          ) : (
+            <ArrowUpRight className="h-3.5 w-3.5" />
+          )}
+        </span>
+        <span className="min-w-0">
+          <span className="block truncate text-sm font-medium text-ink">{titulo}</span>
+          <span className="block truncate text-xs text-ink-muted">
+            {detalleItems ?? movementLabel(m.kind)} · {paymentLabel(m.paymentMethod)} ·{" "}
+            {formatTime(m.createdAt)}
+          </span>
+        </span>
+      </span>
+      <span className="flex shrink-0 items-center gap-2">
+        <span
+          className={`text-sm font-semibold tabular-nums ${
+            entra ? "text-ink" : "text-rose-600 dark:text-rose-400"
+          }`}
+        >
+          {formatMoney(m.amount)}
+        </span>
+        {venta && (
+          <ChevronDown
+            className={`h-4 w-4 text-ink-faint transition-transform ${abierto ? "rotate-180" : ""}`}
+            aria-hidden
+          />
+        )}
+      </span>
+    </>
+  );
+
+  // Sin venta asociada no hay nada que desplegar (un egreso ya se muestra
+  // entero), así que la fila no se vuelve un botón que no hace nada.
+  if (!venta) {
+    return <li className="flex items-center justify-between gap-3 py-2.5">{cabecera}</li>;
+  }
+
+  return (
+    <li className="py-1">
+      <button
+        type="button"
+        onClick={() => setAbierto((v) => !v)}
+        aria-expanded={abierto}
+        className="flex w-full items-center justify-between gap-3 rounded-lg py-1.5 text-left transition hover:bg-surface-2"
+      >
+        {cabecera}
+      </button>
+      {abierto && <VentaDetalle venta={venta} />}
+    </li>
+  );
+}
+
+function VentaDetalle({ venta }: { venta: NonNullable<CashMovementRow["venta"]> }) {
+  return (
+    <div className="mb-2 ml-9 rounded-xl bg-surface-2 p-3 text-sm">
+      {venta.items.length === 0 ? (
+        <p className="text-ink-muted">
+          Esta venta se cargó sin detalle de ítems, solo con el importe.
+        </p>
+      ) : (
+        <ul className="space-y-1">
+          {venta.items.map((i) => (
+            <li key={i.id} className="flex items-baseline justify-between gap-3">
+              <span className="min-w-0 text-ink-soft">
+                <span className="tabular-nums text-ink-muted">{i.quantity}×</span> {i.name}
+                {i.quantity > 1 && (
+                  <span className="text-xs text-ink-faint"> ({formatMoney(i.unitPrice)} c/u)</span>
+                )}
+              </span>
+              <span className="shrink-0 tabular-nums text-ink">{formatMoney(i.subtotal)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {venta.discount > 0 && (
+        <div className="mt-2 border-t border-line pt-2">
+          <Row label="Subtotal" value={formatMoney(venta.subtotal)} />
+          <Row
+            label={venta.discountNote ? `Descuento (${venta.discountNote})` : "Descuento"}
+            value={`- ${formatMoney(venta.discount)}`}
+          />
+        </div>
+      )}
+
+      <div className="mt-2 border-t border-line pt-2">
+        <Row label="Total cobrado" value={formatMoney(venta.total)} strong />
+      </div>
+
+      {venta.employeeName && (
+        <p className="mt-2 text-xs text-ink-muted">Atendió {venta.employeeName}</p>
+      )}
+      {venta.note && <p className="mt-1 text-xs text-ink-muted">{venta.note}</p>}
+
+      <Link
+        href={`/clientes/${venta.customerId}`}
+        className="mt-2 inline-block text-xs font-semibold text-brand-700 underline dark:text-brand-300"
+      >
+        Ver ficha de {venta.customerName}
+      </Link>
+    </div>
+  );
+}
+
 function Row({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
     <div className="flex items-center justify-between">
@@ -421,32 +539,103 @@ function Cierres({ cierres }: { cierres: CajaData["cierres"] }) {
   if (cierres.length === 0) return null;
   return (
     <div className="card p-5">
-      <h2 className="mb-3 font-display font-bold text-ink">Últimos cierres</h2>
+      <h2 className="mb-1 font-display font-bold text-ink">Últimos cierres</h2>
+      <p className="mb-3 text-sm text-ink-muted">
+        Tocá un cierre para ver las ventas de ese turno.
+      </p>
       <ul className="divide-y divide-line-soft">
         {cierres.map((c) => (
-          <li key={c.id} className="flex items-center justify-between gap-3 py-2.5">
-            <span className="text-sm text-ink-soft">{formatDate(c.closedAt)}</span>
-            <div className="flex items-center gap-4 text-sm tabular-nums">
-              <span className="text-ink-muted">
-                Esperado {formatMoney(c.expectedAmount)}
-              </span>
-              <span className="text-ink">Contado {formatMoney(c.countedAmount)}</span>
-              <span
-                className={`font-semibold ${
-                  c.difference === 0
-                    ? "text-brand-700 dark:text-brand-300"
-                    : "text-amber-800 dark:text-amber-300"
-                }`}
-              >
-                {c.difference === 0
-                  ? "OK"
-                  : `${c.difference > 0 ? "+" : ""}${formatMoney(c.difference)}`}
-              </span>
-            </div>
-          </li>
+          <CierreRow key={c.id} c={c} />
         ))}
       </ul>
     </div>
+  );
+}
+
+function CierreRow({ c }: { c: CajaData["cierres"][number] }) {
+  const [abierto, setAbierto] = useState(false);
+  const [detalle, setDetalle] = useState<CashSessionDetail | null>(null);
+  const [cargando, setCargando] = useState(false);
+  const [error, setError] = useState(false);
+
+  // El detalle se pide recién al abrir: diez turnos con todas sus ventas y sus
+  // ítems serían cientos de filas en cada visita a /caja, y casi siempre no se
+  // mira ninguna. Una vez traído queda cacheado en el estado.
+  async function toggle() {
+    const abrir = !abierto;
+    setAbierto(abrir);
+    if (!abrir || detalle || cargando) return;
+
+    setCargando(true);
+    setError(false);
+    try {
+      const d = await getCashSessionDetail(c.id);
+      if (d) setDetalle(d);
+      else setError(true);
+    } catch {
+      setError(true);
+    } finally {
+      setCargando(false);
+    }
+  }
+
+  return (
+    <li className="py-1">
+      <button
+        type="button"
+        onClick={toggle}
+        aria-expanded={abierto}
+        className="flex w-full flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-lg py-2 text-left transition hover:bg-surface-2"
+      >
+        <span className="flex items-center gap-2 text-sm text-ink-soft">
+          <ChevronDown
+            className={`h-4 w-4 shrink-0 text-ink-faint transition-transform ${
+              abierto ? "rotate-180" : ""
+            }`}
+            aria-hidden
+          />
+          {formatDate(c.closedAt)}
+        </span>
+        <span className="flex items-center gap-4 text-sm tabular-nums">
+          <span className="text-ink-muted">Esperado {formatMoney(c.expectedAmount)}</span>
+          <span className="text-ink">Contado {formatMoney(c.countedAmount)}</span>
+          <span
+            className={`font-semibold ${
+              c.difference === 0
+                ? "text-brand-700 dark:text-brand-300"
+                : "text-amber-800 dark:text-amber-300"
+            }`}
+          >
+            {c.difference === 0
+              ? "OK"
+              : `${c.difference > 0 ? "+" : ""}${formatMoney(c.difference)}`}
+          </span>
+        </span>
+      </button>
+
+      {abierto && (
+        <div className="mb-2 ml-6 rounded-xl bg-surface-2 p-3">
+          {cargando && <p className="text-sm text-ink-muted">Cargando el detalle…</p>}
+          {error && (
+            <p className="text-sm text-rose-700 dark:text-rose-300">
+              No se pudo traer el detalle de este turno.
+            </p>
+          )}
+          {detalle && (
+            <>
+              <p className="mb-2 text-xs text-ink-muted">
+                Abierta {formatTime(detalle.openedAt)} · cerrada {formatTime(c.closedAt)} · fondo
+                inicial {formatMoney(detalle.openingAmount)}
+              </p>
+              <MovimientosList
+                movimientos={detalle.movimientos}
+                vacio="Este turno cerró sin movimientos."
+              />
+            </>
+          )}
+        </div>
+      )}
+    </li>
   );
 }
 

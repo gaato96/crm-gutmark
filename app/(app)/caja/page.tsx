@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { getCurrentBusiness } from "@/lib/queries";
 import { currentCashSession } from "@/lib/cash-write";
+import { sessionMovements } from "@/lib/cash-read";
 import { cashExpected, periodRange } from "@/lib/cash";
 import { commissionsByEmployee, commissionDebtByEmployee } from "@/lib/reports";
 import { PageHeader } from "@/components/ui";
@@ -12,12 +13,9 @@ export default async function CajaPage() {
   const biz = await getCurrentBusiness();
   const abierta = await currentCashSession(biz.id);
 
-  const movimientos = abierta
-    ? await db.cashMovement.findMany({
-        where: { sessionId: abierta.id },
-        orderBy: { createdAt: "desc" },
-      })
-    : [];
+  // Cada movimiento de venta viene con el cliente y los ítems ya resueltos: en
+  // el mostrador, "Venta $12.000" no dice nada — hace falta saber a quién y qué.
+  const movimientos = abierta ? await sessionMovements(biz.id, abierta.id) : [];
 
   // El esperado se calcula al vuelo mientras la caja está abierta; recién al
   // cerrar se congela en la fila.
@@ -67,14 +65,7 @@ export default async function CajaPage() {
         }
       : null,
     totales: totals,
-    movimientos: movimientos.map((m) => ({
-      id: m.id,
-      kind: m.kind,
-      amount: m.amount,
-      paymentMethod: m.paymentMethod,
-      description: m.description,
-      createdAt: m.createdAt.toISOString(),
-    })),
+    movimientos,
     empleados: empleados.map((e) => ({
       id: e.id,
       name: e.name,

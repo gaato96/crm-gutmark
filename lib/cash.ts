@@ -111,6 +111,51 @@ export function computeSaleCosts(params: {
   return costs;
 }
 
+// --- Detalle de una venta en la caja ----------------------------------------
+//
+// Los tipos viven acá, con el resto de lo puro, porque los consume la pantalla
+// client de Caja; quien los llena es `lib/cash-read.ts`, que sí es server-only.
+
+export interface SaleItemDetail {
+  id: string;
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  subtotal: number;
+}
+
+export interface SaleDetail {
+  purchaseId: string;
+  customerId: string;
+  customerName: string;
+  items: SaleItemDetail[];
+  subtotal: number;
+  discount: number;
+  discountNote: string | null;
+  total: number;
+  employeeName: string | null;
+  note: string | null;
+}
+
+export interface CashMovementRow {
+  id: string;
+  kind: string;
+  amount: number;
+  paymentMethod: string;
+  description: string;
+  createdAt: string;
+  // Solo en los movimientos de tipo "venta" que todavía tienen su compra.
+  venta: SaleDetail | null;
+}
+
+// Resumen de una venta en una línea: "2× Corte + Barba". Vive acá, con el
+// resto de la aritmética de caja, porque lo usa la pantalla client.
+export function itemsSummary(items: { name: string; quantity: number }[]): string {
+  return items
+    .map((i) => (i.quantity > 1 ? `${i.quantity}\u00d7 ${i.name}` : i.name))
+    .join(" + ");
+}
+
 // --- Arqueo -----------------------------------------------------------------
 
 export interface CashTotals {

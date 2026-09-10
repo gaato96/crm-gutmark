@@ -372,6 +372,22 @@ pantallas. Por eso `MODULE_NAV` tiene dos filas con el mismo `code` — el sideb
 usa el `href` como clave de React, que sí es único. Antes eran dos módulos
 separados; `npm run db:migrate-modules` fusiona los datos viejos.
 
+**El detalle de una venta NO se copia al movimiento de caja.** El
+`CashMovement` de una venta guarda solo el importe y la descripción `"Venta"`;
+el cliente y los ítems se resuelven al leer, siguiendo `CashMovement.purchaseId`
+hasta `Purchase` (`lib/cash-read.ts`, `sessionMovements()`). Es lo contrario del
+criterio de `SaleCost` a propósito: una comisión ya devengada no puede cambiar
+si mañana se toca el porcentaje, pero qué se vendió y a quién ya está congelado
+en `PurchaseItem.name` / `unitPrice`, así que duplicarlo en el movimiento solo
+lograría que las ventas ya registradas se quedaran sin detalle. Los tipos
+(`CashMovementRow`, `SaleDetail`) viven en `lib/cash.ts`, que es puro, porque
+los consume la pantalla client.
+
+El historial de cierres se despliega **a demanda**: `getCashSessionDetail()`
+(`app/cash-actions.ts`) trae los movimientos de un turno cerrado recién cuando
+se abre la fila. Traer los diez cierres con sus ventas y sus ítems en cada
+visita a `/caja` serían cientos de filas que casi nunca se miran.
+
 **Los costos son una foto.** `SaleCost` guarda el nombre y el importe ya
 calculados. Si mañana se le sube la comisión a un barbero, lo que se le debía por
 los cortes del mes pasado no cambia. Por eso la etiqueta dice "Comisión Juan" en
