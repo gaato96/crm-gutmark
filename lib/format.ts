@@ -1,3 +1,8 @@
+import { DEFAULT_TZ } from "./tz";
+
+// Las fechas y horas de instantes (ventas, cajas, mensajes) se muestran en la
+// hora del negocio. Sin timeZone, el servidor (UTC en Vercel) las renderizaba
+// tres horas corridas, y además no coincidían con lo que pintaba el navegador.
 export function formatMoney(amount: number): string {
   return new Intl.NumberFormat("es-AR", {
     style: "currency",
@@ -13,6 +18,7 @@ export function formatDate(date: Date | string | null | undefined): string {
     day: "2-digit",
     month: "short",
     year: "numeric",
+    timeZone: DEFAULT_TZ,
   }).format(d);
 }
 
@@ -35,6 +41,7 @@ export function formatDateShort(date: Date | string | null | undefined): string 
   return new Intl.DateTimeFormat("es-AR", {
     day: "2-digit",
     month: "2-digit",
+    timeZone: DEFAULT_TZ,
   }).format(d);
 }
 
@@ -79,4 +86,17 @@ export function avatarColor(name: string): string {
   let hash = 0;
   for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
   return palette[Math.abs(hash) % palette.length];
+}
+
+// Hora del día. La lista de caja es de un turno: sin la hora, dos ventas del
+// mismo cliente son indistinguibles.
+export function formatTime(date: Date | string | null | undefined): string {
+  if (!date) return "—";
+  const d = typeof date === "string" ? new Date(date) : date;
+  return new Intl.DateTimeFormat("es-AR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: DEFAULT_TZ,
+  }).format(d);
 }

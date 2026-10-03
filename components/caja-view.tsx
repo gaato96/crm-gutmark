@@ -17,6 +17,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   Banknote,
+  ChevronDown,
 } from "lucide-react";
 import {
   openCashSession,
@@ -29,24 +30,25 @@ import {
   toggleCostRule,
   deleteCostRule,
   payEmployeeCommission,
+  getCashSessionDetail,
   type CashFormState,
+  type CashSessionDetail,
 } from "@/app/cash-actions";
-import { formatMoney, formatDate } from "@/lib/format";
-import { MOVEMENT_KINDS, movementLabel, type CashTotals } from "@/lib/cash";
+import { formatMoney, formatDate, formatTime } from "@/lib/format";
+import {
+  MOVEMENT_KINDS,
+  movementLabel,
+  type CashTotals,
+  type CashMovementRow,
+} from "@/lib/cash";
 import { PAYMENT_METHODS, paymentLabel } from "@/lib/sales";
 import { SubmitButton } from "./submit-button";
+import { SaleRow, saleItemsLine } from "./sale-detail";
 
 export interface CajaData {
   sesion: { id: string; openedAt: string; openingAmount: number; notes: string | null } | null;
   totales: CashTotals | null;
-  movimientos: {
-    id: string;
-    kind: string;
-    amount: number;
-    paymentMethod: string;
-    description: string;
-    createdAt: string;
-  }[];
+  movimientos: CashMovementRow[];
   empleados: {
     id: string;
     name: string;
@@ -240,46 +242,7 @@ function CajaAbierta({ data }: { data: CajaData }) {
             </p>
           )}
 
-          {data.movimientos.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-line px-4 py-8 text-center text-sm text-ink-muted">
-              Todavía no hay movimientos. Las ventas se cargan solas.
-            </p>
-          ) : (
-            <ul className="divide-y divide-line-soft">
-              {data.movimientos.map((m) => (
-                <li key={m.id} className="flex items-center justify-between gap-3 py-2.5">
-                  <div className="flex min-w-0 items-center gap-2.5">
-                    <span
-                      className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg ${
-                        m.amount >= 0
-                          ? "bg-brand-500/10 text-brand-600"
-                          : "bg-rose-500/10 text-rose-600"
-                      }`}
-                    >
-                      {m.amount >= 0 ? (
-                        <ArrowDownLeft className="h-3.5 w-3.5" />
-                      ) : (
-                        <ArrowUpRight className="h-3.5 w-3.5" />
-                      )}
-                    </span>
-                    <div className="min-w-0">
-                      <div className="truncate text-sm text-ink">{m.description}</div>
-                      <div className="text-xs text-ink-muted">
-                        {movementLabel(m.kind)} · {paymentLabel(m.paymentMethod)}
-                      </div>
-                    </div>
-                  </div>
-                  <span
-                    className={`shrink-0 text-sm font-semibold tabular-nums ${
-                      m.amount >= 0 ? "text-ink" : "text-rose-600 dark:text-rose-400"
-                    }`}
-                  >
-                    {formatMoney(m.amount)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
+          <MovimientosList movimientos={data.movimientos} />
         </div>
 
         {/* Cierre */}
@@ -408,6 +371,89 @@ function CajaAbierta({ data }: { data: CajaData }) {
   );
 }
 
+// --- Movimientos y detalle de venta -----------------------------------------
+
+function MovimientosList({
+  movimientos,
+  vacio = "Todavía no hay movimientos. Las ventas se cargan solas.",
+}: {
+  movimientos: CashMovementRow[];
+  vacio?: string;
+}) {
+  if (movimientos.length === 0) {
+    return (
+      <p className="rounded-xl border border-dashed border-line px-4 py-8 text-center text-sm text-ink-muted">
+        {vacio}
+      </p>
+    );
+  }
+
+  return (
+    <ul className="divide-y divide-line-soft">
+      {movimientos.map((m) => (
+        <MovimientoRow key={m.id} m={m} />
+      ))}
+    </ul>
+  );
+}
+
+function MovimientoRow({ m }: { m: CashMovementRow }) {
+  const venta = m.venta;
+  const entra = m.amount >= 0;
+
+  // Una venta se despliega con el componente compartido con Reportes: la misma
+  // venta tiene que leerse igual en las dos pantallas. En Caja la línea chica
+  // lleva la hora, que es lo que ubica el movimiento dentro del turno.
+  if (venta) {
+    return (
+      <SaleRow
+        venta={venta}
+        meta={
+          <>
+            {saleItemsLine(venta) ?? movementLabel(m.kind)} · {paymentLabel(m.paymentMethod)} ·{" "}
+            {formatTime(m.createdAt)}
+          </>
+        }
+      />
+    );
+  }
+
+  // Un ingreso o egreso cargado a mano ya se muestra entero, así que la fila no
+  // se vuelve un botón que no hace nada.
+  return (
+    <li className="flex items-center justify-between gap-3 py-2.5">
+      <div className="flex min-w-0 items-center gap-2.5">
+        <span
+          className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg ${
+            entra ? "bg-brand-500/10 text-brand-600" : "bg-rose-500/10 text-rose-600"
+          }`}
+        >
+          {entra ? (
+            <ArrowDownLeft className="h-3.5 w-3.5" />
+          ) : (
+            <ArrowUpRight className="h-3.5 w-3.5" />
+          )}
+        </span>
+        <div className="min-w-0">
+          <div className="truncate text-sm font-medium text-ink">
+            {m.description || movementLabel(m.kind)}
+          </div>
+          <div className="truncate text-xs text-ink-muted">
+            {movementLabel(m.kind)} · {paymentLabel(m.paymentMethod)} · {formatTime(m.createdAt)}
+          </div>
+        </div>
+      </div>
+      <span
+        className={`shrink-0 text-sm font-semibold tabular-nums ${
+          entra ? "text-ink" : "text-rose-600 dark:text-rose-400"
+        }`}
+      >
+        {formatMoney(m.amount)}
+      </span>
+    </li>
+  );
+}
+
 function Row({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
     <div className="flex items-center justify-between">
@@ -421,32 +467,103 @@ function Cierres({ cierres }: { cierres: CajaData["cierres"] }) {
   if (cierres.length === 0) return null;
   return (
     <div className="card p-5">
-      <h2 className="mb-3 font-display font-bold text-ink">Últimos cierres</h2>
+      <h2 className="mb-1 font-display font-bold text-ink">Últimos cierres</h2>
+      <p className="mb-3 text-sm text-ink-muted">
+        Tocá un cierre para ver las ventas de ese turno.
+      </p>
       <ul className="divide-y divide-line-soft">
         {cierres.map((c) => (
-          <li key={c.id} className="flex items-center justify-between gap-3 py-2.5">
-            <span className="text-sm text-ink-soft">{formatDate(c.closedAt)}</span>
-            <div className="flex items-center gap-4 text-sm tabular-nums">
-              <span className="text-ink-muted">
-                Esperado {formatMoney(c.expectedAmount)}
-              </span>
-              <span className="text-ink">Contado {formatMoney(c.countedAmount)}</span>
-              <span
-                className={`font-semibold ${
-                  c.difference === 0
-                    ? "text-brand-700 dark:text-brand-300"
-                    : "text-amber-800 dark:text-amber-300"
-                }`}
-              >
-                {c.difference === 0
-                  ? "OK"
-                  : `${c.difference > 0 ? "+" : ""}${formatMoney(c.difference)}`}
-              </span>
-            </div>
-          </li>
+          <CierreRow key={c.id} c={c} />
         ))}
       </ul>
     </div>
+  );
+}
+
+function CierreRow({ c }: { c: CajaData["cierres"][number] }) {
+  const [abierto, setAbierto] = useState(false);
+  const [detalle, setDetalle] = useState<CashSessionDetail | null>(null);
+  const [cargando, setCargando] = useState(false);
+  const [error, setError] = useState(false);
+
+  // El detalle se pide recién al abrir: diez turnos con todas sus ventas y sus
+  // ítems serían cientos de filas en cada visita a /caja, y casi siempre no se
+  // mira ninguna. Una vez traído queda cacheado en el estado.
+  async function toggle() {
+    const abrir = !abierto;
+    setAbierto(abrir);
+    if (!abrir || detalle || cargando) return;
+
+    setCargando(true);
+    setError(false);
+    try {
+      const d = await getCashSessionDetail(c.id);
+      if (d) setDetalle(d);
+      else setError(true);
+    } catch {
+      setError(true);
+    } finally {
+      setCargando(false);
+    }
+  }
+
+  return (
+    <li className="py-1">
+      <button
+        type="button"
+        onClick={toggle}
+        aria-expanded={abierto}
+        className="flex w-full flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-lg py-2 text-left transition hover:bg-surface-2"
+      >
+        <span className="flex items-center gap-2 text-sm text-ink-soft">
+          <ChevronDown
+            className={`h-4 w-4 shrink-0 text-ink-faint transition-transform ${
+              abierto ? "rotate-180" : ""
+            }`}
+            aria-hidden
+          />
+          {formatDate(c.closedAt)}
+        </span>
+        <span className="flex items-center gap-4 text-sm tabular-nums">
+          <span className="text-ink-muted">Esperado {formatMoney(c.expectedAmount)}</span>
+          <span className="text-ink">Contado {formatMoney(c.countedAmount)}</span>
+          <span
+            className={`font-semibold ${
+              c.difference === 0
+                ? "text-brand-700 dark:text-brand-300"
+                : "text-amber-800 dark:text-amber-300"
+            }`}
+          >
+            {c.difference === 0
+              ? "OK"
+              : `${c.difference > 0 ? "+" : ""}${formatMoney(c.difference)}`}
+          </span>
+        </span>
+      </button>
+
+      {abierto && (
+        <div className="mb-2 ml-6 rounded-xl bg-surface-2 p-3">
+          {cargando && <p className="text-sm text-ink-muted">Cargando el detalle…</p>}
+          {error && (
+            <p className="text-sm text-rose-700 dark:text-rose-300">
+              No se pudo traer el detalle de este turno.
+            </p>
+          )}
+          {detalle && (
+            <>
+              <p className="mb-2 text-xs text-ink-muted">
+                Abierta {formatTime(detalle.openedAt)} · cerrada {formatTime(c.closedAt)} · fondo
+                inicial {formatMoney(detalle.openingAmount)}
+              </p>
+              <MovimientosList
+                movimientos={detalle.movimientos}
+                vacio="Este turno cerró sin movimientos."
+              />
+            </>
+          )}
+        </div>
+      )}
+    </li>
   );
 }
 

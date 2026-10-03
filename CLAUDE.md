@@ -447,6 +447,35 @@ pantallas. Por eso `MODULE_NAV` tiene dos filas con el mismo `code` — el sideb
 usa el `href` como clave de React, que sí es único. Antes eran dos módulos
 separados; `npm run db:migrate-modules` fusiona los datos viejos.
 
+**El detalle de una venta NO se copia al movimiento de caja.** El
+`CashMovement` de una venta guarda solo el importe y la descripción `"Venta"`;
+el cliente y los ítems se resuelven al leer, siguiendo `CashMovement.purchaseId`
+hasta `Purchase` (`lib/cash-read.ts`, `sessionMovements()`). Es lo contrario del
+criterio de `SaleCost` a propósito: una comisión ya devengada no puede cambiar
+si mañana se toca el porcentaje, pero qué se vendió y a quién ya está congelado
+en `PurchaseItem.name` / `unitPrice`, así que duplicarlo en el movimiento solo
+lograría que las ventas ya registradas se quedaran sin detalle. Los tipos
+(`CashMovementRow`, `SaleDetail`) viven en `lib/cash.ts`, que es puro, porque
+los consume la pantalla client.
+
+El historial de cierres se despliega **a demanda**: `getCashSessionDetail()`
+(`app/cash-actions.ts`) trae los movimientos de un turno cerrado recién cuando
+se abre la fila. Traer los diez cierres con sus ventas y sus ítems en cada
+visita a `/caja` serían cientos de filas que casi nunca se miran.
+
+Reportes muestra la misma lista, venta por venta, con `periodSales()` — que
+**no** sale de `buildPeriodReport()` a propósito: ese corre dos veces (período
+actual y anterior) y el anterior solo se usa para los deltas, así que meter la
+lista adentro duplicaría el payload al cliente para nada. Va acotada a
+`SALES_DETAIL_LIMIT` ventas: un mes cargado puede tener cientos, y el resto de
+la pantalla ya son totales.
+
+La fila desplegable es **un solo componente** (`components/sale-detail.tsx`,
+`<SaleRow>` + `<SaleDetailPanel>`) que usan las dos pantallas: la misma venta
+tiene que leerse igual en Caja y en Reportes. Lo que cambia es la línea chica
+de abajo, que cada pantalla arma con lo suyo y pasa por la prop `meta` — Caja
+pone la hora (todo es del mismo turno), Reportes la fecha.
+
 **Los costos son una foto.** `SaleCost` guarda el nombre y el importe ya
 calculados. Si mañana se le sube la comisión a un barbero, lo que se le debía por
 los cortes del mes pasado no cambia. Por eso la etiqueta dice "Comisión Juan" en

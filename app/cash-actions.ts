@@ -5,9 +5,25 @@ import { db } from "@/lib/db";
 import { requireModule } from "@/lib/module-guard";
 import { getSessionUser } from "@/lib/auth";
 import { catalogWords } from "@/lib/rubros";
-import { cashExpected, cashDifference, isMovementKind, signedAmount } from "@/lib/cash";
+import {
+  cashExpected,
+  cashDifference,
+  isMovementKind,
+  signedAmount,
+  type CashMovementRow,
+} from "@/lib/cash";
 import { currentCashSession } from "@/lib/cash-write";
+import { sessionMovements } from "@/lib/cash-read";
 import { isPaymentMethod, round2 } from "@/lib/sales";
+
+export interface CashSessionDetail {
+  id: string;
+  openedAt: string;
+  closedAt: string | null;
+  openingAmount: number;
+  notes: string | null;
+  movimientos: CashMovementRow[];
+}
 
 export interface CashFormState {
   error?: string;
@@ -382,4 +398,34 @@ export async function listEmployeesForSale(): Promise<SaleContext> {
     select: { id: true, name: true },
   });
   return { employees, sellerLabel };
+}
+
+// --- Detalle de un cierre pasado --------------------------------------------
+
+// Los movimientos de una caja ya cerrada, para desplegar el detalle sin cargar
+// de entrada el historial completo: diez cierres con sus ventas y sus ítems
+// serían cientos de filas en cada visita a /caja, y casi siempre no se mira
+// ninguna.
+//
+// El id viene del cliente, así que la query va escopeada por el negocio de la
+// sesión: un Server Action es un endpoint POST direccionable por su id y la UI
+// mostrando solo lo propio no alcanza.
+export async function getCashSessionDetail(sessionId: string): Promise<CashSessionDetail | null> {
+  const session = await requireModule("caja");
+  const businessId = session.business.id;
+
+  const caja = await db.cashSession.findFirst({
+    where: { id: sessionId, businessId },
+    select: { id: true, openedAt: true, closedAt: true, openingAmount: true, notes: true },
+  });
+  if (!caja) return null;
+
+  return {
+    id: caja.id,
+    openedAt: caja.openedAt.toISOString(),
+    closedAt: caja.closedAt?.toISOString() ?? null,
+    openingAmount: caja.openingAmount,
+    notes: caja.notes,
+    movimientos: await sessionMovements(businessId, caja.id),
+  };
 }
