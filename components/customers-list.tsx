@@ -1,5 +1,6 @@
 "use client";
 
+import { matchesSearch } from "@/lib/search";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Search, ChevronRight, Cake } from "lucide-react";
@@ -48,15 +49,14 @@ export function CustomersList({
   const [filter, setFilter] = useState<"todos" | Segment>(initialFilter);
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = query.trim();
+    const digits = q.replace(/\D/g, "");
     return customers.filter((c) => {
       if (filter !== "todos" && c.segment !== filter) return false;
       if (!q) return true;
       return (
-        c.name.toLowerCase().includes(q) ||
-        (c.email ?? "").toLowerCase().includes(q) ||
-        (c.phone ?? "").includes(q) ||
-        c.tags.some((t) => t.toLowerCase().includes(q))
+        matchesSearch(`${c.name} ${c.email ?? ""} ${c.tags.join(" ")}`, q) ||
+        (digits.length >= 3 && (c.phone ?? "").replace(/\D/g, "").includes(digits))
       );
     });
   }, [customers, query, filter]);
@@ -92,7 +92,7 @@ export function CustomersList({
               onClick={() => setFilter(f.key)}
               className={`inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-medium transition ${
                 active
-                  ? "bg-brand-600 text-white"
+                  ? "bg-brand-700 text-white"
                   : "bg-surface text-ink-soft ring-1 ring-inset ring-line hover:bg-surface-2"
               }`}
             >

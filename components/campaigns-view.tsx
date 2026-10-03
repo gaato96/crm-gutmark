@@ -11,7 +11,9 @@ import {
   Users2,
   Sparkles,
   Lock,
+  TrendingUp,
 } from "lucide-react";
+import { formatMoney } from "@/lib/format";
 import { CampaignComposer, type Audience } from "./campaign-composer";
 import {
   CampaignEditor,
@@ -161,14 +163,25 @@ function CampaignCard({ c, onEdit }: { c: CampaignItem; onEdit: () => void }) {
         {c.triggerLabel}
       </p>
 
-      <p className="mb-4 text-sm">
-        <span className="font-display text-lg font-bold text-brand-700 dark:text-brand-300">
-          {c.reach}
-        </span>{" "}
-        <span className="text-ink-muted">
-          {c.reach === 1 ? "cliente entra hoy" : "clientes entran hoy"}
-        </span>
-      </p>
+      <div className="mb-4 flex flex-wrap items-end gap-x-6 gap-y-2 text-sm">
+        <p>
+          <span className="font-display text-lg font-bold text-ink">{c.reach}</span>{" "}
+          <span className="text-ink-muted">
+            {c.reach === 1 ? "cliente entra hoy" : "clientes entran hoy"}
+          </span>
+        </p>
+        {/* Lo que trajo: es el número que justifica tener la campaña activa. */}
+        {(c.impactCustomers ?? 0) > 0 && (
+          <p className="inline-flex items-center gap-1.5 text-brand-700 dark:text-brand-300">
+            <TrendingUp className="h-4 w-4" aria-hidden="true" />
+            <span>
+              <strong className="font-display">{formatMoney(c.impactRevenue ?? 0)}</strong> de{" "}
+              {c.impactCustomers} {c.impactCustomers === 1 ? "cliente que volvió" : "clientes que volvieron"}{" "}
+              <span className="text-ink-muted">(30 días)</span>
+            </span>
+          </p>
+        )}
+      </div>
 
       <div className="flex flex-wrap gap-2">
         <button onClick={onEdit} disabled={busy} className="btn-secondary !py-2 text-xs">

@@ -7,6 +7,11 @@ import {
   RotateCcw,
   ArrowRight,
   TrendingUp,
+  Send,
+  CheckCircle2,
+  Repeat,
+  Hourglass,
+  UserMinus,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import {
@@ -17,7 +22,12 @@ import {
   getCampaigns,
   getServices,
   ruleDefaults,
+  getCampaignContacts,
+  coveringContact,
 } from "@/lib/queries";
+import { matchesCampaign } from "@/lib/campaigns";
+import { campaignImpact, moneyAtStake } from "@/lib/insights";
+import { zonedDayKey } from "@/lib/tz";
 import { formatMoney } from "@/lib/format";
 import { SEGMENT_META, Segment } from "@/lib/segmentation";
 import { StatCard } from "@/components/stat-card";
@@ -36,13 +46,44 @@ function pctDelta(current: number, previous: number): number | undefined {
 export default async function DashboardPage() {
   const biz = await getCurrentBusiness();
   const cfg = toConfig(biz);
-  const customers = await getEnrichedCustomers(biz.id, cfg);
-  const campaigns = await getCampaigns(biz.id);
-  const stats = buildDashboard(
-    customers,
-    campaigns.filter((c) => c.active),
-    ruleDefaults(biz, await getServices(biz.id))
-  );
+  const [customers, campaigns, services, contacts, impact] = await Promise.all([
+    getEnrichedCustomers(biz.id, cfg),
+    getCampaigns(biz.id),
+    getServices(biz.id),
+    getCampaignContacts(biz.id),
+    campaignImpact(biz.id),
+  ]);
+  const defaults = ruleDefaults(biz, services);
+  const activeCampaigns = campaigns.filter((c) => c.active);
+  const stats = buildDashboard(customers, activeCampaigns, defaults, contacts);
+  const stake = moneyAtStake(customers);
+
+  // Plan del día: por campaña, cuántos faltan y cuántos ya recibieron el
+  // mensaje en este ciclo. Es lo primero que se ve: el panel no es un reporte,
+  // es la lista de cosas que hoy traen plata.
+  const pendingSet = new Set<string>();
+  const sentSet = new Set<string>();
+  const plan = activeCampaigns
+    .map((c) => {
+      let pending = 0;
+      let sent = 0;
+      for (const cu of customers) {
+        if (!matchesCampaign(cu, c, defaults)) continue;
+        if (coveringContact(contacts, c, cu)) {
+          sent++;
+          sentSet.add(cu.id);
+        } else {
+          pending++;
+          pendingSet.add(cu.id);
+        }
+      }
+      return { id: c.id, name: c.name, pending, sent };
+    })
+    .filter((p) => p.pending + p.sent > 0)
+    .sort((a, b) => b.pending - a.pending);
+  for (const id of pendingSet) sentSet.delete(id);
+  const planTotal = pendingSet.size + sentSet.size;
+  const planPct = planTotal ? Math.round((sentSet.size / planTotal) * 100) : 0;
 
   const now = new Date();
   const since30 = new Date(now.getTime() - 30 * DAY);
@@ -63,23 +104,20 @@ export default async function DashboardPage() {
   const prev30Total = purchasesPrev30._sum.amount ?? 0;
   const salesDelta = pctDelta(last30Total, prev30Total);
 
-  // Serie diaria para el gráfico
+  // Serie diaria para el gráfico, por día calendario del negocio: con
+  // toISOString (UTC) las ventas de después de las 21:00 caían al día siguiente.
   const byDay = new Map<string, number>();
   for (let i = 29; i >= 0; i--) {
-    const d = new Date(now.getTime() - i * DAY);
-    byDay.set(d.toISOString().slice(0, 10), 0);
+    byDay.set(zonedDayKey(new Date(now.getTime() - i * DAY), biz.timezone), 0);
   }
   for (const p of purchasesLast30) {
-    const key = new Date(p.date).toISOString().slice(0, 10);
+    const key = zonedDayKey(new Date(p.date), biz.timezone);
     if (byDay.has(key)) byDay.set(key, (byDay.get(key) ?? 0) + p.amount);
   }
-  const chartData: SalesPoint[] = [...byDay.entries()].map(([key, total]) => {
-    const d = new Date(key + "T00:00:00");
-    return {
-      label: d.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" }),
-      total,
-    };
-  });
+  const chartData: SalesPoint[] = [...byDay.entries()].map(([key, total]) => ({
+    label: `${key.slice(8, 10)}/${key.slice(5, 7)}`,
+    total,
+  }));
 
   const newCustomers30 = customers.filter((c) => c.createdAt >= since30).length;
   const newCustomersPrev30 = customers.filter(
@@ -102,13 +140,154 @@ export default async function DashboardPage() {
 
   const segments = Object.keys(SEGMENT_META) as Segment[];
   const maxSeg = Math.max(1, ...segments.map((s) => stats.segmentCounts[s]));
+  const todayLabel = now.toLocaleDateString("es-AR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone: biz.timezone,
+  });
 
   return (
     <div className="animate-fade-in">
       <PageHeader
-        title={`Hola, ${biz.name} 👋`}
-        subtitle="Este es el resumen de tu cartera de clientes y las oportunidades de venta de hoy."
+        title={`Hola, ${biz.name}`}
+        subtitle={`${todayLabel.charAt(0).toUpperCase()}${todayLabel.slice(1)} · Esto es lo que hoy te puede traer ventas.`}
       />
+
+      {/* Plan de hoy */}
+      <section
+        aria-labelledby="plan-hoy"
+        className="card mb-6 overflow-hidden lg:grid lg:grid-cols-[1.1fr_1fr]"
+      >
+        <div className="grain relative overflow-hidden bg-gradient-to-br from-accent-600 to-accent-800 p-6 text-white sm:p-7">
+          <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-brand-400/20 blur-3xl" />
+          <div className="relative">
+            <h2
+              id="plan-hoy"
+              className="font-display text-xs font-semibold uppercase tracking-[0.14em] text-accent-100"
+            >
+              Tu plan de hoy
+            </h2>
+            {pendingSet.size > 0 ? (
+              <>
+                <p className="mt-3 font-display text-4xl font-bold tabular-nums sm:text-5xl">
+                  {pendingSet.size}
+                </p>
+                <p className="mt-1 text-lg font-semibold leading-snug">
+                  {pendingSet.size === 1 ? "cliente para contactar" : "clientes para contactar"}
+                </p>
+                <p className="mt-2 max-w-sm text-sm leading-relaxed text-accent-100">
+                  Cada mensaje ya está escrito con su nombre. Mandarlos te lleva menos que un café.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="mt-3 font-display text-2xl font-bold">¡Estás al día!</p>
+                <p className="mt-2 max-w-sm text-sm leading-relaxed text-accent-100">
+                  No queda nadie pendiente en tus campañas activas. Mañana el sistema arma la lista de
+                  nuevo.
+                </p>
+              </>
+            )}
+            {planTotal > 0 && (
+              <div className="mt-5 max-w-sm">
+                <div className="mb-1.5 flex justify-between text-xs font-medium text-accent-100">
+                  <span>
+                    {sentSet.size} de {planTotal} ya contactados
+                  </span>
+                  <span className="tabular-nums">{planPct}%</span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-white/15">
+                  <div className="h-full rounded-full bg-brand-400" style={{ width: `${planPct}%` }} />
+                </div>
+              </div>
+            )}
+            <Link
+              href="/campanas"
+              className="btn mt-6 bg-white !px-5 !py-3 text-accent-700 shadow-pop hover:bg-accent-50"
+            >
+              <Send className="h-4 w-4" aria-hidden="true" />
+              {pendingSet.size > 0 ? "Empezar a enviar" : "Ver campañas"}
+            </Link>
+          </div>
+        </div>
+        <div className="p-5 sm:p-6">
+          <SectionTitle hint="Por campaña">A quién escribirle</SectionTitle>
+          {plan.length === 0 ? (
+            <p className="py-6 text-sm text-ink-muted">
+              Ninguna campaña activa tiene clientes hoy. Revisá tus campañas o cargá ventas para que el
+              sistema detecte oportunidades.
+            </p>
+          ) : (
+            <ul className="space-y-1">
+              {plan.slice(0, 6).map((p) => (
+                <li key={p.id}>
+                  <Link
+                    href="/campanas"
+                    className="flex items-center gap-3 rounded-xl px-2.5 py-2.5 transition hover:bg-surface-2"
+                  >
+                    <span
+                      className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${
+                        p.pending === 0
+                          ? "bg-brand-500/15 text-brand-700 dark:text-brand-300"
+                          : "bg-accent-500/10 text-accent-600 dark:text-accent-300"
+                      }`}
+                    >
+                      {p.pending === 0 ? (
+                        <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+                      ) : (
+                        <Send className="h-4 w-4" aria-hidden="true" />
+                      )}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold text-ink">{p.name}</span>
+                      <span className="block text-xs text-ink-muted">
+                        {p.pending === 0
+                          ? "Todos contactados"
+                          : `${p.pending} por enviar${p.sent ? ` · ${p.sent} enviados` : ""}`}
+                      </span>
+                    </span>
+                    {p.pending > 0 && (
+                      <span className="rounded-full bg-surface-2 px-2 py-0.5 text-xs font-bold tabular-nums text-ink-soft">
+                        {p.pending}
+                      </span>
+                    )}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
+
+      {/* Lo que está en juego: la razón de ser del sistema, en plata */}
+      <div className="mb-6 grid gap-4 md:grid-cols-3">
+        <ValueCard
+          tone="brand"
+          icon={<Repeat className="h-5 w-5" aria-hidden="true" />}
+          label="Volvieron por tus mensajes"
+          value={formatMoney(impact.revenue)}
+          detail={
+            impact.customers > 0
+              ? `${impact.customers} ${impact.customers === 1 ? "cliente compró" : "clientes compraron"} dentro de los 14 días de recibir un mensaje (últimos 30 días).`
+              : "Cuando mandes mensajes desde Campañas, acá vas a ver cuánta plata vuelve gracias a eso."
+          }
+        />
+        <ValueCard
+          tone="accent"
+          icon={<Hourglass className="h-5 w-5" aria-hidden="true" />}
+          label="Recompra pendiente"
+          value={formatMoney(stake.dueRevenue)}
+          detail={`${stake.dueCustomers} ${stake.dueCustomers === 1 ? "cliente ya debería" : "clientes ya deberían"} haber vuelto. Si cada uno vuelve una vez, entra esto.`}
+        />
+        <ValueCard
+          tone="rose"
+          icon={<UserMinus className="h-5 w-5" aria-hidden="true" />}
+          label="Lo que se llevó la competencia"
+          value={`${formatMoney(stake.inactiveYearlyValue)}/año`}
+          detail={`Lo que gastaban por año tus ${stake.inactiveCustomers} clientes inactivos. Recuperar aunque sea uno de cada cinco ya paga el sistema.`}
+        />
+      </div>
 
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -338,6 +517,38 @@ function OpportunityBlock({
           ))}
         </ul>
       )}
+    </div>
+  );
+}
+
+function ValueCard({
+  tone,
+  icon,
+  label,
+  value,
+  detail,
+}: {
+  tone: "brand" | "accent" | "rose";
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  detail: string;
+}) {
+  const tones = {
+    brand: "bg-brand-500/12 text-brand-700 dark:text-brand-300",
+    accent: "bg-accent-500/10 text-accent-600 dark:text-accent-300",
+    rose: "bg-rose-500/10 text-rose-600 dark:text-rose-400",
+  };
+  return (
+    <div className="card p-5">
+      <div className="flex items-center gap-3">
+        <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${tones[tone]}`}>
+          {icon}
+        </span>
+        <span className="text-sm font-semibold text-ink-soft">{label}</span>
+      </div>
+      <div className="mt-4 break-words font-display text-2xl font-bold tabular-nums text-ink md:text-xl lg:text-2xl">{value}</div>
+      <p className="mt-1.5 text-xs leading-relaxed text-ink-muted">{detail}</p>
     </div>
   );
 }

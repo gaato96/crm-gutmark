@@ -70,6 +70,7 @@ npm run db:migrate-sales       # rellena Purchase.subtotal en ventas anteriores 
 npm run db:migrate-modules     # fusiona el módulo "reportes" dentro de "caja"; idempotente
 npm run db:migrate-rubros      # pasa Business.rubro de texto libre a códigos + fija catalogMode; idempotente
 npm run db:migrate-trigger-units  # triggerDays→triggerValue+unidad y commissionPct→valor+tipo; idempotente
+npm run demo:setup        # crea/regenera las cuentas demo (una por rubro); `-- barberia` para una sola
 npm run icons:generate    # regenera íconos PWA + og.png desde public/logo.svg via sharp
 node scripts/pdf-to-svg.cjs   # regenera public/logo*.svg desde el PDF del manual de marca
 ```
@@ -215,6 +216,28 @@ servicio, preguntar cómo salió.
 está en días, así que dejar el campo vacío daría 15 días donde el negocio quiso
 15 horas. El server rechaza esa combinación.
 
+**Tope opcional (`triggerMaxValue`).** Los disparadores por tiempo solo decían
+"desde": "2 horas después del servicio" alcanzaba también a quien compró hace
+tres meses. Con `triggerMaxValue` (misma unidad) la campaña es "entre 2 y 24
+horas". Null = sin tope, el comportamiento de siempre. Solo aplica a
+`days-since-purchase` y `service-recompra`.
+
+**Estado de envío: se persiste.** Tocar WhatsApp/email o "Ya lo envié" registra
+un `ContactLog` con la campaña. `contactCoversCycle()` (lib/campaigns.ts)
+decide si ese contacto "cubre" al cliente: en los disparadores por tiempo, si
+fue después de su última compra; en el resto, si fue en los últimos 30 días
+(`CONTACT_VALID_DAYS`). `getCampaignContacts()` + `coveringContact()` en
+`lib/queries.ts` lo resuelven con una sola consulta, y Campañas (pendientes /
+enviados con Deshacer), Recordatorios y el dashboard lo usan para no volver a
+mostrar como pendiente a quien ya se le escribió. `undoContact` borra el
+registro (scoped por negocio).
+
+**Lo que trajo cada campaña.** `campaignImpact()` (`lib/insights.ts`) atribuye a
+una campaña la primera compra que hizo un cliente dentro de los 14 días
+posteriores a un mensaje. Lo muestran el dashboard ("Volvieron por tus
+mensajes") y cada tarjeta de campaña. `moneyAtStake()` calcula la recompra
+pendiente y lo que gastaban por año los inactivos.
+
 `triggerValue` en `null` **no** significa cero: significa "usar el default". La campaña de
 recompra de fábrica lo deja en null a propósito para seguir el `recompraDays` de
 Configuración en vez de duplicar el valor. `excludeInactive` existe porque el mensaje de
@@ -280,6 +303,58 @@ que esconderle los productos a un kiosco.
 que antes se llamaba "Catálogo digital" pasó a `/vidriera` ("Vidriera digital")
 porque es otra cosa: la página **pública** que el negocio comparte, no su lista
 de precios interna.
+
+### Presets por rubro: ningún negocio arranca en blanco
+
+`lib/rubro-presets.ts` (puro) define, por rubro, los módulos recomendados, los
+ajustes (recompra, inactividad, VIP, puntos), el catálogo con la recompra de
+cada ítem y las campañas propias del rubro (además de las dos de fábrica, a las
+que les puede cambiar el texto). `applyRubroPreset()` en `lib/rubro-setup.ts`
+lo aplica al crear un negocio: el registro público lo aplica **sin módulos**
+(son pagos); el alta desde `/admin` deja elegir. Lo lee también la landing
+(sección "Listo para tu rubro") — lo que se promete ahí es lo que el negocio
+encuentra al entrar. `lib/default-campaigns.ts` ya no existe.
+
+Una campaña de preset atada a un ítem (`serviceName`) se resuelve al id al
+crearla; si el ítem no existe, la campaña no se crea (una campaña sin servicio
+no alcanza a nadie).
+
+### Cuentas demo (`Business.isDemo`)
+
+Un negocio por rubro con datos inventados para mostrar el sistema
+(`docs/demos.md` tiene los logins y un recorrido sugerido). Dos piezas en
+`lib/demo-data.ts`:
+
+- `resetDemoBusiness()` **borra** clientes, ventas, cajas, campañas y catálogo y
+  genera todo de nuevo: ~200 clientes repartidos en segmentos, ventas todos los
+  días abiertos del último mes según el horario del rubro, cumpleaños hoy y en
+  la semana, comisiones (las de semanas anteriores pagadas), cajas cerradas, y
+  mensajes ya enviados — incluido ~75% de cada audiencia actual, para que el
+  plan del día sea creíble. Se niega a correr si `isDemo` es false: es la única
+  protección contra borrar la cartera de un cliente real.
+- `refreshDemoDates()` corre todas las fechas hacia adelante (por días enteros,
+  para no desarmar el reporte por hora) cuando cambia el día. Lo llama
+  `app/(app)/layout.tsx` en cada visita de una cuenta demo; un candado
+  optimista sobre `demoAnchorAt` evita correrlo dos veces en paralelo. Solo
+  mueve filas anteriores al ancla. Los cumpleaños se mueven igual (son
+  calendario).
+
+Este archivo **no** importa `server-only` (ni nada que lo importe) porque lo usa
+`scripts/demo-accounts.ts` con tsx. Las demos no cuentan en el MRR ni en lo
+facturado de `/admin`, y se listan aparte con botones de Restaurar/Entrar.
+Restaurar va de a una por pedido (el botón "Restaurar todas" las encadena desde
+el cliente) para no pasarse del `maxDuration` de la función.
+
+### Zona horaria
+
+El servidor en Vercel corre en UTC. Todo lo que agrupa por hora o por día
+calendario pasa por `lib/tz.ts` (`zonedParts`, `zonedDayKey`, `zonedMidnight`)
+con `Business.timezone`: reportes por día/hora, cortes de semana y mes
+(`periodRange`), el gráfico del dashboard. Los cumpleaños son **fechas
+calendario guardadas a medianoche UTC**: se leen con `getUTC*`
+(`daysToBirthday`, `formatBirthday`, el `<input type=date>` del formulario) y se
+escriben con `T00:00:00Z`. Con getters locales, en Argentina se mostraba — y al
+guardar se re-grababa — el día anterior.
 
 ### Servicios y venta con ítems
 

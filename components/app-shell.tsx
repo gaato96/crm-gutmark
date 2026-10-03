@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard,
@@ -20,7 +20,6 @@ import {
   ShoppingBag,
   UserPlus,
   Upload,
-  Plus,
   ShieldAlert,
 } from "lucide-react";
 import { logout } from "@/app/auth-actions";
@@ -109,6 +108,7 @@ export function AppShell({
   userEmail,
   isImpersonating,
   modules,
+  isDemo,
 }: {
   children: React.ReactNode;
   businessName: string;
@@ -117,11 +117,10 @@ export function AppShell({
   userEmail: string;
   isImpersonating?: boolean;
   modules: string[];
+  isDemo?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [quickSaleOpen, setQuickSaleOpen] = useState(false);
-  const [speedDial, setSpeedDial] = useState(false);
-  const speedDialRef = useRef<HTMLDivElement>(null);
   const navItems = buildNavItems(modules, catalogMode);
 
   // Atajo de teclado: "n" abre Nueva venta (si no estás escribiendo en un campo)
@@ -142,15 +141,6 @@ export function AppShell({
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  useEffect(() => {
-    function onClickOutside(e: MouseEvent) {
-      if (speedDialRef.current && !speedDialRef.current.contains(e.target as Node)) {
-        setSpeedDial(false);
-      }
-    }
-    if (speedDial) document.addEventListener("mousedown", onClickOutside);
-    return () => document.removeEventListener("mousedown", onClickOutside);
-  }, [speedDial]);
 
   return (
     <div className="min-h-screen">
@@ -171,8 +161,9 @@ export function AppShell({
       <div className="lg:grid lg:grid-cols-[264px_1fr]">
       {/* Sidebar desktop */}
       <aside className="sticky top-0 hidden h-screen flex-col border-r border-line bg-surface p-4 lg:flex">
-        <div className="py-2">
+        <div className="flex items-center justify-between gap-2 py-2">
           <Brand />
+          {isDemo && <DemoBadge />}
         </div>
 
         <button
@@ -182,7 +173,9 @@ export function AppShell({
           <span className="flex items-center gap-2">
             <ShoppingBag className="h-4 w-4" /> Nueva venta
           </span>
-          <kbd className="rounded-md bg-white/15 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-white/80 group-hover:bg-white/25">
+          {/* Texto oscuro y no blanco: sobre el verde de marca el blanco no
+              llega al contraste mínimo (ver .btn-primary en globals.css). */}
+          <kbd className="rounded-md bg-brand-950/10 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-brand-950/75 group-hover:bg-brand-950/15">
             N
           </kbd>
         </button>
@@ -208,7 +201,10 @@ export function AppShell({
 
       {/* Topbar mobile */}
       <div className="glass sticky top-0 z-30 flex items-center justify-between border-b px-4 py-3 lg:hidden">
-        <Brand />
+        <div className="flex items-center gap-2">
+          <Brand />
+          {isDemo && <DemoBadge />}
+        </div>
         <div className="flex items-center gap-1.5">
           <ThemeToggle compact />
           <button
@@ -277,48 +273,43 @@ export function AppShell({
       )}
 
       {/* Contenido */}
-      <main className="min-w-0 px-4 py-6 pb-24 sm:px-6 lg:px-10 lg:py-8 lg:pb-8">
+      <main className="min-w-0 px-4 py-6 pb-32 sm:px-6 lg:px-10 lg:py-8 lg:pb-8">
         <div className="mx-auto max-w-6xl">{children}</div>
       </main>
 
-      {/* Speed-dial móvil: acciones rápidas siempre a mano */}
-      <div ref={speedDialRef} className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-3 lg:hidden">
-        {speedDial && (
-          <div className="flex flex-col items-end gap-2 animate-fade-in">
-            <SpeedDialItem
-              label="Importar"
-              icon={<Upload className="h-4 w-4" />}
-              href="/clientes/importar"
-              onClick={() => setSpeedDial(false)}
-            />
-            <SpeedDialItem
-              label="Nuevo cliente"
-              icon={<UserPlus className="h-4 w-4" />}
-              href="/clientes/nuevo"
-              onClick={() => setSpeedDial(false)}
-            />
-            <SpeedDialItem
-              label="Nueva venta"
-              icon={<ShoppingBag className="h-4 w-4" />}
-              onClick={() => {
-                setSpeedDial(false);
-                setQuickSaleOpen(true);
-              }}
-              primary
-            />
+      {/* Barra inferior móvil. Reemplaza al botón flotante con menú: con el
+          pulgar se llega a las cuatro pantallas de todos los días y a la venta,
+          sin abrir nada antes. "Más" abre el menú completo. */}
+      <nav
+        aria-label="Navegación principal"
+        className="glass fixed inset-x-0 bottom-0 z-40 border-t pb-[env(safe-area-inset-bottom)] lg:hidden"
+      >
+        <div className="mx-auto grid max-w-md grid-cols-5 items-end px-2">
+          <BottomLink href="/dashboard" exact label="Inicio" icon={LayoutDashboard} />
+          <BottomLink href="/clientes" label="Clientes" icon={Users} />
+          <div className="flex justify-center">
+            <button
+              onClick={() => setQuickSaleOpen(true)}
+              className="-mt-5 mb-1 flex flex-col items-center gap-1"
+              aria-label="Nueva venta"
+            >
+              <span className="grid h-14 w-14 place-items-center rounded-full bg-brand-500 text-brand-950 shadow-pop shadow-brand-500/30 ring-4 ring-canvas transition-transform active:scale-95">
+                <ShoppingBag className="h-6 w-6" strokeWidth={2.2} />
+              </span>
+              <span className="text-[11px] font-semibold text-ink-soft">Venta</span>
+            </button>
           </div>
-        )}
-        <button
-          onClick={() => setSpeedDial((s) => !s)}
-          className={`grid h-14 w-14 place-items-center rounded-full bg-brand-600 text-white shadow-pop shadow-brand-600/30 transition-transform active:scale-95 ${
-            speedDial ? "rotate-45" : ""
-          }`}
-          aria-label="Acciones rápidas"
-          aria-expanded={speedDial}
-        >
-          <Plus className="h-6 w-6" strokeWidth={2.4} />
-        </button>
-      </div>
+          <BottomLink href="/campanas" label="Campañas" icon={Send} />
+          <button
+            onClick={() => setOpen(true)}
+            className="flex min-h-[56px] flex-col items-center justify-center gap-1 text-ink-muted"
+            aria-label="Abrir menú completo"
+          >
+            <Menu className="h-5 w-5" strokeWidth={2.2} />
+            <span className="text-[11px] font-semibold">Más</span>
+          </button>
+        </div>
+      </nav>
 
       <QuickSaleModal open={quickSaleOpen} onClose={() => setQuickSaleOpen(false)} />
       </div>
@@ -326,37 +317,43 @@ export function AppShell({
   );
 }
 
-function SpeedDialItem({
-  label,
-  icon,
+function BottomLink({
   href,
-  onClick,
-  primary,
+  label,
+  icon: Icon,
+  exact,
 }: {
+  href: string;
   label: string;
-  icon: React.ReactNode;
-  href?: string;
-  onClick?: () => void;
-  primary?: boolean;
+  icon: LucideIcon;
+  exact?: boolean;
 }) {
-  const cls = `flex items-center gap-2.5 rounded-full py-2 pl-3.5 pr-4 text-sm font-semibold shadow-pop transition active:scale-95 ${
-    primary
-      ? "bg-brand-600 text-white shadow-brand-600/30"
-      : "bg-surface text-ink ring-1 ring-inset ring-line"
-  }`;
-  if (href) {
-    return (
-      <Link href={href} onClick={onClick} className={cls}>
-        {icon}
-        {label}
-      </Link>
-    );
-  }
+  const pathname = usePathname();
+  const active = exact ? pathname === href : pathname.startsWith(href);
   return (
-    <button onClick={onClick} className={cls}>
-      {icon}
-      {label}
-    </button>
+    <Link
+      href={href}
+      aria-current={active ? "page" : undefined}
+      className={`flex min-h-[56px] flex-col items-center justify-center gap-1 transition-colors ${
+        active ? "text-brand-700 dark:text-brand-300" : "text-ink-muted hover:text-ink-soft"
+      }`}
+    >
+      <Icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2.2} />
+      <span className="text-[11px] font-semibold">{label}</span>
+    </Link>
+  );
+}
+
+// Aviso de cuenta de demostración: los datos son de ejemplo y se corren solos
+// cada día. Que se vea, para que nadie lo confunda con un negocio real.
+function DemoBadge() {
+  return (
+    <span
+      className="rounded-full bg-accent-500/15 px-2 py-0.5 font-display text-[10px] font-bold uppercase tracking-wider text-accent-700 ring-1 ring-inset ring-accent-500/25 dark:text-accent-300"
+      title="Cuenta de demostración: los datos son de ejemplo"
+    >
+      Demo
+    </span>
   );
 }
 

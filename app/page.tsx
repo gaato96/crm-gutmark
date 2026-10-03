@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   FileSpreadsheet,
   HeartHandshake,
+  LogIn,
   MessageCircle,
   Puzzle,
   Send,
@@ -24,6 +25,12 @@ import { StepFlow } from "@/components/landing/step-flow";
 import { RubroMarquee } from "@/components/landing/rubro-marquee";
 import { MagneticCta } from "@/components/landing/magnetic-cta";
 import { Logo } from "@/components/logo";
+import { LossCalculator } from "@/components/landing/loss-calculator";
+import { RubroCampaigns, type RubroShowcase } from "@/components/landing/rubro-campaigns";
+import { demoPresets } from "@/lib/rubro-presets";
+import { CAMPAIGN_SEED } from "@/lib/campaigns";
+import { renderTemplate } from "@/lib/messages";
+import { rubroLabel } from "@/lib/rubros";
 
 const CTA_MESSAGE = "¡Hola! Quiero pedir acceso a Vuelvo CRM para mi negocio.";
 
@@ -53,7 +60,7 @@ const PAIN_POINTS = [
 const STEPS = [
   {
     title: "Cargá tu cartera",
-    body: "Nombre, teléfono, cumpleaños y las compras que ya te hicieron. A mano, o importando el Excel que venís usando hace años.",
+    body: "Nombre, teléfono, cumpleaños y las compras que ya te hicieron. A mano o importando tu Excel. El catálogo y las campañas de tu rubro ya vienen armados.",
   },
   {
     title: "Se ordena sola",
@@ -64,8 +71,8 @@ const STEPS = [
     body: "Los cumpleaños de la semana y los clientes que ya deberían haber vuelto te esperan cada mañana en el panel.",
   },
   {
-    title: "Escribís en un clic",
-    body: "El mensaje sale redactado y con el nombre puesto. Lo revisás, lo mandás por WhatsApp y volvés a atender.",
+    title: "Escribís en un clic y ves qué volvió",
+    body: "El mensaje sale redactado y con el nombre puesto. Lo mandás por WhatsApp y el panel te muestra cuánta plata entró de los clientes que respondieron.",
   },
 ];
 
@@ -103,7 +110,7 @@ export default async function LandingPage() {
     <div className="min-h-screen overflow-x-hidden bg-canvas">
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-xl focus:bg-brand-600 focus:px-4 focus:py-2.5 focus:text-sm focus:font-semibold focus:text-white"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-xl focus:bg-brand-700 focus:px-4 focus:py-2.5 focus:text-sm focus:font-semibold focus:text-white"
       >
         Saltar al contenido principal
       </a>
@@ -112,9 +119,12 @@ export default async function LandingPage() {
         <Hero />
         <RubroSection />
         <ProblemSection />
+        <LossSection />
         <HowItWorks />
+        <RubroCampaignsSection />
         <WhatsInside />
         <TrustSection />
+        <FaqSection />
         <FinalCta />
       </main>
       <Footer />
@@ -136,28 +146,48 @@ function Nav() {
             Cómo funciona
           </a>
           <a
+            href="#por-rubro"
+            className="text-sm font-medium text-ink-soft transition hover:text-ink"
+          >
+            Por rubro
+          </a>
+          <a
             href="#que-incluye"
             className="text-sm font-medium text-ink-soft transition hover:text-ink"
           >
             Qué incluye
           </a>
+          <a
+            href="#preguntas"
+            className="text-sm font-medium text-ink-soft transition hover:text-ink"
+          >
+            Preguntas
+          </a>
         </nav>
 
-        <div className="flex items-center gap-2 sm:gap-3">
-          <ThemeToggle compact />
+        {/* En mobile no entraban los tres controles y "Iniciar sesión" estaba
+            escondido (hidden sm:block): un cliente que ya tenía cuenta no tenía
+            cómo entrar desde el celular. Ahora el login está siempre, y el
+            selector de tema se va al pie en pantallas chicas. */}
+        <div className="flex items-center gap-1.5 sm:gap-3">
+          <span className="hidden sm:block">
+            <ThemeToggle compact />
+          </span>
           <Link
             href="/login"
-            className="hidden text-sm font-semibold text-ink-soft transition hover:text-ink sm:block"
+            className="btn-ghost min-h-[44px] whitespace-nowrap !px-2.5 text-sm font-semibold sm:!px-3"
           >
-            Iniciar sesión
+            <LogIn aria-hidden="true" className="hidden h-4 w-4 min-[400px]:block sm:hidden" />
+            <span className="sm:hidden">Ingresar</span>
+            <span className="hidden sm:inline">Iniciar sesión</span>
           </Link>
           <a
             href={businessWhatsappLink(CTA_MESSAGE)}
             target="_blank"
             rel="noopener noreferrer"
-            className="btn-primary !py-2 text-sm"
+            className="btn-primary min-h-[44px] whitespace-nowrap !px-3.5 !py-2 text-sm sm:!px-4"
           >
-            <MessageCircle aria-hidden="true" className="h-4 w-4" /> {CTA_LABEL}
+            <MessageCircle aria-hidden="true" className="hidden h-4 w-4 min-[400px]:block" /> {CTA_LABEL}
           </a>
         </div>
       </div>
@@ -367,6 +397,189 @@ function ProblemSection() {
   );
 }
 
+// Fuentes reales y nombradas: un dato de marketing sin fuente en una landing
+// hace dudar de todo lo demás.
+const LOSS_STATS = [
+  {
+    value: "5 a 25×",
+    label: "más caro conseguir un cliente nuevo que retener uno que ya tenés",
+    source: "Harvard Business Review",
+  },
+  {
+    value: "+25% a 95%",
+    label: "de ganancia puede traer subir apenas un 5% la cantidad de clientes que vuelven",
+    source: "Bain & Company",
+  },
+  {
+    value: "0 avisos",
+    label: "te da el cliente que deja de venir. Simplemente un día empieza a comprarle a otro",
+    source: "Lo que pasa en todo mostrador",
+  },
+];
+
+function LossSection() {
+  return (
+    <section
+      id="cuanto-perdes"
+      className="scroll-mt-20 border-y border-line bg-surface-2/40 py-24 sm:py-32"
+    >
+      <div className="mx-auto max-w-6xl px-5 sm:px-8">
+        <Reveal className="max-w-2xl">
+          <span className="font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-rose-600 dark:text-rose-400">
+            Lo que perdés sin darte cuenta
+          </span>
+          <h2 className="mt-3 text-balance font-display text-3xl leading-tight text-ink sm:text-4xl">
+            El cliente que no vuelve no se queja. Se va.
+          </h2>
+          <p className="mt-4 leading-relaxed text-ink-muted">
+            Ningún negocio chico lleva la cuenta de cuánta plata se le va por los que compraron una
+            vez y nunca más aparecieron. Hacela acá con tus números.
+          </p>
+        </Reveal>
+
+        <div className="mt-12 grid gap-4 sm:grid-cols-3">
+          {LOSS_STATS.map((st, i) => (
+            <Reveal key={st.value} delay={i * 80}>
+              <div className="card h-full p-6">
+                <div className="font-display text-3xl font-bold text-ink">{st.value}</div>
+                <p className="mt-2 text-sm leading-relaxed text-ink-soft">{st.label}</p>
+                <p className="mt-4 text-xs font-medium text-ink-muted">Fuente: {st.source}</p>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+
+        <Reveal className="mt-8">
+          <LossCalculator />
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
+// Las campañas que trae cada rubro, armadas desde los mismos presets que usa
+// el alta de negocios (lib/rubro-presets.ts).
+function buildShowcase(): RubroShowcase[] {
+  const birthdaySeed = CAMPAIGN_SEED.find((c) => c.builtin === "birthday")!;
+  return demoPresets().map((p) => {
+    const nombre = p.demo.maleShare >= 0.5 ? "Martín" : "Sofía";
+    const vars = (servicio?: string) => ({
+      nombre,
+      negocio: p.demo.businessName,
+      servicio: servicio ?? p.services[0]?.name ?? "",
+      puntos: "80",
+      dias_sin_comprar: String(p.config.recompraDays),
+    });
+    const extras = p.campaigns
+      .filter((c) => c.segment !== "inactivo" && c.segment !== "vip")
+      .slice(0, 2)
+      .map((c) => ({
+        name: c.name,
+        when: c.description,
+        message: renderTemplate(c.whatsappBody, vars(c.serviceName)),
+      }));
+    return {
+      rubro: p.rubro,
+      label: rubroLabel(p.rubro).split(" / ")[0],
+      businessName: p.demo.businessName,
+      campaigns: [
+        {
+          name: "Cumpleaños",
+          when: "Unos días antes del cumpleaños, con un regalo para que venga esa semana.",
+          message: renderTemplate(p.birthday?.whatsappBody ?? birthdaySeed.whatsappBody, vars()),
+        },
+        ...extras,
+      ],
+    };
+  });
+}
+
+function RubroCampaignsSection() {
+  return (
+    <section id="por-rubro" className="mx-auto max-w-6xl scroll-mt-20 px-5 py-24 sm:px-8 sm:py-32">
+      <Reveal className="max-w-2xl">
+        <span className="font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-700 dark:text-brand-400">
+          Listo para tu rubro
+        </span>
+        <h2 className="mt-3 text-balance font-display text-3xl leading-tight text-ink sm:text-4xl">
+          Arrancás con las campañas que ya funcionan en tu negocio
+        </h2>
+        <p className="mt-4 leading-relaxed text-ink-muted">
+          Una barbería sabe que el corte se repite a las tres semanas. Una óptica, que los lentes
+          mensuales se terminan a los 30 días. Vuelvo también lo sabe: cada cuenta nueva viene con el
+          catálogo y las campañas de su rubro, listas para mandar.
+        </p>
+      </Reveal>
+      <div className="mt-10">
+        <RubroCampaigns items={buildShowcase()} />
+      </div>
+    </section>
+  );
+}
+
+const FAQ = [
+  {
+    q: "¿Tengo que saber de computación?",
+    a: "No. Si usás WhatsApp, podés usar Vuelvo. El alta la hacemos juntos y te dejamos tu cartera cargada.",
+  },
+  {
+    q: "¿Los mensajes se mandan solos?",
+    a: "Los armás en un toque: el sistema elige a quién escribirle y redacta el mensaje con su nombre; vos lo mandás desde tu WhatsApp. Así el cliente recibe un mensaje tuyo, no de un número desconocido, y no hay riesgo de que te bloqueen.",
+  },
+  {
+    q: "¿Cómo sé si me está sirviendo?",
+    a: "El panel te muestra cuántos clientes compraron después de recibir un mensaje y cuánta plata dejaron. Es la cuenta que justifica el sistema, mes a mes.",
+  },
+  {
+    q: "¿Funciona desde el celular?",
+    a: "Sí. Se instala como una app en el teléfono y podés registrar una venta en el mostrador en segundos.",
+  },
+  {
+    q: "Ya tengo mis clientes en un Excel. ¿Los pierdo?",
+    a: "No. Importás la planilla tal como está y cuando quieras descargás tu cartera completa. Los datos son tuyos.",
+  },
+  {
+    q: "¿Sirve para mi rubro?",
+    a: "Sirve para cualquier negocio donde el cliente vuelve: barberías, estéticas, gimnasios, veterinarias, ópticas, indumentaria, suplementos, lavaderos, talleres y muchos más.",
+  },
+];
+
+function FaqSection() {
+  return (
+    <section
+      id="preguntas"
+      className="scroll-mt-20 border-t border-line bg-surface-2/40 py-24 sm:py-32"
+    >
+      <div className="mx-auto grid max-w-6xl gap-10 px-5 sm:px-8 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
+        <Reveal>
+          <h2 className="text-balance font-display text-3xl leading-tight text-ink sm:text-4xl">
+            Preguntas frecuentes
+          </h2>
+          <p className="mt-4 max-w-sm leading-relaxed text-ink-muted">
+            ¿Te quedó alguna? Escribinos por WhatsApp y te contestamos nosotros.
+          </p>
+        </Reveal>
+        <div className="divide-y divide-line border-y border-line">
+          {FAQ.map((f) => (
+            <details key={f.q} className="group py-1">
+              <summary className="flex min-h-[56px] cursor-pointer list-none items-center justify-between gap-4 py-3 font-semibold text-ink [&::-webkit-details-marker]:hidden">
+                {f.q}
+                <span
+                  aria-hidden="true"
+                  className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-surface text-ink-muted ring-1 ring-line transition-transform group-open:rotate-45"
+                >
+                  +
+                </span>
+              </summary>
+              <p className="pb-5 pr-10 text-sm leading-relaxed text-ink-muted">{f.a}</p>
+            </details>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function HowItWorks() {
   return (
     <section
@@ -397,7 +610,7 @@ function HowItWorks() {
         <StepFlow>
           {STEPS.map((step, i) => (
             <li key={step.title} data-step className="relative sm:pl-16">
-              <span className="mb-3 grid h-10 w-10 place-items-center rounded-full bg-brand-600 font-mono text-sm font-bold text-white sm:absolute sm:left-0 sm:top-0 sm:mb-0">
+              <span className="mb-3 grid h-10 w-10 place-items-center rounded-full bg-brand-700 font-mono text-sm font-bold text-white sm:absolute sm:left-0 sm:top-0 sm:mb-0">
                 {i + 1}
               </span>
               <h3 className="font-display text-xl text-ink sm:text-2xl">
@@ -528,17 +741,22 @@ function WhatsInside() {
                 {/* Solo se nombra lo que ya está construido. Los módulos en
                     desarrollo se anuncian como futuros, no como disponibles. */}
                 <p className="mt-1.5 max-w-lg text-sm leading-relaxed text-ink-muted">
-                  Hoy podés sumar Puntos y beneficios: sellos y premios por compra,
-                  sin tarjetas de cartón que se pierden. Vamos sumando más — turnos,
-                  catálogo y stock están en camino.
+                  Hoy podés sumar Puntos y beneficios (premios por compra, sin tarjetas
+                  de cartón) y Caja y reportes: arqueo, comisiones de tu equipo y en qué
+                  día y horario vendés más. Turnos, vidriera y stock están en camino.
                 </p>
               </div>
             </div>
             <div className="flex flex-wrap gap-2 sm:shrink-0">
-              <span className="rounded-full border border-line bg-surface-2 px-3 py-1 text-xs font-semibold text-ink-soft">
-                Puntos
-              </span>
-              {["Turnos", "Catálogo", "Stock"].map((m) => (
+              {["Puntos", "Caja y reportes"].map((m) => (
+                <span
+                  key={m}
+                  className="rounded-full border border-line bg-surface-2 px-3 py-1 text-xs font-semibold text-ink-soft"
+                >
+                  {m}
+                </span>
+              ))}
+              {["Turnos", "Vidriera", "Stock"].map((m) => (
                 <span
                   key={m}
                   className="rounded-full border border-dashed border-line px-3 py-1 text-xs font-semibold text-ink-faint"
@@ -641,6 +859,9 @@ function Footer() {
           <Logo size="sm" byline />
         </div>
         <div className="flex items-center gap-5 text-sm">
+          <span className="sm:hidden">
+            <ThemeToggle compact />
+          </span>
           <a
             href={businessWhatsappLink(CTA_MESSAGE)}
             target="_blank"

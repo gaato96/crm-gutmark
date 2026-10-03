@@ -11,11 +11,13 @@ export function RubroSelect({
   defaultValue,
   label = "Rubro",
   showHint = true,
+  onChange,
 }: {
   name?: string;
   defaultValue?: string;
   label?: string;
   showHint?: boolean;
+  onChange?: (rubro: string) => void;
 }) {
   const [rubro, setRubro] = useState(defaultValue ?? "");
   const words = rubro ? catalogWords(modeForRubro(rubro)) : null;
@@ -29,7 +31,10 @@ export function RubroSelect({
         id={name}
         name={name}
         value={rubro}
-        onChange={(e) => setRubro(e.target.value)}
+        onChange={(e) => {
+          setRubro(e.target.value);
+          onChange?.(e.target.value);
+        }}
         required
         className="input"
       >

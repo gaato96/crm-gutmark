@@ -27,6 +27,7 @@ export interface CampaignItem {
   triggerType: string;
   triggerValue: number | null;
   triggerUnit: string;
+  triggerMaxValue: number | null;
   segment: string | null;
   minSpend: number | null;
   serviceId: string | null;
@@ -37,6 +38,10 @@ export interface CampaignItem {
   emailBody: string;
   reach: number;
   triggerLabel: string;
+  // Resultado de los últimos 30 días: clientes que compraron dentro de las dos
+  // semanas posteriores a un mensaje de esta campaña (lib/insights.ts).
+  impactCustomers?: number;
+  impactRevenue?: number;
 }
 
 const EMPTY: CampaignFormState = {};
@@ -208,6 +213,9 @@ export function CampaignEditor({
                     </span>
                   )}
                 </div>
+                {trigger === "days-since-purchase" && (
+                  <MaxValueField defaultValue={campaign?.triggerMaxValue ?? null} disabled={lockedTrigger} />
+                )}
               </div>
             )}
 
@@ -291,6 +299,7 @@ export function CampaignEditor({
                       ))}
                     </select>
                   </div>
+                  <MaxValueField defaultValue={campaign?.triggerMaxValue ?? null} disabled={lockedTrigger} />
                   <p className="mt-1.5 text-xs text-ink-muted">
                     En horas sirve para el rato justo después: “dos horas después del turno,
                     preguntale cómo le quedó”.{" "}
@@ -424,6 +433,40 @@ export function CampaignEditor({
           </SubmitButton>
         </div>
       </form>
+    </div>
+  );
+}
+
+// Tope opcional del disparador por tiempo. Sin esto, "2 horas después del
+// servicio" alcanzaba también a quien compró hace tres meses: el disparador
+// solo decía "desde", nunca "hasta".
+function MaxValueField({
+  defaultValue,
+  disabled,
+}: {
+  defaultValue: number | null;
+  disabled: boolean;
+}) {
+  return (
+    <div className="mt-3">
+      <label className="label" htmlFor="campaign-max">
+        Hasta <span className="font-normal text-ink-muted">(opcional, misma unidad)</span>
+      </label>
+      <input
+        id="campaign-max"
+        name="triggerMaxValue"
+        type="number"
+        min={1}
+        max={3650}
+        defaultValue={defaultValue ?? ""}
+        placeholder="Sin tope"
+        disabled={disabled}
+        className="input disabled:opacity-60"
+      />
+      <p className="mt-1.5 text-xs text-ink-muted">
+        Ej.: desde 2 hasta 24 horas = solo los que compraron hoy. Vacío = todos los que ya
+        pasaron el “desde”.
+      </p>
     </div>
   );
 }

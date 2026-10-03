@@ -4,6 +4,7 @@
 // Server Actions como las pantallas client de Caja y Reportes.
 
 import { round2 } from "./sales";
+import { DEFAULT_TZ, zonedParts, zonedMidnight } from "./tz";
 
 export const MOVEMENT_KINDS = [
   { code: "venta", label: "Venta", sign: 1 },
@@ -163,43 +164,42 @@ export interface Period {
   label: string;
 }
 
-// Semana que arranca el LUNES (getDay(): 0 = domingo). En Argentina la semana
-// comercial es lunes a domingo, así que un corte domingo-a-sábado partiría el
-// fin de semana, que es cuando más factura una peluquería.
-export function startOfWeek(d: Date): Date {
-  const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  const dow = x.getDay();
-  const back = dow === 0 ? 6 : dow - 1;
-  x.setDate(x.getDate() - back);
-  return x;
-}
-
-export function startOfMonth(d: Date): Date {
-  return new Date(d.getFullYear(), d.getMonth(), 1);
-}
-
-// Devuelve el período actual y el inmediatamente anterior, para poder comparar.
-export function periodRange(kind: PeriodKind, offset = 0): Period {
-  const now = new Date();
+// Semana que arranca el LUNES. En Argentina la semana comercial es lunes a
+// domingo, así que un corte domingo-a-sábado partiría el fin de semana, que es
+// cuando más factura una peluquería.
+//
+// Los cortes se calculan en la hora del negocio (lib/tz.ts) y no en la del
+// servidor, que en Vercel es UTC: si no, el lunes arrancaba el domingo a las
+// 21:00 y las ventas de esa noche se iban a la semana equivocada.
+export function periodRange(kind: PeriodKind, offset = 0, tz: string = DEFAULT_TZ): Period {
+  const today = zonedParts(new Date(), tz);
 
   if (kind === "semana") {
-    const start = startOfWeek(now);
-    start.setDate(start.getDate() - offset * 7);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 7);
+    const back = today.weekday === 0 ? 6 : today.weekday - 1;
+    // Date.UTC normaliza días negativos o fuera de rango (ej. el 0 = último
+    // día del mes anterior), así que la aritmética de calendario sale gratis.
+    const monday = new Date(Date.UTC(today.year, today.month - 1, today.day - back - offset * 7));
+    const nextMonday = new Date(monday.getTime() + 7 * 86400000);
+    const from = zonedMidnight(monday.getUTCFullYear(), monday.getUTCMonth() + 1, monday.getUTCDate(), tz);
+    const to = zonedMidnight(
+      nextMonday.getUTCFullYear(),
+      nextMonday.getUTCMonth() + 1,
+      nextMonday.getUTCDate(),
+      tz
+    );
     return {
-      from: start,
-      to: end,
-      label: `Semana del ${start.toLocaleDateString("es-AR", { day: "2-digit", month: "short" })}`,
+      from,
+      to,
+      label: `Semana del ${monday.toLocaleDateString("es-AR", { day: "2-digit", month: "short", timeZone: "UTC" })}`,
     };
   }
 
-  const start = new Date(now.getFullYear(), now.getMonth() - offset, 1);
-  const end = new Date(start.getFullYear(), start.getMonth() + 1, 1);
+  const first = new Date(Date.UTC(today.year, today.month - 1 - offset, 1));
+  const next = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 1));
   return {
-    from: start,
-    to: end,
-    label: start.toLocaleDateString("es-AR", { month: "long", year: "numeric" }),
+    from: zonedMidnight(first.getUTCFullYear(), first.getUTCMonth() + 1, 1, tz),
+    to: zonedMidnight(next.getUTCFullYear(), next.getUTCMonth() + 1, 1, tz),
+    label: first.toLocaleDateString("es-AR", { month: "long", year: "numeric", timeZone: "UTC" }),
   };
 }
 

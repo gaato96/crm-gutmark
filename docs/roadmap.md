@@ -4,7 +4,23 @@ Estado real de lo construido y orden de lo que sigue. **Este archivo es la fuent
 de verdad del plan**: antes vivía solo en la conversación y no se podía encontrar
 después. Si cambia el orden de las fases, se actualiza acá.
 
-Última actualización: 2026-08-19.
+Última actualización: 2026-10-03.
+
+### Novedades 2026-10-03
+
+- Campañas: el "enviado" se guarda (ContactLog) y sobrevive a recargar; lista
+  de pendientes y enviados con Deshacer; tope opcional "hasta" en disparadores
+  por tiempo; cada campaña muestra la plata que trajo.
+- Dashboard: "Tu plan de hoy" + Volvieron por tus mensajes / Recompra
+  pendiente / Lo que se llevó la competencia.
+- Presets por rubro: catálogo, campañas y módulos de fábrica al crear un
+  negocio (rubros nuevos: suplementos, óptica, lavadero).
+- Cuentas demo: diez rubros, datos regenerables desde /admin, siempre al día.
+- Arreglos: búsqueda de Nueva venta sin mayúsculas/acentos, login visible en la
+  landing mobile, gráficos por día/hora que salían vacíos, zona horaria en
+  reportes y cumpleaños.
+- Landing: calculadora de lo que se pierde, campañas por rubro y preguntas
+  frecuentes. Panel mobile con barra de navegación inferior.
 
 ---
 

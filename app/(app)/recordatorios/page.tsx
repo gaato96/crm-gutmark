@@ -8,6 +8,8 @@ import {
   campaignRecipients,
   ruleDefaults,
   toConfig,
+  getCampaignContacts,
+  coveringContact,
 } from "@/lib/queries";
 import { describeTrigger, matchedServiceId } from "@/lib/campaigns";
 import { buildCampaignMessage } from "@/lib/build-message";
@@ -20,9 +22,15 @@ export const dynamic = "force-dynamic";
 export default async function RecordatoriosPage() {
   const biz = await getCurrentBusiness();
   const cfg = toConfig(biz);
-  const customers = await getEnrichedCustomers(biz.id, cfg);
-  const defaults = ruleDefaults(biz, await getServices(biz.id));
-  const campaigns = (await getCampaigns(biz.id)).filter((c) => c.active);
+  const [customers, services, allCampaigns, contacts] = await Promise.all([
+    getEnrichedCustomers(biz.id, cfg),
+    getServices(biz.id),
+    getCampaigns(biz.id),
+    getCampaignContacts(biz.id),
+  ]);
+  const defaults = ruleDefaults(biz, services);
+  const campaigns = allCampaigns.filter((c) => c.active);
+  let alreadyContacted = 0;
 
   const balances = biz.modules.includes("puntos")
     ? await pointsBalancesByCustomer(biz.id)
@@ -32,7 +40,15 @@ export default async function RecordatoriosPage() {
   // antes. Si el negocio arma una campaña propia, aparece acá sin tocar código.
   const sections = campaigns
     .map((c) => {
-      const recipients = campaignRecipients(c, customers, defaults)
+      const audience = campaignRecipients(c, customers, defaults);
+      // A quien ya se le escribió en este ciclo no se lo vuelve a mostrar: era
+      // la forma más fácil de mandarle dos veces el mismo mensaje.
+      const recipients = audience
+        .filter((cu) => {
+          const covered = coveringContact(contacts, c, cu) !== null;
+          if (covered) alreadyContacted++;
+          return !covered;
+        })
         // Lo más urgente primero: cumpleaños por proximidad, el resto por
         // tiempo sin comprar.
         .sort((a, b) =>
@@ -66,9 +82,12 @@ export default async function RecordatoriosPage() {
       <PageHeader
         title="Recordatorios"
         subtitle={
-          total > 0
+          (total > 0
             ? `Tenés ${total} ${total === 1 ? "oportunidad" : "oportunidades"} para contactar clientes hoy.`
-            : "Estás al día. No hay acciones urgentes."
+            : "Estás al día. No hay acciones urgentes.") +
+          (alreadyContacted > 0
+            ? ` Ya contactaste a ${alreadyContacted} en este ciclo.`
+            : "")
         }
         action={
           <Link href="/campanas" className="btn-secondary">

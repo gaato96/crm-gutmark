@@ -14,8 +14,14 @@ import { formatMoney, formatDate } from "@/lib/format";
 import { getPlatformSettings, businessMonthlyTotal, billingStatus, type BillingStatus } from "@/lib/platform";
 import { PageHeader, EmptyState } from "@/components/ui";
 import { ImpersonateButton, ToggleActiveButton } from "@/components/admin-actions-buttons";
+import { rubroLabel } from "@/lib/rubros";
+import { AdminDemoAccounts } from "@/components/admin-demo-accounts";
+import { DEMO_PASSWORD } from "@/lib/demo-data";
 
 export const dynamic = "force-dynamic";
+// Restaurar una cuenta demo genera miles de filas: le damos margen a la
+// Server Action, que hereda la configuración de esta página.
+export const maxDuration = 60;
 
 const STATUS_META: Record<BillingStatus, { label: string; cls: string }> = {
   "al-dia": { label: "Al día", cls: "bg-brand-500/15 text-brand-700 ring-brand-500/25 dark:text-brand-300" },
@@ -26,11 +32,11 @@ const STATUS_META: Record<BillingStatus, { label: string; cls: string }> = {
 
 export default async function AdminPage() {
   const now = new Date();
-  const [businesses, revenueByBusiness, settings] = await Promise.all([
+  const [allBusinesses, revenueByBusiness, settings] = await Promise.all([
     db.business.findMany({
       orderBy: { createdAt: "desc" },
       include: {
-        _count: { select: { customers: true } },
+        _count: { select: { customers: true, purchases: true } },
         users: {
           where: { role: "owner" },
           orderBy: { createdAt: "asc" },
@@ -48,8 +54,18 @@ export default async function AdminPage() {
     getPlatformSettings(),
   ]);
 
+  // Las demos van aparte: no son clientes, no pagan y sus ventas son
+  // inventadas. Mezclarlas inflaba el MRR y lo "facturado".
+  const businesses = allBusinesses.filter((b) => !b.isDemo);
+  const demos = allBusinesses
+    .filter((b) => b.isDemo)
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const demoIds = new Set(demos.map((d) => d.id));
+
   const revenueMap = new Map(revenueByBusiness.map((r) => [r.businessId, r._sum.amount ?? 0]));
-  const totalRevenue = revenueByBusiness.reduce((s, r) => s + (r._sum.amount ?? 0), 0);
+  const totalRevenue = revenueByBusiness
+    .filter((r) => !demoIds.has(r.businessId))
+    .reduce((s, r) => s + (r._sum.amount ?? 0), 0);
   const activeCount = businesses.filter((b) => b.active).length;
   const mrr = businesses.reduce(
     (s, b) => s + businessMonthlyTotal(settings.basePlanPrice, b.modules),
@@ -136,7 +152,7 @@ export default async function AdminPage() {
                       <td className="px-5 py-3.5">
                         <Link href={`/admin/negocios/${b.id}`} className="hover:underline">
                           <div className="font-semibold text-ink">{b.name}</div>
-                          <div className="text-xs text-ink-muted">{b.rubro}</div>
+                          <div className="text-xs text-ink-muted">{rubroLabel(b.rubro)}</div>
                         </Link>
                       </td>
                       <td className="px-5 py-3.5">
@@ -211,7 +227,21 @@ export default async function AdminPage() {
 
       <div className="mt-4 flex items-center gap-1.5 text-xs text-ink-muted">
         <Wallet className="h-3.5 w-3.5" aria-hidden="true" />
-        Los montos incluyen todo el historial cargado por cada negocio.
+        Los montos incluyen todo el historial cargado por cada negocio (sin las cuentas demo).
+      </div>
+
+      <div className="mt-10">
+        <AdminDemoAccounts
+          password={DEMO_PASSWORD}
+          rows={demos.map((d) => ({
+            id: d.id,
+            name: d.name,
+            rubro: d.rubro,
+            email: d.users[0]?.email ?? null,
+            customers: d._count.customers,
+            purchases: d._count.purchases,
+          }))}
+        />
       </div>
     </div>
   );

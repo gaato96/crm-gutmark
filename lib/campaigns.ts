@@ -117,6 +117,9 @@ export interface CampaignRule {
   triggerType: string;
   triggerValue: number | null;
   triggerUnit: string;
+  // Tope opcional en la misma unidad que triggerValue ("hasta 24 horas").
+  // Opcional en la interfaz para que los objetos armados a mano sigan valiendo.
+  triggerMaxValue?: number | null;
   segment: string | null;
   minSpend: number | null;
   serviceId: string | null;
@@ -166,6 +169,17 @@ export interface RuleDefaults {
   catalogSingular?: string;
 }
 
+// ¿Todavía está dentro del tope? Sin tope, siempre.
+function withinMax(sinceHours: number, rule: CampaignRule): boolean {
+  if (rule.triggerMaxValue === null || rule.triggerMaxValue === undefined) return true;
+  return sinceHours < toHours(rule.triggerMaxValue, rule.triggerUnit);
+}
+
+function maxSuffix(rule: CampaignRule): string {
+  if (rule.triggerMaxValue === null || rule.triggerMaxValue === undefined) return "";
+  return `, hasta ${rule.triggerMaxValue} ${unitLabel(rule.triggerUnit, rule.triggerMaxValue)}`;
+}
+
 export function matchesCampaign(
   c: CampaignTarget,
   rule: CampaignRule,
@@ -184,7 +198,11 @@ export function matchesCampaign(
         rule.triggerValue !== null
           ? toHours(rule.triggerValue, rule.triggerUnit)
           : defaults.recompraDays * 24;
-      return c.hoursSinceLast !== null && c.hoursSinceLast >= minHours;
+      return (
+        c.hoursSinceLast !== null &&
+        c.hoursSinceLast >= minHours &&
+        withinMax(c.hoursSinceLast, rule)
+      );
     }
     case "service-recompra": {
       if (!rule.allServices && !rule.serviceId) return false;
@@ -201,7 +219,7 @@ export function matchesCampaign(
           rule.triggerValue !== null
             ? toHours(rule.triggerValue, rule.triggerUnit)
             : (defaults.serviceRecompraDays?.[id] ?? defaults.recompraDays) * 24;
-        if (sinceHours >= waitHours) return true;
+        if (sinceHours >= waitHours && withinMax(sinceHours, rule)) return true;
       }
       return false;
     }
@@ -244,11 +262,46 @@ export function matchedServiceId(
       rule.triggerValue !== null
         ? toHours(rule.triggerValue, rule.triggerUnit)
         : (defaults.serviceRecompraDays?.[id] ?? defaults.recompraDays) * 24;
-    if (sinceHours < waitHours) continue;
+    if (sinceHours < waitHours || !withinMax(sinceHours, rule)) continue;
     const overdueHours = sinceHours - waitHours;
     if (!best || overdueHours > best.overdueHours) best = { id, overdueHours };
   }
   return best?.id ?? null;
+}
+
+// --- ¿Ya se le mandó? -------------------------------------------------------
+
+// Cuánto vale un contacto. Pasado este plazo sin que el cliente vuelva, la
+// persona reaparece como pendiente: un mensaje de hace dos meses sin respuesta
+// es una oportunidad para insistir, no una tarea terminada.
+export const CONTACT_VALID_DAYS = 30;
+
+// ¿Un contacto hecho desde esta campaña ya "cubre" a este cliente?
+//
+// Antes el "Contactado" vivía solo en el estado del navegador: al volver a
+// entrar, el cliente aparecía otra vez como pendiente y el negocio terminaba
+// abriendo WhatsApp para descubrir que ya le había escrito. Ahora se lee del
+// historial (ContactLog), con una regla por tipo de disparador:
+//
+// - Por tiempo sin comprar o por servicio: cuenta si fue DESPUÉS de su última
+//   compra. Si volvió a comprar, empieza un ciclo nuevo y el mensaje viejo ya
+//   no aplica — cuando vuelva a vencer, vuelve a aparecer.
+// - Cumpleaños y el resto: cuenta si fue dentro de los últimos 30 días.
+export function contactCoversCycle(
+  rule: { triggerType: string },
+  customer: { lastPurchaseAt: Date | null },
+  contactAt: Date,
+  now: Date = new Date()
+): boolean {
+  const ageDays = (now.getTime() - contactAt.getTime()) / 86400000;
+  if (ageDays > CONTACT_VALID_DAYS) return false;
+  if (
+    (rule.triggerType === "days-since-purchase" || rule.triggerType === "service-recompra") &&
+    customer.lastPurchaseAt
+  ) {
+    return contactAt > customer.lastPurchaseAt;
+  }
+  return true;
 }
 
 // Resumen legible del disparador, para las tarjetas de la lista de campañas.
@@ -261,7 +314,9 @@ export function describeTrigger(rule: CampaignRule, defaults: RuleDefaults): str
     case "days-since-purchase": {
       const v = rule.triggerValue ?? defaults.recompraDays;
       const u = rule.triggerValue !== null ? rule.triggerUnit : "dias";
-      const base = `Hace ${v} ${unitLabel(u, v)} o más que no compran`;
+      const base = rule.triggerMaxValue
+        ? `Compraron hace entre ${v} y ${rule.triggerMaxValue} ${unitLabel(u, rule.triggerMaxValue)}`
+        : `Hace ${v} ${unitLabel(u, v)} o más que no compran`;
       return rule.excludeInactive ? `${base} (sin los inactivos)` : base;
     }
     case "service-recompra": {
@@ -275,7 +330,7 @@ export function describeTrigger(rule: CampaignRule, defaults: RuleDefaults): str
         const base =
           rule.triggerValue === null
             ? `${verb} cualquier ${singular} y ya pasó su tiempo de recompra`
-            : `${verb} cualquier ${singular} hace ${rule.triggerValue} ${unitLabel(rule.triggerUnit, rule.triggerValue)} o más`;
+            : `${verb} cualquier ${singular} hace ${rule.triggerValue} ${unitLabel(rule.triggerUnit, rule.triggerValue)} o más${maxSuffix(rule)}`;
         return rule.excludeInactive ? `${base} (sin los inactivos)` : base;
       }
 
@@ -285,7 +340,7 @@ export function describeTrigger(rule: CampaignRule, defaults: RuleDefaults): str
         defaults.serviceRecompraDays?.[rule.serviceId!] ??
         defaults.recompraDays;
       const u = rule.triggerValue !== null ? rule.triggerUnit : "dias";
-      const base = `${verb} ${name} hace ${v} ${unitLabel(u, v)} o más`;
+      const base = `${verb} ${name} hace ${v} ${unitLabel(u, v)} o más${maxSuffix(rule)}`;
       return rule.excludeInactive ? `${base} (sin los inactivos)` : base;
     }
     case "days-since-signup": {

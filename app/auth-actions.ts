@@ -13,7 +13,7 @@ import {
   getSessionToken,
   revokeOtherSessions,
 } from "@/lib/auth";
-import { createDefaultCampaigns } from "@/lib/default-campaigns";
+import { applyRubroPreset } from "@/lib/rubro-setup";
 import { isRubroCode, modeForRubro } from "@/lib/rubros";
 
 export interface AuthState {
@@ -62,7 +62,9 @@ export async function register(
     },
   });
 
-  await createDefaultCampaigns(business.id);
+  // Arranca con el catálogo y las campañas de su rubro, no en blanco. Los
+  // módulos no: son pagos y los activa el superadmin.
+  await applyRubroPreset(business.id, rubro, { modules: false });
   await touchLastLogin(user.id);
   await createSession(user.id);
   redirect("/dashboard");

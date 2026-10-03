@@ -20,7 +20,7 @@ import {
   getServices,
   ruleDefaults,
 } from "@/lib/queries";
-import { formatMoney, formatDate, daysSince, hoursSince } from "@/lib/format";
+import { formatMoney, formatDate, formatBirthday, daysSince, hoursSince } from "@/lib/format";
 import {
   computeSegment,
   isVip,
@@ -218,7 +218,7 @@ export default async function ClienteDetailPage({
           {customer.birthdate && (
             <span className="inline-flex items-center gap-2 text-ink-soft">
               <Cake className="h-4 w-4 text-ink-faint" />
-              {formatDate(customer.birthdate)}
+              {formatBirthday(customer.birthdate)}
               {ageTurning(customer.birthdate) !== null && (
                 <span className="text-ink-muted">(cumple {ageTurning(customer.birthdate)})</span>
               )}

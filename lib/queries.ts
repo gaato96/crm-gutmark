@@ -11,7 +11,13 @@ import {
   birthdayThisMonth,
 } from "./segmentation";
 import { daysSince, hoursSince } from "./format";
-import { matchesCampaign, CampaignRule, RuleDefaults } from "./campaigns";
+import {
+  matchesCampaign,
+  contactCoversCycle,
+  CONTACT_VALID_DAYS,
+  CampaignRule,
+  RuleDefaults,
+} from "./campaigns";
 import { catalogWords } from "./rubros";
 import type { Campaign, Service } from "@prisma/client";
 
@@ -192,6 +198,44 @@ export function campaignRecipients(
   return customers.filter((c) => matchesCampaign(c, campaign, defaults));
 }
 
+// Último contacto de cada (campaña, cliente) en la ventana en que un contacto
+// todavía cuenta. Una sola consulta para toda la pantalla: con esto Campañas,
+// Recordatorios y el dashboard saben a quién ya se le escribió.
+export interface ContactMark {
+  id: string;
+  at: Date;
+  channel: string;
+}
+export type CampaignContacts = Map<string, Map<string, ContactMark>>;
+
+export async function getCampaignContacts(businessId: string): Promise<CampaignContacts> {
+  const since = new Date(Date.now() - CONTACT_VALID_DAYS * 86400000);
+  const rows = await db.contactLog.findMany({
+    where: { businessId, campaignId: { not: null }, createdAt: { gte: since } },
+    orderBy: { createdAt: "asc" },
+    select: { id: true, campaignId: true, customerId: true, channel: true, createdAt: true },
+  });
+  const map: CampaignContacts = new Map();
+  for (const r of rows) {
+    const byCustomer = map.get(r.campaignId!) ?? new Map<string, ContactMark>();
+    // Orden ascendente: el último que se escribe es el más reciente.
+    byCustomer.set(r.customerId, { id: r.id, at: r.createdAt, channel: r.channel });
+    map.set(r.campaignId!, byCustomer);
+  }
+  return map;
+}
+
+// El contacto que cubre a este cliente en esta campaña, si lo hay.
+export function coveringContact(
+  contacts: CampaignContacts,
+  campaign: { id: string; triggerType: string },
+  customer: { id: string; lastPurchaseAt: Date | null }
+): ContactMark | null {
+  const mark = contacts.get(campaign.id)?.get(customer.id);
+  if (!mark) return null;
+  return contactCoversCycle(campaign, customer, mark.at) ? mark : null;
+}
+
 export interface DashboardStats {
   totalCustomers: number;
   activeCustomers: number;
@@ -208,8 +252,9 @@ export interface DashboardStats {
 
 export function buildDashboard(
   customers: EnrichedCustomer[],
-  campaigns: CampaignRule[],
-  defaults: RuleDefaults
+  campaigns: (CampaignRule & { id: string })[],
+  defaults: RuleDefaults,
+  contacts?: CampaignContacts
 ): DashboardStats {
   const totalCustomers = customers.length;
   const inactiveCustomers = customers.filter((c) => c.segment === "inactivo").length;
@@ -244,9 +289,12 @@ export function buildDashboard(
   // años y además debía recompra se contaba dos veces, y el número no coincidía
   // con lo que después mostraba /recordatorios.
   const reached = new Set<string>();
+  // Los que ya recibieron el mensaje de esa campaña no cuentan como pendientes.
   for (const campaign of campaigns) {
     for (const c of customers) {
-      if (matchesCampaign(c, campaign, defaults)) reached.add(c.id);
+      if (!matchesCampaign(c, campaign, defaults)) continue;
+      if (contacts && coveringContact(contacts, campaign, c)) continue;
+      reached.add(c.id);
     }
   }
   const pendingReminders = reached.size;

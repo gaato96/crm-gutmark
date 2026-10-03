@@ -41,6 +41,7 @@ interface TriggerFields {
   triggerType: string;
   triggerValue: number | null;
   triggerUnit: string;
+  triggerMaxValue: number | null;
   segment: string | null;
   minSpend: number | null;
   serviceId: string | null;
@@ -88,6 +89,7 @@ async function parseTrigger(
 
   const meta = TRIGGER_META[triggerType];
   const value = optionalInt(formData.get("triggerValue"));
+  const maxValue = optionalInt(formData.get("triggerMaxValue"));
   const segment = clean(formData.get("segment"));
   const minSpend = optionalFloat(formData.get("minSpend"));
   const serviceId = clean(formData.get("serviceId"));
@@ -105,6 +107,14 @@ async function parseTrigger(
   // dejarlo vacío daría 15 días donde el negocio quiso 15 horas.
   if (usaTiempo && unit === "horas" && value === null) {
     return { error: "Si medís en horas, poné cuántas." };
+  }
+  const usaTope =
+    usaTiempo && (triggerType === "days-since-purchase" || triggerType === "service-recompra");
+  if (usaTope && maxValue !== null) {
+    if (maxValue <= 0 || maxValue > 3650) return { error: "El tope tiene que estar entre 1 y 3650." };
+    if (value !== null && maxValue <= value) {
+      return { error: "El “hasta” tiene que ser mayor que el “desde”." };
+    }
   }
   if (meta.field === "segment" && !(segment in SEGMENT_META)) {
     return { error: "Elegí un segmento válido." };
@@ -134,6 +144,7 @@ async function parseTrigger(
       // que no queden valores viejos decidiendo audiencias de forma invisible.
       triggerValue: usaTiempo ? value : null,
       triggerUnit: unit,
+      triggerMaxValue: usaTope ? maxValue : null,
       segment: meta.field === "segment" ? segment : null,
       minSpend: meta.field === "amount" ? minSpend : null,
       // "all" es un valor del <select> que nunca se guarda como serviceId: esa
@@ -263,6 +274,7 @@ export async function duplicateCampaign(id: string) {
       serviceId: source.serviceId,
       allServices: source.allServices,
       triggerUnit: source.triggerUnit,
+      triggerMaxValue: source.triggerMaxValue,
       excludeInactive: source.excludeInactive,
       whatsappBody: source.whatsappBody,
       emailSubject: source.emailSubject,

@@ -184,8 +184,8 @@ export function ReportesView({
           )}
 
           <div className="grid gap-4 lg:grid-cols-2">
-            <Bars title="Por día de la semana" rows={a.porDiaSemana} />
-            <Bars title="Por hora" rows={a.porHora} />
+            <Bars title="Por día de la semana" rows={a.porDiaSemana} unit="dia" />
+            <Bars title="Por hora" rows={a.porHora} unit="hora" />
           </div>
         </>
       )}
@@ -351,32 +351,64 @@ function shortLabel(label: string): string {
   return label.includes(":") ? label.split(":")[0] : label.slice(0, 3);
 }
 
-function Bars({ title, rows }: { title: string; rows: ReportRow[] }) {
+function Bars({ title, rows, unit }: { title: string; rows: ReportRow[]; unit: "dia" | "hora" }) {
   const max = Math.max(1, ...rows.map((r) => r.amount));
   const conDatos = rows.some((r) => r.amount > 0);
+  const pico = conDatos ? rows.reduce((a, b) => (b.amount > a.amount ? b : a)) : null;
 
   return (
     <div className="card p-5">
       <h2 className="mb-1 font-display font-bold text-ink">{title}</h2>
-      <p className="mb-4 text-sm text-ink-muted">Para saber cuándo conviene tener más gente.</p>
+      <p className="mb-4 text-sm text-ink-muted">
+        {pico ? (
+          <>
+            Tu pico es{" "}
+            <span className="font-semibold text-ink">
+              {unit === "dia" ? `el ${pico.label.toLowerCase()}` : `a las ${pico.label} h`}
+            </span>{" "}
+            ({pico.count} {pico.count === 1 ? "venta" : "ventas"}). Ahí conviene tener más gente.
+          </>
+        ) : (
+          "Para saber cuándo conviene tener más gente."
+        )}
+      </p>
       {!conDatos ? (
         <p className="rounded-xl border border-dashed border-line px-4 py-6 text-center text-sm text-ink-muted">
           Sin ventas en este período.
         </p>
       ) : (
-        <div className="flex h-32 items-end gap-1.5">
-          {rows.map((r) => (
-            <div key={r.label} className="flex min-w-0 flex-1 flex-col items-center gap-1">
+        // Cada columna ocupa el alto completo (h-full) y apila la barra abajo:
+        // sin eso, el `height: N%` de la barra no tenía contra qué medirse y
+        // todas quedaban en cero — por eso el gráfico se veía vacío.
+        <div className="flex h-40 items-stretch gap-1" role="list">
+          {rows.map((r) => {
+            const isPeak = pico?.label === r.label;
+            return (
               <div
-                className="w-full rounded-t bg-brand-500/70"
-                style={{ height: `${Math.max((r.amount / max) * 100, 2)}%` }}
-                title={`${r.label}: ${formatMoney(r.amount)}`}
-              />
-              <span className="w-full truncate text-center text-[10px] text-ink-faint">
-                {shortLabel(r.label)}
-              </span>
-            </div>
-          ))}
+                key={r.label}
+                role="listitem"
+                aria-label={`${r.label}: ${formatMoney(r.amount)}, ${r.count} ventas`}
+                className="group flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1"
+              >
+                <div className="relative flex w-full flex-1 items-end">
+                  <div
+                    className={`w-full rounded-t-md transition-colors ${
+                      isPeak ? "bg-brand-500" : "bg-brand-500/45 group-hover:bg-brand-500/70"
+                    }`}
+                    style={{ height: `${r.amount > 0 ? Math.max((r.amount / max) * 100, 3) : 0}%` }}
+                    title={`${r.label}: ${formatMoney(r.amount)} · ${r.count} ventas`}
+                  />
+                </div>
+                <span
+                  className={`w-full truncate text-center text-[10px] ${
+                    isPeak ? "font-bold text-ink" : "text-ink-faint"
+                  }`}
+                >
+                  {shortLabel(r.label)}
+                </span>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

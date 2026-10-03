@@ -13,10 +13,13 @@ interface CustomerFormData {
 
 function toDateInput(d: Date | null): string {
   if (!d) return "";
+  // El cumpleaños es una fecha calendario guardada a medianoche UTC. Con los
+  // getters locales, en Argentina (UTC-3) se mostraba el día anterior — y al
+  // guardar el formulario sin tocarlo, el cumpleaños retrocedía un día.
   const dt = new Date(d);
-  const m = String(dt.getMonth() + 1).padStart(2, "0");
-  const day = String(dt.getDate()).padStart(2, "0");
-  return `${dt.getFullYear()}-${m}-${day}`;
+  const m = String(dt.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(dt.getUTCDate()).padStart(2, "0");
+  return `${dt.getUTCFullYear()}-${m}-${day}`;
 }
 
 export function CustomerForm({

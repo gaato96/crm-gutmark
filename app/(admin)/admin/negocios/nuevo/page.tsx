@@ -3,6 +3,9 @@ import { ArrowLeft } from "lucide-react";
 import { PageHeader } from "@/components/ui";
 import { AdminNewBusinessForm } from "@/components/admin-new-business-form";
 
+// Una cuenta demo se genera con miles de filas al crearla.
+export const maxDuration = 60;
+
 export default function NuevoNegocioPage() {
   return (
     <div className="mx-auto max-w-2xl animate-fade-in">

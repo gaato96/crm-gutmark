@@ -46,7 +46,7 @@ export default async function CajaPage() {
       orderBy: { closedAt: "desc" },
       take: 10,
     }),
-    commissionsByEmployee(biz.id, periodRange("semana")),
+    commissionsByEmployee(biz.id, periodRange("semana", 0, biz.timezone)),
     commissionDebtByEmployee(biz.id),
   ]);
 

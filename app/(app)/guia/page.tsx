@@ -266,6 +266,13 @@ export default async function GuiaPage() {
           para ese cliente puntual, y lo mandás. El sistema arma la lista y el texto; el envío
           lo hacés vos, uno por uno, con dos toques.
         </p>
+        <p className="mt-3 text-sm text-ink-soft">
+          Al tocar WhatsApp, el cliente pasa a <b>Enviados</b> y queda registrado: aunque cierres
+          la pestaña o entres desde el celular, no te va a volver a aparecer como pendiente. Si al
+          final no lo mandaste, tocá <b>Deshacer</b>. Cuando el cliente vuelve a comprar y le
+          vuelve a tocar, aparece otra vez. En cada campaña vas a ver además cuánta plata dejaron
+          los clientes que compraron dentro de las dos semanas de recibir el mensaje.
+        </p>
 
         <h3 className="mt-6 font-display text-sm font-bold uppercase tracking-wide text-ink-muted">
           Tipos de disparador

@@ -16,6 +16,19 @@ export function formatDate(date: Date | string | null | undefined): string {
   }).format(d);
 }
 
+// Fecha calendario sin hora (cumpleaños): se guarda a medianoche UTC, así que
+// se formatea en UTC. En la zona del navegador o del servidor podía mostrar el
+// día anterior.
+export function formatBirthday(date: Date | string | null | undefined): string {
+  if (!date) return "—";
+  const d = typeof date === "string" ? new Date(date) : date;
+  return new Intl.DateTimeFormat("es-AR", {
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+  }).format(d);
+}
+
 export function formatDateShort(date: Date | string | null | undefined): string {
   if (!date) return "—";
   const d = typeof date === "string" ? new Date(date) : date;

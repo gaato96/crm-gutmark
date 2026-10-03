@@ -2,6 +2,7 @@ import "server-only";
 import { db } from "./db";
 import { round2 } from "./sales";
 import { pctDelta, type Period } from "./cash";
+import { DEFAULT_TZ, zonedParts } from "./tz";
 
 export interface ReportRow {
   label: string;
@@ -52,9 +53,22 @@ function bump(
   map.set(key, cur);
 }
 
+function horasContinuas(map: Map<string, { amount: number; count: number }>): ReportRow[] {
+  const horas = [...map.keys()].map((k) => parseInt(k, 10)).filter((h) => !Number.isNaN(h));
+  if (horas.length === 0) return [];
+  const rows: ReportRow[] = [];
+  for (let h = Math.min(...horas); h <= Math.max(...horas); h++) {
+    const label = `${String(h).padStart(2, "0")}:00`;
+    const v = map.get(label);
+    rows.push({ label, amount: round2(v?.amount ?? 0), count: v?.count ?? 0 });
+  }
+  return rows;
+}
+
 export async function buildPeriodReport(
   businessId: string,
-  period: Period
+  period: Period,
+  tz: string = DEFAULT_TZ
 ): Promise<PeriodReport> {
   const [purchases, costs] = await Promise.all([
     db.purchase.findMany({
@@ -89,10 +103,12 @@ export async function buildPeriodReport(
     bump(porEmpleado, p.employee?.name ?? "Sin asignar", p.amount);
     bump(porMetodoPago, p.paymentMethod, p.amount);
 
-    const d = new Date(p.date);
-    const dow = d.getDay();
-    bump(porDiaSemana, DIAS[dow === 0 ? 6 : dow - 1], p.amount);
-    bump(porHora, `${String(d.getHours()).padStart(2, "0")}:00`, p.amount);
+    // En la hora del negocio, no en la del servidor (UTC en Vercel): si no,
+    // una venta de las 20:00 figuraba a las 23:00 y la del sábado a la noche
+    // caía el domingo.
+    const z = zonedParts(new Date(p.date), tz);
+    bump(porDiaSemana, DIAS[z.weekday === 0 ? 6 : z.weekday - 1], p.amount);
+    bump(porHora, `${String(z.hour).padStart(2, "0")}:00`, p.amount);
   }
   for (const c of costs) bump(costosPorConcepto, c.label, c.amount);
 
@@ -133,9 +149,10 @@ export async function buildPeriodReport(
       amount: round2(porDiaSemana.get(d)?.amount ?? 0),
       count: porDiaSemana.get(d)?.count ?? 0,
     })),
-    porHora: [...porHora.entries()]
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([label, v]) => ({ label, amount: round2(v.amount), count: v.count })),
+    // Del primer al último horario con ventas, sin huecos: si faltara la hora
+    // en que no se vendió nada, las barras de 13 y 16 quedarían pegadas y la
+    // siesta no se vería.
+    porHora: horasContinuas(porHora),
   };
 }
 
@@ -151,11 +168,12 @@ export interface ReportComparison {
 export async function buildComparison(
   businessId: string,
   actual: Period,
-  anterior: Period
+  anterior: Period,
+  tz: string = DEFAULT_TZ
 ): Promise<ReportComparison> {
   const [a, b] = await Promise.all([
-    buildPeriodReport(businessId, actual),
-    buildPeriodReport(businessId, anterior),
+    buildPeriodReport(businessId, actual, tz),
+    buildPeriodReport(businessId, anterior, tz),
   ]);
 
   return {

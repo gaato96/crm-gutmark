@@ -68,10 +68,15 @@ export function StatCard({
       <div className="mt-3.5 text-[1.75rem] font-bold leading-none tracking-tight text-ink tabular-nums">
         {value}
       </div>
-      <div className="mt-2 flex items-center gap-2">
-        {delta !== undefined && <DeltaBadge delta={delta} />}
-        {hint && <span className="text-xs text-ink-muted">{delta !== undefined ? deltaLabel : hint}</span>}
-      </div>
+      {/* Antes, si había variación, el hint desaparecía y quedaba solo
+          "vs. mes anterior": se perdía el dato de activos/inactivos. */}
+      {delta !== undefined && (
+        <div className="mt-2 flex items-center gap-2">
+          <DeltaBadge delta={delta} />
+          <span className="text-xs text-ink-muted">{deltaLabel}</span>
+        </div>
+      )}
+      {hint && <div className="mt-1.5 text-xs text-ink-muted">{hint}</div>}
     </div>
   );
 }

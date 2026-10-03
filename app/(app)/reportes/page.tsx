@@ -15,11 +15,11 @@ export default async function ReportesPage({
   const kind: PeriodKind = p === "mes" ? "mes" : "semana";
 
   const biz = await getCurrentBusiness();
-  const actual = periodRange(kind, 0);
-  const anterior = periodRange(kind, 1);
+  const actual = periodRange(kind, 0, biz.timezone);
+  const anterior = periodRange(kind, 1, biz.timezone);
 
   const [comparacion, comisiones] = await Promise.all([
-    buildComparison(biz.id, actual, anterior),
+    buildComparison(biz.id, actual, anterior, biz.timezone),
     commissionsByEmployee(biz.id, actual),
   ]);
 

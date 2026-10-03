@@ -1,4 +1,5 @@
 import { daysSince } from "./format";
+import { zonedParts } from "./tz";
 
 export type Segment = "vip" | "frecuente" | "ocasional" | "nuevo" | "inactivo";
 
@@ -89,28 +90,42 @@ export function needsWinback(c: CustomerStats, cfg: BusinessConfig): boolean {
   return since >= cfg.recompraDays;
 }
 
+// Los cumpleaños se guardan como fecha calendario a medianoche UTC (o a las
+// 03:00 UTC en los cargados desde una máquina en hora argentina): en los dos
+// casos el día UTC es el correcto, así que se leen con getUTC*. El "hoy", en
+// cambio, es el de la hora del negocio — en UTC, después de las 21:00 el
+// servidor ya creía que era mañana y anunciaba los cumpleaños un día antes.
+function birthParts(birthdate: Date): { month: number; day: number; year: number } {
+  const b = new Date(birthdate);
+  return { year: b.getUTCFullYear(), month: b.getUTCMonth(), day: b.getUTCDate() };
+}
+
+function todayUtc(): Date {
+  const t = zonedParts(new Date());
+  return new Date(Date.UTC(t.year, t.month - 1, t.day));
+}
+
 // Días hasta el próximo cumpleaños (0 = hoy). null si no hay fecha.
 export function daysToBirthday(birthdate: Date | null): number | null {
   if (!birthdate) return null;
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const b = new Date(birthdate);
-  let next = new Date(today.getFullYear(), b.getMonth(), b.getDate());
-  if (next < today) next = new Date(today.getFullYear() + 1, b.getMonth(), b.getDate());
+  const today = todayUtc();
+  const b = birthParts(birthdate);
+  let next = new Date(Date.UTC(today.getUTCFullYear(), b.month, b.day));
+  if (next < today) next = new Date(Date.UTC(today.getUTCFullYear() + 1, b.month, b.day));
   return Math.round((next.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 }
 
 export function birthdayThisMonth(birthdate: Date | null): boolean {
   if (!birthdate) return false;
-  return new Date(birthdate).getMonth() === new Date().getMonth();
+  return birthParts(birthdate).month === todayUtc().getUTCMonth();
 }
 
 export function ageTurning(birthdate: Date | null): number | null {
   if (!birthdate) return null;
-  const b = new Date(birthdate);
-  const now = new Date();
-  let age = now.getFullYear() - b.getFullYear();
-  const next = new Date(now.getFullYear(), b.getMonth(), b.getDate());
-  if (next < new Date(now.getFullYear(), now.getMonth(), now.getDate())) age += 1;
+  const b = birthParts(birthdate);
+  const today = todayUtc();
+  let age = today.getUTCFullYear() - b.year;
+  const next = new Date(Date.UTC(today.getUTCFullYear(), b.month, b.day));
+  if (next < today) age += 1;
   return age;
 }

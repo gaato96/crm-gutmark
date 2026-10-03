@@ -5,6 +5,7 @@ import { getCurrentBusiness } from "@/lib/queries";
 import { parseFlexibleDate } from "@/lib/csv";
 import { recordSale } from "@/lib/sale-write";
 import { isRubroCode, modeForRubro } from "@/lib/rubros";
+import { normalizeSearch } from "@/lib/search";
 import type { SaleItemInput } from "@/lib/sales";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -17,7 +18,9 @@ function str(v: FormDataEntryValue | null): string | null {
 function parseDate(v: FormDataEntryValue | null): Date | null {
   const s = str(v);
   if (!s) return null;
-  const d = new Date(s + "T00:00:00");
+  // Medianoche UTC explícita: es una fecha calendario, no un instante, y así
+  // queda igual sin importar la zona horaria del servidor.
+  const d = new Date(s + "T00:00:00Z");
   return isNaN(d.getTime()) ? null : d;
 }
 
@@ -156,11 +159,28 @@ export async function logContact(
     linkedCampaignId = campaign?.id ?? null;
   }
 
-  await db.contactLog.create({
+  const log = await db.contactLog.create({
     data: { businessId: biz.id, customerId, reason, channel, campaignId: linkedCampaignId },
+    select: { id: true, createdAt: true },
   });
   revalidatePath("/recordatorios");
+  revalidatePath("/campanas");
+  revalidatePath("/dashboard");
   revalidatePath(`/clientes/${customerId}`);
+  // El id vuelve a la pantalla para poder deshacerlo si se tocó sin querer.
+  return { id: log.id, at: log.createdAt.toISOString() };
+}
+
+// Deshacer un "enviado": tocar WhatsApp registra el contacto al instante,
+// pero a veces el chat se abre y el mensaje no se manda. Sin esto, ese cliente
+// quedaba marcado como contactado sin haberlo estado.
+export async function undoContact(contactId: string) {
+  const biz = await getCurrentBusiness();
+  // deleteMany + businessId: un id de otro negocio no borra nada.
+  await db.contactLog.deleteMany({ where: { id: contactId, businessId: biz.id } });
+  revalidatePath("/recordatorios");
+  revalidatePath("/campanas");
+  revalidatePath("/dashboard");
 }
 
 export async function updateBusiness(formData: FormData) {
@@ -269,32 +289,68 @@ export interface CustomerSearchResult {
 }
 
 // Búsqueda liviana para la paleta de "Nueva venta" (menor cantidad de clics posible).
+//
+// Sin mayúsculas ni acentos: "patricio" encuentra a "Patricio" y "nunez" a
+// "Núñez". Antes era un `contains` de Prisma, que en Postgres distingue
+// mayúsculas — escribir el nombre en minúscula, que es lo que hace todo el
+// mundo apurado en el mostrador, no encontraba a nadie. `mode: "insensitive"`
+// resolvía las mayúsculas pero no los acentos, así que se filtra acá: la
+// cartera de un negocio chico entra en memoria sin problema.
 export async function searchCustomers(query: string): Promise<CustomerSearchResult[]> {
   const biz = await getCurrentBusiness();
-  const q = query.trim();
+  const q = normalizeSearch(query);
 
-  const customers = await db.customer.findMany({
-    where: {
-      businessId: biz.id,
-      ...(q
-        ? {
-            OR: [
-              { name: { contains: q } },
-              { phone: { contains: q } },
-              { email: { contains: q } },
-            ],
-          }
-        : {}),
-    },
-    orderBy: { lastPurchaseAt: "desc" },
-    take: 8,
+  if (!q) {
+    const recent = await db.customer.findMany({
+      where: { businessId: biz.id },
+      orderBy: [{ lastPurchaseAt: { sort: "desc", nulls: "last" } }, { createdAt: "desc" }],
+      take: 8,
+      select: { id: true, name: true, phone: true, email: true, lastPurchaseAt: true },
+    });
+    return recent.map(toSearchResult);
+  }
+
+  const all = await db.customer.findMany({
+    where: { businessId: biz.id },
     select: { id: true, name: true, phone: true, email: true, lastPurchaseAt: true },
   });
 
-  return customers.map((c) => ({
-    ...c,
-    lastPurchaseAt: c.lastPurchaseAt ? c.lastPurchaseAt.toISOString() : null,
-  }));
+  const digits = q.replace(/\D/g, "");
+  const words = q.split(" ").filter(Boolean);
+  const scored: { c: (typeof all)[number]; score: number }[] = [];
+  for (const c of all) {
+    const name = normalizeSearch(c.name);
+    const email = normalizeSearch(c.email ?? "");
+    const phone = (c.phone ?? "").replace(/\D/g, "");
+    let score = -1;
+    // Todas las palabras tienen que aparecer: "maria gon" encuentra a
+    // "María González" sin exigir el nombre completo.
+    if (words.every((w) => name.includes(w))) {
+      score = name.startsWith(q) ? 3 : name.split(" ").some((part) => part.startsWith(words[0])) ? 2 : 1;
+    } else if (email.includes(q)) {
+      score = 1;
+    } else if (digits.length >= 3 && phone.includes(digits)) {
+      score = 1;
+    }
+    if (score >= 0) scored.push({ c, score });
+  }
+
+  scored.sort(
+    (a, b) =>
+      b.score - a.score ||
+      (b.c.lastPurchaseAt?.getTime() ?? 0) - (a.c.lastPurchaseAt?.getTime() ?? 0)
+  );
+  return scored.slice(0, 8).map((s) => toSearchResult(s.c));
+}
+
+function toSearchResult(c: {
+  id: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  lastPurchaseAt: Date | null;
+}): CustomerSearchResult {
+  return { ...c, lastPurchaseAt: c.lastPurchaseAt ? c.lastPurchaseAt.toISOString() : null };
 }
 
 // Registrar una venta en el mínimo de pasos: elegir cliente + monto, sin salir de la pantalla actual.

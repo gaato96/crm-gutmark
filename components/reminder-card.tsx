@@ -43,10 +43,10 @@ export function ReminderCard({
     } catch {}
   }
 
-  async function markDone() {
+  async function markDone(channel: string) {
     setBusy(true);
     try {
-      await logContact(id, reason, "manual", campaignId);
+      await logContact(id, reason, channel, campaignId);
       setDone(true);
     } finally {
       setBusy(false);
@@ -86,7 +86,7 @@ export function ReminderCard({
           href={whatsappLink(phone, whatsappBody)}
           target="_blank"
           rel="noopener noreferrer"
-          onClick={markDone}
+          onClick={() => markDone("whatsapp")}
           className={`btn-primary flex-1 !py-2 text-xs ${!phone ? "pointer-events-none opacity-40" : ""}`}
         >
           <MessageCircle className="h-4 w-4" /> WhatsApp
@@ -96,13 +96,13 @@ export function ReminderCard({
         </button>
         <a
           href={mailtoLink(email, emailSubject, emailBody)}
-          onClick={markDone}
+          onClick={() => markDone("email")}
           className={`btn-secondary !py-2 text-xs ${!email ? "pointer-events-none opacity-40" : ""}`}
         >
           <Mail className="h-4 w-4" />
         </a>
         <button
-          onClick={markDone}
+          onClick={() => markDone("manual")}
           disabled={busy}
           className="btn-ghost !py-2 text-xs text-ink-muted"
         >

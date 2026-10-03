@@ -32,6 +32,15 @@ model Business {
   // Módulo Puntos/beneficios: ARS gastados para ganar 1 punto. Solo tiene
   // efecto si el negocio tiene el módulo "puntos" activo (ver lib/points.ts).
   pointsPerAmount Float  @default(1000)
+  // Cuenta de demostración (la usa el equipo para mostrar el sistema a
+  // potenciales clientes). Solo sobre estas se puede "Restaurar datos demo",
+  // que BORRA todos sus clientes y ventas: nunca marcar un negocio real.
+  // Tampoco suman al MRR ni a los contadores de /admin.
+  isDemo        Boolean  @default(false)
+  // Momento al que corresponden los datos demo. Al entrar se corren todas las
+  // fechas hacia adelante (ver lib/demo-data.ts → refreshDemoDates) para que la
+  // cuenta siempre se vea "como si se hubiera usado hasta hoy".
+  demoAnchorAt  DateTime?
   createdAt     DateTime @default(now())
 
   customers     Customer[]
@@ -252,6 +261,10 @@ model Campaign {
   triggerValue Int?
   // "dias" | "horas"
   triggerUnit  String @default("dias")
+  // Tope opcional, en la misma unidad: "entre 2 y 24 horas después". Sin tope,
+  // "2 horas después del servicio" alcanzaba a todos los que alguna vez
+  // compraron. Null = sin tope (el comportamiento de siempre).
+  triggerMaxValue Int?
   // OBSOLETA: la reemplazó triggerValue + triggerUnit. Se mantiene hasta
   // confirmar que todos los negocios pasaron por db:migrate-trigger-units.
   triggerDays Int?

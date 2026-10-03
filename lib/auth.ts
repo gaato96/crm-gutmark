@@ -113,6 +113,8 @@ export interface SessionUser {
     recompraDays: number;
     vipMinSpend: number;
     active: boolean;
+    timezone: string;
+    isDemo: boolean;
     // Códigos de módulo activos para este negocio (ver lib/modules.ts).
     modules: string[];
   };
@@ -160,6 +162,8 @@ export async function getSessionUser(): Promise<SessionUser | null> {
       recompraDays: user.business.recompraDays,
       vipMinSpend: user.business.vipMinSpend,
       active: user.business.active,
+      timezone: user.business.timezone,
+      isDemo: user.business.isDemo,
       modules: user.business.modules.map((m) => m.moduleCode),
     },
   };

@@ -10,7 +10,8 @@ import {
   createSession,
   stopImpersonating,
 } from "@/lib/auth";
-import { createDefaultCampaigns } from "@/lib/default-campaigns";
+import { applyRubroPreset } from "@/lib/rubro-setup";
+import { ensureAllDemoBusinesses, resetDemoBusiness } from "@/lib/demo-data";
 import { isModuleCode, MODULE_SEED } from "@/lib/modules";
 import { isRubroCode, modeForRubro, isCatalogMode } from "@/lib/rubros";
 
@@ -43,8 +44,20 @@ export async function createBusiness(
   const existing = await db.user.findUnique({ where: { email } });
   if (existing) return { error: "Ya existe una cuenta con ese email." };
 
+  // "Cuenta demo": se llena con clientes y ventas de ejemplo para mostrarla.
+  // Queda marcada como demo para que no cuente en el MRR y para que se pueda
+  // restaurar después sin riesgo de tocar un negocio real.
+  const isDemo = formData.get("isDemo") === "on";
+  const withModules = formData.get("presetModules") === "on";
+
   const business = await db.business.create({
-    data: { name: businessName, rubro, catalogMode: modeForRubro(rubro) },
+    data: {
+      name: businessName,
+      rubro,
+      catalogMode: modeForRubro(rubro),
+      isDemo,
+      billingExempt: isDemo,
+    },
   });
   await db.user.create({
     data: {
@@ -55,10 +68,44 @@ export async function createBusiness(
       role: "owner",
     },
   });
-  await createDefaultCampaigns(business.id);
+  if (isDemo) {
+    // resetDemoBusiness ya aplica el preset del rubro (con módulos).
+    await resetDemoBusiness(business.id);
+  } else {
+    await applyRubroPreset(business.id, rubro, { modules: withModules });
+  }
 
   revalidatePath("/admin");
   redirect("/admin");
+}
+
+// --- Cuentas demo -------------------------------------------------------------
+
+// Crea las cuentas demo de cada rubro que todavía no existan. No genera datos:
+// eso lo hace restoreDemoBusiness, de a una, para no pasarse del tiempo máximo
+// de una función serverless.
+export async function setupDemoAccounts(): Promise<{ id: string; name: string }[]> {
+  await requireSuperAdmin();
+  const list = await ensureAllDemoBusinesses();
+  revalidatePath("/admin");
+  return list;
+}
+
+// Borra y regenera los datos de UNA cuenta demo. resetDemoBusiness se niega a
+// tocar un negocio que no tenga isDemo: es la protección contra borrar la
+// cartera de un cliente real por error.
+export async function restoreDemoBusiness(
+  businessId: string
+): Promise<{ ok: true; customers: number; purchases: number } | { ok: false; error: string }> {
+  await requireSuperAdmin();
+  try {
+    const res = await resetDemoBusiness(businessId);
+    revalidatePath("/admin");
+    revalidatePath(`/admin/negocios/${businessId}`);
+    return { ok: true, ...res };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "No se pudo restaurar." };
+  }
 }
 
 export async function toggleBusinessActive(businessId: string, active: boolean) {

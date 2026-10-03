@@ -1,5 +1,5 @@
 import { renderTemplate, TemplateVars } from "./messages";
-import { formatMoney, formatDate } from "./format";
+import { formatMoney, formatDate, formatBirthday } from "./format";
 
 // Lo que hace falta de una campaña para armar el mensaje. `Campaign` de Prisma
 // lo cumple estructuralmente.
@@ -40,7 +40,7 @@ export function customerVars(
     // Sin el módulo Puntos activo no llega el dato: la variable queda en 0 en
     // vez de vacía, para que el mensaje no se lea cortado si alguien la usó.
     puntos: String(points ?? 0),
-    cumple: c.birthdate ? formatDate(c.birthdate) : "—",
+    cumple: c.birthdate ? formatBirthday(c.birthdate) : "—",
     servicio: serviceName ?? "",
   };
 }

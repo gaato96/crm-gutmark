@@ -1,5 +1,6 @@
 "use client";
 
+import { matchesSearch } from "@/lib/search";
 import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { Plus, Minus, Trash2, Tag } from "lucide-react";
 import { formatMoney } from "@/lib/format";
@@ -67,11 +68,8 @@ export function SaleItemsPicker({
   const [query, setQuery] = useState("");
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return services;
-    return services.filter(
-      (s) => s.name.toLowerCase().includes(q) || s.category.toLowerCase().includes(q)
-    );
+    if (!query.trim()) return services;
+    return services.filter((s) => matchesSearch(`${s.name} ${s.category}`, query));
   }, [services, query]);
 
   const totals = saleTotals(items, discount);
