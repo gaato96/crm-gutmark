@@ -236,7 +236,7 @@ registro (scoped por negocio).
 una campaña la primera compra que hizo un cliente dentro de los 14 días
 posteriores a un mensaje. Lo muestran el dashboard ("Volvieron por tus
 mensajes") y cada tarjeta de campaña. `moneyAtStake()` calcula la recompra
-pendiente y lo que gastaban por año los inactivos.
+pendiente, cuántos clientes vuelven a comprar y cuántos inactivos hay.
 
 `triggerValue` en `null` **no** significa cero: significa "usar el default". La campaña de
 recompra de fábrica lo deja en null a propósito para seguir el `recompraDays` de
@@ -568,21 +568,32 @@ se desplaza `-50%`. La separación entre ítems va como `padding-right` de cada
 uno y **no** como `gap` del flex: con `gap` el ancho total es `2·copia + gap` y
 el corte del bucle no cae justo, así que se ve un salto en cada vuelta.
 
-**El hero sigue al tema; el video vive en el marco de producto.** El titular va
-centrado sobre `canvas` con manchas de marca (`Aurora`) y patrón de puntos
-(`.bg-dots` + `.mask-radial` en `app/globals.css`, que usan los tokens y se ven en
-los dos temas). Debajo, `ProductFrame`: un marco violeta con `public/hero.mp4` de
-fondo y piezas reales del panel flotando encima (plan del día, chat de WhatsApp,
-tarjeta de puntos, aviso de "volvió"). Ese marco **sí** es oscuro fijo: adentro
-no uses `text-ink` ni `bg-surface` salvo dentro de las tarjetas, que son
-superficies propias. En `lg` las piezas son absolutas dentro de un contenedor
-`absolute inset-0` — contra una caja de alto cero, las ancladas con `bottom-*`
-quedaban fuera de cuadro. Debajo de `lg` se apilan en grilla.
+**El hero es la única banda que se queda oscura en los dos temas.** Su fondo es
+`public/hero.mp4` y sobre un video no se puede garantizar contraste con tokens
+que cambian según el tema, así que el scrim y los colores del texto quedan
+fijos. Dentro del hero **no uses `text-ink` ni `bg-surface`**. Texto a la
+izquierda; a la derecha `components/landing/hero-chat.tsx`, un chat de WhatsApp
+animado que cuenta la historia entera (aviso de cumpleaños → mensaje → leído →
+respuesta → "volvió y compró"). El scrim desktop es direccional (opaco a la
+izquierda, abierto a la derecha) y el de mobile es parejo. ⚠️ El dueño probó
+reemplazar este hero por uno centrado con fotos dentro del titular y lo
+rechazó: mejorarlo sí, cambiarle la estructura no.
+
+Las ilustraciones de la landing son **interfaz dibujada** (tickets, calendario,
+plan del día, chats), no fotos de stock: una foto que no tiene que ver con el
+texto ("se te pasó un cumpleaños" con un frasco de vidrio) se lee como relleno.
+Las fotos solo van donde tienen relación directa (la cinta de rubros). Y el
+copy nunca puede sugerir envío automático: cada mensaje se manda a mano, uno
+por uno.
+
+Fondos: `.bg-dots`, `.bg-grid-lines` (se desplazan solos y en oscuro toman el
+violeta de marca), `.bg-grid-move` (para superficies de color) y las bandas
+`.band-violet` / `.band-green`, que en oscuro son violeta y verde profundos y no
+negro. Solo colores de marca: nada de rojos ni rosas de fondo.
 
 Motion de la landing (todo dentro de `matchMedia` de movimiento):
-`hero-motion.tsx` (titular palabra por palabra, el marco que se endereza y crece
-con el scroll, parallax de las piezas con `data-depth`), `pain-accordion.tsx`
-(acordeón horizontal con fotos), `stack-cards.tsx` (los cuatro pasos se apilan:
+`hero-stage.tsx` (entrada escalonada y parallax del chat), `pain-accordion.tsx`
+(acordeón horizontal con ilustraciones), `stack-cards.tsx` (los cuatro pasos se apilan:
 `sticky` de CSS + GSAP que achica y oscurece la de atrás — oscurece, no baja la
 opacidad, porque si no se transparenta el texto de la anterior),
 `reveal-group.tsx` y `count-up.tsx`. ⚠️ La página usa `overflow-x-clip` y no

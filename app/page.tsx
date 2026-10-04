@@ -23,9 +23,9 @@ import { demoPresets } from "@/lib/rubro-presets";
 import { CAMPAIGN_SEED } from "@/lib/campaigns";
 import { rubroLabel } from "@/lib/rubros";
 import { HeroVideo } from "@/components/landing/hero-video";
-import { HeroMotion } from "@/components/landing/hero-motion";
+import { HeroStage } from "@/components/landing/hero-stage";
+import { HeroChat } from "@/components/landing/hero-chat";
 import { FloatingNav } from "@/components/landing/floating-nav";
-import { LoyaltyCard } from "@/components/landing/loyalty-card";
 import { WordScrub } from "@/components/landing/word-scrub";
 import { RubroMarquee } from "@/components/landing/rubro-marquee";
 import { MagneticCta } from "@/components/landing/magnetic-cta";
@@ -55,29 +55,25 @@ const PAINS: PainSlice[] = [
     title: "Compró una vez y nunca más supiste de él",
     detail:
       "Sin un registro, cada venta empieza y termina en sí misma. No sabés si volvió, si se fue a otro lado o si simplemente se olvidó.",
-    src: photo("Indumentaria").src,
-    alt: photo("Indumentaria").alt,
+    visual: "ticket",
   },
   {
     title: "Se te pasó el cumpleaños de una clienta de siempre",
     detail:
       "Un saludo a tiempo, con un beneficio, rinde más que cualquier publicidad paga. Y es lo primero que se olvida en un día de mostrador.",
-    src: photo("Estética").src,
-    alt: photo("Estética").alt,
+    visual: "calendar",
   },
   {
     title: "No sabés quiénes son tus mejores clientes",
     detail:
       "Ni cuánto gastan, ni cada cuánto vienen, ni hace cuánto que no aparecen. Los tratás igual que a alguien que vino una sola vez.",
-    src: photo("Peluquerías").src,
-    alt: photo("Peluquerías").alt,
+    visual: "ranking",
   },
   {
-    title: "Avisar una promo te lleva la tarde entera",
+    title: "Querés escribirles, pero no sabés a quién ni qué decir",
     detail:
-      "Escribís uno por uno, copiás y pegás, y aun así te salteás la mitad de la lista. Al final no lo hacés.",
-    src: photo("Gimnasios").src,
-    alt: photo("Gimnasios").alt,
+      "Abrís WhatsApp, ves cientos de contactos y no sabés por dónde empezar ni qué decirle a cada uno. Al final no le escribís a nadie.",
+    visual: "contacts",
   },
 ];
 
@@ -86,25 +82,21 @@ const STEPS = [
     title: "Cargá tu cartera",
     body: "Nombre, teléfono, cumpleaños y lo que ya te compraron. A mano o importando tu Excel. El catálogo y las campañas de tu rubro ya vienen armados.",
     tone: "surface" as const,
-    img: photo("Perfumerías"),
   },
   {
     title: "Se ordena sola",
     body: "Cada cliente queda en VIP, frecuente, ocasional, nuevo o inactivo, y se reacomoda solo con cada venta que registrás.",
     tone: "accent" as const,
-    img: photo("Veterinarias"),
   },
   {
     title: "Te avisa a quién escribirle",
     body: "Los cumpleaños de la semana y los que ya deberían haber vuelto te esperan cada mañana en el panel, con el mensaje listo.",
     tone: "brand" as const,
-    img: photo("Ópticas"),
   },
   {
     title: "Mandás en un toque y ves qué volvió",
     body: "Sale por tu WhatsApp con el nombre puesto. El panel te muestra cuántos clientes compraron después del mensaje y cuánta plata dejaron.",
     tone: "ink" as const,
-    img: photo("Pet shops"),
   },
 ];
 
@@ -141,7 +133,7 @@ const FAQ = [
   },
   {
     q: "¿Los mensajes se mandan solos?",
-    a: "El sistema elige a quién escribirle y redacta el mensaje con su nombre; vos lo mandás desde tu WhatsApp con un toque. Así le llega un mensaje tuyo, no de un número desconocido, y no hay riesgo de que te bloqueen.",
+    a: "El sistema elige a quién escribirle y redacta el mensaje con su nombre; vos lo mandás desde tu WhatsApp, uno por uno, con un toque cada uno. Así le llega un mensaje tuyo, no de un número desconocido, y no hay riesgo de que te bloqueen.",
   },
   {
     q: "¿Cómo sé si me está sirviendo?",
@@ -197,208 +189,98 @@ export default async function LandingPage() {
 function Aurora({ className = "" }: { className?: string }) {
   return (
     <div aria-hidden="true" className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}>
-      <div className="animate-drift-a absolute -left-32 -top-32 h-[34rem] w-[34rem] rounded-full bg-brand-400/25 blur-[110px] dark:bg-brand-500/20" />
-      <div className="animate-drift-b absolute -right-40 top-10 h-[30rem] w-[30rem] rounded-full bg-accent-500/25 blur-[110px] dark:bg-accent-600/30" />
+      <div className="animate-drift-a absolute -left-32 -top-32 h-[34rem] w-[34rem] rounded-full bg-brand-400/25 blur-[110px] dark:bg-brand-500/25" />
+      <div className="animate-drift-b absolute -right-40 top-10 h-[30rem] w-[30rem] rounded-full bg-accent-500/25 blur-[110px] dark:bg-accent-500/35" />
       <div className="animate-drift-a absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-accent-300/20 blur-[90px] [animation-duration:31s]" />
     </div>
   );
 }
 
-// Imagen en píldora dentro del titular.
-function InlinePhoto({ name, className = "" }: { name: string; className?: string }) {
-  const p = photo(name);
-  return (
-    <span
-      data-hero-pill
-      className={`relative mx-[0.12em] hidden h-[0.82em] w-[1.75em] overflow-hidden rounded-full align-[-0.06em] ring-2 ring-surface shadow-pop sm:inline-block ${className}`}
-    >
-      <Image src={p.src} alt="" fill sizes="160px" className="object-cover" priority />
-    </span>
-  );
-}
-
-// Palabra del titular con máscara para la entrada de abajo hacia arriba.
-function W({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return (
-    <span className="inline-block overflow-hidden pb-[0.08em] align-bottom">
-      <span data-hero-word className={`inline-block ${className}`}>
-        {children}
-      </span>
-    </span>
-  );
-}
-
+/**
+ * El hero es la única banda que se queda oscura en los dos temas: su fondo es
+ * el video, y sobre un video no se puede garantizar contraste con tokens que
+ * cambian según el tema. El scrim y los colores del texto quedan fijos y el
+ * contraste se calcula una sola vez (ver "Landing pública" en CLAUDE.md).
+ *
+ * Texto a la izquierda, chat animado a la derecha: el chat cuenta la historia
+ * entera del producto (aviso de cumpleaños, mensaje escrito, respuesta, venta).
+ */
 function Hero() {
   return (
-    <HeroMotion>
-      <section className="relative isolate overflow-hidden pb-24 pt-32 sm:pt-40 md:pb-32">
-        <Aurora />
-        <div aria-hidden="true" className="bg-dots mask-radial pointer-events-none absolute inset-0 -z-10" />
+    <HeroStage>
+      <section className="relative flex min-h-[100dvh] items-center overflow-hidden bg-accent-900 pt-20">
+        <HeroVideo src="/hero.mp4" className="absolute inset-0 h-full w-full object-cover" />
 
-        <div className="relative mx-auto w-full max-w-6xl px-5 text-center sm:px-8">
-          <h1 className="mx-auto max-w-6xl text-balance font-display text-[2.15rem] font-bold leading-[1.06] tracking-[-0.03em] text-ink sm:text-[clamp(2.6rem,6vw,5.4rem)]">
-            <W>Vendé</W> <W>más</W>
-            <InlinePhoto name="Peluquerías" />{" "}
-            <W className="text-brand-700 dark:text-brand-400">sin</W>{" "}
-            <W className="text-brand-700 dark:text-brand-400">conseguir</W>{" "}
-            <W>un</W> <W>solo</W> <W>cliente</W>
-            <InlinePhoto name="Veterinarias" />{" "}
-            <W>nuevo.</W>
-          </h1>
-
-          <p
-            data-hero-fade
-            className="mx-auto mt-7 max-w-2xl text-lg leading-relaxed text-ink-soft sm:text-xl"
-          >
-            Vuelvo conoce a cada cliente que ya tenés, te avisa quién está por volver y te deja el
-            WhatsApp escrito. Vos tocás enviar. Ellos vuelven.
-          </p>
-
-          <div data-hero-fade className="mt-10 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
-            <MagneticCta
-              href={CTA_HREF}
-              className="btn-primary justify-center whitespace-nowrap rounded-full !px-8 !py-4 text-base"
-            >
-              <MessageCircle aria-hidden="true" className="h-5 w-5" />
-              {CTA_LABEL}
-            </MagneticCta>
-            <a
-              href="#como-funciona"
-              className="btn-secondary justify-center whitespace-nowrap rounded-full !px-7 !py-4 text-base"
-            >
-              Ver cómo funciona
-              <ArrowRight aria-hidden="true" className="h-4 w-4" />
-            </a>
-          </div>
+        {/* Piso de oscuridad: ningún cuadro claro del video se come el titular. */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-accent-900/45" />
+        {/* Mobile: scrim parejo (el texto ocupa todo el ancho). */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-accent-900/72 lg:hidden" />
+        {/* Desktop: scrim direccional. Opaco donde está el texto, abierto a la
+            derecha para que el video se vea detrás del chat. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 hidden bg-gradient-to-r from-accent-900 via-accent-900/80 to-accent-900/25 lg:block"
+        />
+        {/* Grilla en movimiento sobre el video: textura de marca. */}
+        <div aria-hidden="true" className="bg-grid-move pointer-events-none absolute inset-0 opacity-50 [mask-image:linear-gradient(to_bottom,black,transparent_85%)]" />
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-b from-transparent to-canvas" />
+        <div aria-hidden="true" className="grain pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="animate-drift-a absolute -left-40 -top-40 h-[30rem] w-[30rem] rounded-full bg-brand-400/25 blur-3xl" />
+          <div className="animate-drift-b absolute -right-32 top-40 h-[24rem] w-[24rem] rounded-full bg-accent-400/25 blur-3xl" />
+          <div className="animate-drift-b absolute -bottom-32 left-1/3 h-72 w-72 rounded-full bg-brand-300/15 blur-3xl [animation-duration:32s]" />
         </div>
 
-        <ProductFrame />
+        <div className="relative mx-auto grid w-full max-w-6xl gap-16 px-5 py-16 sm:px-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:gap-14">
+          <div>
+            <span
+              data-anim="hero-item"
+              className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-accent-200 ring-1 ring-inset ring-white/15 backdrop-blur"
+            >
+              <HeartHandshake aria-hidden="true" className="h-3.5 w-3.5" />
+              Fidelización para PYMES
+            </span>
+
+            <h1
+              data-anim="hero-item"
+              className="mt-5 max-w-2xl text-balance font-display text-[2.35rem] font-bold leading-[1.06] tracking-tight text-white sm:text-[3rem] lg:text-[3.5rem]"
+            >
+              Vendé más <span className="text-brand-300">sin conseguir</span> un solo cliente nuevo.
+            </h1>
+
+            <p data-anim="hero-item" className="mt-6 max-w-xl text-lg leading-relaxed text-accent-100">
+              Conocé a los clientes que ya tenés, acordate de todos, y hacelos volver antes de que se
+              olviden de vos.
+            </p>
+
+            <div data-anim="hero-item" className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <MagneticCta
+                href={CTA_HREF}
+                className="btn-primary justify-center whitespace-nowrap !px-7 !py-3.5 text-base"
+              >
+                <MessageCircle aria-hidden="true" className="h-5 w-5" />
+                {CTA_LABEL}
+              </MagneticCta>
+              {/* Botón propio del hero (no .btn-secondary): el fondo es fijo y
+                  oscuro, así que el botón también. */}
+              <a
+                href="#como-funciona"
+                className="btn justify-center whitespace-nowrap border border-white/25 bg-white/10 !px-6 !py-3.5 text-base text-white backdrop-blur hover:bg-white/20"
+              >
+                Ver cómo funciona
+                <ArrowRight aria-hidden="true" className="h-4 w-4" />
+              </a>
+            </div>
+          </div>
+
+          <div data-anim="hero-visual" className="relative mx-auto mt-6 w-full max-w-[23rem] lg:mx-0 lg:ml-auto lg:mt-0 lg:max-w-[26rem]">
+            <div aria-hidden="true" className="pointer-events-none absolute -inset-10 rounded-[3rem] bg-accent-900/60 blur-2xl" />
+            <div data-anim="hero-photo" className="relative">
+              <HeroChat />
+            </div>
+          </div>
+        </div>
       </section>
-    </HeroMotion>
-  );
-}
-
-/**
- * Marco de producto: el video del hero como escenario y, encima, las piezas
- * reales del panel (plan del día, mensaje de WhatsApp, tarjeta de puntos).
- * Es un panel de ejemplo con datos de una cuenta demo, no una promesa de
- * resultados — por eso la leyenda de abajo lo aclara.
- */
-function ProductFrame() {
-  return (
-    <div className="relative mx-auto mt-16 w-full max-w-6xl px-4 sm:mt-20 sm:px-8">
-      <div
-        data-hero-frame
-        className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-accent-900 shadow-[0_40px_120px_-30px_rgba(91,46,229,0.55)] ring-1 ring-black/5 lg:aspect-[16/8.5]"
-      >
-        <HeroVideo src="/hero.mp4" className="absolute inset-0 h-full w-full object-cover opacity-70" />
-        <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-br from-accent-900/85 via-accent-900/55 to-brand-950/70" />
-        <div aria-hidden="true" className="grain absolute inset-0" />
-
-        {/* Mobile: apilado. Desktop: piezas flotando sobre el video. */}
-        {/* El contenedor ocupa todo el marco en lg (inset-0): las piezas de
-            abajo se anclan con bottom-*, y contra una caja de alto cero
-            quedaban fuera de cuadro. */}
-        <div className="relative grid gap-4 p-4 sm:grid-cols-2 sm:p-6 lg:absolute lg:inset-0 lg:block lg:p-0">
-          <div data-depth="0.6" className="lg:absolute lg:left-[5%] lg:top-[11%] lg:w-[33%]">
-            <div className="lg:animate-float">
-              <PlanCard />
-            </div>
-          </div>
-
-          <div data-depth="1.1" className="lg:absolute lg:right-[5%] lg:top-[9%] lg:w-[31%]">
-            <div className="lg:animate-float lg:[animation-delay:-2s]">
-              <ChatCard />
-            </div>
-          </div>
-
-          <div data-depth="1.5" className="hidden lg:absolute lg:bottom-[8%] lg:left-[39%] lg:block lg:w-[26%]">
-            <div className="animate-float [animation-delay:-4s]">
-              <LoyaltyCard />
-            </div>
-          </div>
-
-          <div data-depth="0.9" className="lg:absolute lg:bottom-[13%] lg:right-[7%]">
-            <ReturnToast />
-          </div>
-        </div>
-      </div>
-      <p className="mt-4 text-center text-xs text-ink-muted">Panel de ejemplo con datos de una cuenta demo.</p>
-    </div>
-  );
-}
-
-function PlanCard() {
-  const rows = [
-    { name: "Cumpleaños", n: 3, icon: Cake, tone: "bg-accent-500/15 text-accent-700 dark:text-accent-300" },
-    { name: "Hora del corte", n: 9, icon: Send, tone: "bg-brand-500/15 text-brand-700 dark:text-brand-300" },
-    { name: "Recompra", n: 6, icon: TrendingUp, tone: "bg-sky-500/15 text-sky-700 dark:text-sky-300" },
-  ];
-  return (
-    <div className="rounded-3xl border border-line bg-surface p-5 text-left shadow-pop">
-      <p className="font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-muted">
-        Tu plan de hoy
-      </p>
-      <p className="mt-2 font-display text-4xl font-bold tabular-nums text-ink">18</p>
-      <p className="text-sm font-medium text-ink-soft">clientes para contactar</p>
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-surface-3">
-        <div className="h-full w-[62%] rounded-full bg-brand-500" />
-      </div>
-      <ul className="mt-4 space-y-2">
-        {rows.map((r) => (
-          <li key={r.name} className="flex items-center gap-3">
-            <span className={`grid h-8 w-8 place-items-center rounded-xl ${r.tone}`}>
-              <r.icon aria-hidden="true" className="h-4 w-4" />
-            </span>
-            <span className="flex-1 text-sm font-semibold text-ink">{r.name}</span>
-            <span className="rounded-full bg-surface-2 px-2 py-0.5 text-xs font-bold tabular-nums text-ink-soft">
-              {r.n}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function ChatCard() {
-  return (
-    <div className="overflow-hidden rounded-3xl bg-[#efeae2] text-left shadow-pop dark:bg-[#0b141a]">
-      <div className="flex items-center gap-3 bg-[#008069] px-4 py-3 text-white dark:bg-[#202c33]">
-        <span className="grid h-9 w-9 place-items-center rounded-full bg-white/20 font-display text-sm font-bold">
-          MG
-        </span>
-        <div className="leading-tight">
-          <p className="text-sm font-semibold">María González</p>
-          <p className="text-[11px] text-white/75">en línea</p>
-        </div>
-      </div>
-      <div className="space-y-2 p-4">
-        <div className="ml-auto max-w-[88%] rounded-2xl rounded-tr-md bg-[#d9fdd3] px-3.5 py-2.5 text-[13px] leading-relaxed text-[#111b21] shadow-sm dark:bg-[#005c4b] dark:text-[#e9edef]">
-          ¡Hola María! Ya pasaron unas semanas de tu último corte. ¿Te guardo un lugar esta semana?
-          <span className="mt-1 flex items-center justify-end gap-1 text-[10px] text-[#667781] dark:text-[#8696a0]">
-            10:24 <CheckCheck aria-hidden="true" className="h-3.5 w-3.5 text-[#53bdeb]" />
-          </span>
-        </div>
-        <div className="max-w-[70%] rounded-2xl rounded-tl-md bg-white px-3.5 py-2.5 text-[13px] leading-relaxed text-[#111b21] shadow-sm dark:bg-[#202c33] dark:text-[#e9edef]">
-          ¡Sí! ¿El jueves a la tarde?
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ReturnToast() {
-  return (
-    <div className="flex items-center gap-3 rounded-2xl border border-line bg-surface/95 px-4 py-3 text-left shadow-pop backdrop-blur md:max-w-[17rem]">
-      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-500 text-brand-950">
-        <Check aria-hidden="true" className="h-5 w-5" strokeWidth={3} />
-      </span>
-      <div className="leading-tight">
-        <p className="text-sm font-bold text-ink">Martín volvió</p>
-        <p className="text-xs text-ink-muted">3 días después del mensaje</p>
-      </div>
-    </div>
+    </HeroStage>
   );
 }
 
@@ -407,18 +289,19 @@ function RubroBand() {
   const names = RUBRO_PHOTOS.map((r) => r.name);
   const track = [...names, ...names];
   return (
-    <section aria-labelledby="rubros-title" className="relative border-y border-line bg-surface-2/40 py-20 sm:py-24">
+    <section aria-labelledby="rubros-title" className="band-green relative isolate overflow-hidden border-y border-line py-14 sm:py-16">
       <Reveal className="mx-auto max-w-6xl px-5 sm:px-8">
         <h2 id="rubros-title" className="text-balance text-center font-display text-2xl font-bold text-ink sm:text-3xl">
           Para negocios donde el cliente vuelve
         </h2>
       </Reveal>
-      <div className="mt-10">
+      <div aria-hidden="true" className="bg-dots mask-radial pointer-events-none absolute inset-0 -z-10" />
+      <div className="mt-8">
         <RubroMarquee />
       </div>
       {/* Segunda cinta, tipográfica y en sentido contrario: da ritmo sin sumar
           información nueva, por eso va fuera del árbol de accesibilidad. */}
-      <div aria-hidden="true" className="marquee-mask mt-8 overflow-hidden">
+      <div aria-hidden="true" className="marquee-mask mt-6 overflow-hidden">
         <div className="animate-marquee-reverse flex w-max">
           {track.map((n, i) => (
             <span
@@ -437,7 +320,7 @@ function RubroBand() {
 // ---------------------------------------------------------------------------
 function ProblemSection() {
   return (
-    <section className="relative isolate overflow-hidden py-28 md:py-44">
+    <section className="relative isolate overflow-hidden py-16 md:py-24">
       <div aria-hidden="true" className="bg-grid-lines mask-fade-y pointer-events-none absolute inset-0 -z-10" />
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
         <WordScrub
@@ -445,7 +328,7 @@ function ProblemSection() {
           className="mx-auto max-w-5xl text-balance text-center font-display text-[1.75rem] font-bold leading-[1.2] tracking-tight text-ink sm:text-[2.6rem] sm:leading-[1.15]"
         />
 
-        <Reveal className="mt-24 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <Reveal className="mt-14 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <h3 className="font-display text-3xl font-bold tracking-tight text-ink sm:text-4xl">¿Te suena familiar?</h3>
           <p className="max-w-sm text-sm text-ink-muted">Pasá el mouse por cada historia. Las cuatro tienen arreglo.</p>
         </Reveal>
@@ -460,15 +343,16 @@ function ProblemSection() {
 // ---------------------------------------------------------------------------
 function LossSection() {
   return (
-    <section id="cuanto-perdes" className="relative isolate scroll-mt-24 overflow-hidden bg-surface-2/50 py-28 md:py-44">
+    <section id="cuanto-perdes" className="band-violet relative isolate scroll-mt-24 overflow-hidden py-16 md:py-24">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="animate-drift-b absolute -right-24 top-20 h-[28rem] w-[28rem] rounded-full bg-rose-400/15 blur-[110px]" />
-        <div className="animate-drift-a absolute -left-24 bottom-0 h-[26rem] w-[26rem] rounded-full bg-accent-500/15 blur-[110px]" />
+        <div className="animate-drift-b absolute -right-24 top-20 h-[28rem] w-[28rem] rounded-full bg-accent-500/20 blur-[110px]" />
+        <div className="animate-drift-a absolute -left-24 bottom-0 h-[26rem] w-[26rem] rounded-full bg-brand-400/15 blur-[110px]" />
+        <div className="bg-grid-lines mask-radial absolute inset-0" />
       </div>
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
         <Reveal className="max-w-4xl">
           <h2 className="text-balance font-display text-4xl font-bold leading-[1.05] tracking-tight text-ink sm:text-6xl">
-            El cliente que no vuelve no se queja. <span className="text-rose-600 dark:text-rose-400">Se va.</span>
+            El cliente que no vuelve no se queja. <span className="text-accent-600 dark:text-accent-300">Se va.</span>
           </h2>
           <p className="mt-6 max-w-2xl text-lg leading-relaxed text-ink-soft">
             Ningún negocio chico lleva la cuenta de cuánta plata se le va por los que compraron una vez
@@ -476,7 +360,7 @@ function LossSection() {
           </p>
         </Reveal>
 
-        <RevealGroup className="mt-16 grid gap-4 sm:grid-cols-3">
+        <RevealGroup className="mt-10 grid gap-4 sm:grid-cols-3">
           <StatCard
             value={<CountUp to={25} prefix="5 a " suffix="×" />}
             label="más caro conseguir un cliente nuevo que retener uno que ya tenés."
@@ -524,8 +408,8 @@ function StatCard({ value, label, source }: { value: React.ReactNode; label: str
 function BentoSection() {
   const msgPhoto = photo("Perfumerías");
   return (
-    <section id="que-incluye" className="relative isolate scroll-mt-24 overflow-hidden py-28 md:py-44">
-      <div aria-hidden="true" className="bg-dots mask-radial pointer-events-none absolute inset-0 -z-10 opacity-70" />
+    <section id="que-incluye" className="relative isolate scroll-mt-24 overflow-hidden py-16 md:py-24">
+      <div aria-hidden="true" className="bg-dots mask-radial pointer-events-none absolute inset-0 -z-10" />
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
         <Reveal className="max-w-4xl">
           <h2 className="text-balance font-display text-4xl font-bold leading-[1.05] tracking-tight text-ink sm:text-6xl">
@@ -533,7 +417,7 @@ function BentoSection() {
           </h2>
         </Reveal>
 
-        <RevealGroup className="mt-14 grid grid-flow-dense auto-rows-[minmax(15rem,auto)] gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <RevealGroup className="mt-10 grid grid-flow-dense auto-rows-[minmax(15rem,auto)] gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {/* A: mensajes */}
           <article
             data-reveal
@@ -671,7 +555,7 @@ const STEP_MUTED = {
 
 function StepsSection() {
   return (
-    <section id="como-funciona" className="relative scroll-mt-24 py-28 md:py-44">
+    <section id="como-funciona" className="band-green relative scroll-mt-24 py-16 md:py-24">
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
         <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <Reveal>
@@ -687,7 +571,7 @@ function StepsSection() {
         </div>
 
         <StackCards>
-          <div className="mt-14 space-y-6">
+          <div className="mt-10 space-y-6">
             {STEPS.map((s, i) => (
               <div
                 key={s.title}
@@ -697,7 +581,7 @@ function StepsSection() {
               >
                 <article
                   data-stack-inner
-                  className={`grid origin-top overflow-hidden rounded-[2rem] shadow-pop md:min-h-[24rem] md:grid-cols-[1.1fr_0.9fr] ${STEP_TONES[s.tone]}`}
+                  className={`group grid origin-top overflow-hidden rounded-[2rem] shadow-pop md:min-h-[24rem] md:grid-cols-[1.1fr_0.9fr] ${STEP_TONES[s.tone]}`}
                 >
                   <div className="flex flex-col justify-between gap-10 p-7 sm:p-10">
                     <span className="font-display text-7xl font-bold leading-none tracking-tighter opacity-25 sm:text-8xl">
@@ -710,26 +594,13 @@ function StepsSection() {
                       </p>
                     </div>
                   </div>
-                  <div className="group relative hidden overflow-hidden md:block">
-                    <Image
-                      src={s.img.src}
-                      alt={s.img.alt}
-                      fill
-                      sizes="45vw"
-                      className="object-cover transition-transform duration-1000 ease-out group-hover:scale-105"
-                    />
-                    <div
-                      aria-hidden="true"
-                      className={`absolute inset-0 ${
-                        s.tone === "surface"
-                          ? "bg-gradient-to-r from-surface via-surface/20 to-transparent"
-                          : s.tone === "accent"
-                          ? "bg-gradient-to-r from-accent-700 via-accent-700/30 to-transparent"
-                          : s.tone === "brand"
-                          ? "bg-gradient-to-r from-brand-500 via-brand-500/25 to-transparent"
-                          : "bg-gradient-to-r from-[#0b0f17] via-[#0b0f17]/40 to-transparent"
-                      }`}
-                    />
+                  {/* La pantalla de ese paso, dibujada con la interfaz real: antes
+                      iba una foto de stock que no tenía relación con el texto. */}
+                  <div aria-hidden="true" className="relative hidden items-center justify-center overflow-hidden p-8 md:flex">
+                    <div className={`pointer-events-none absolute inset-0 ${s.tone === "surface" ? "bg-grid-lines" : "bg-grid-move"} opacity-70`} />
+                    <div className="relative w-full max-w-xs transition-transform duration-700 ease-out group-hover:-translate-y-1">
+                      <StepVisual step={i} tone={s.tone} />
+                    </div>
                   </div>
                 </article>
               </div>
@@ -737,7 +608,7 @@ function StepsSection() {
           </div>
         </StackCards>
 
-        <div className="mt-16 flex justify-center">
+        <div className="mt-12 flex justify-center">
           <MagneticCta href={CTA_HREF} className="btn-primary whitespace-nowrap rounded-full !px-8 !py-4 text-base">
             <MessageCircle aria-hidden="true" className="h-5 w-5" />
             {CTA_LABEL}
@@ -745,6 +616,95 @@ function StepsSection() {
         </div>
       </div>
     </section>
+  );
+}
+
+type StepTone = keyof typeof STEP_TONES;
+
+// Paneles de las ilustraciones de cada paso, según el color de la tarjeta.
+const PANEL: Record<StepTone, { box: string; line: string; text: string; strong: string }> = {
+  surface: { box: "bg-surface-2 ring-1 ring-line", line: "bg-surface-3", text: "text-ink-muted", strong: "text-ink" },
+  accent: { box: "bg-white/10 ring-1 ring-inset ring-white/15", line: "bg-white/20", text: "text-accent-100", strong: "text-white" },
+  brand: { box: "bg-brand-950/10 ring-1 ring-inset ring-brand-950/15", line: "bg-brand-950/15", text: "text-brand-900", strong: "text-brand-950" },
+  ink: { box: "bg-white/5 ring-1 ring-inset ring-white/10", line: "bg-white/15", text: "text-white/60", strong: "text-white" },
+};
+
+function StepVisual({ step, tone }: { step: number; tone: StepTone }) {
+  const p = PANEL[tone];
+  if (step === 0) {
+    return (
+      <div className={`rounded-2xl p-4 shadow-pop ${p.box}`}>
+        <div className={`flex items-center gap-2 text-xs font-semibold ${p.strong}`}>
+          <FileSpreadsheet className="h-4 w-4" /> clientes.xlsx
+        </div>
+        <div className="mt-3 space-y-2">
+          {["María González", "Juan Pérez", "Laura Sosa", "Diego Ruiz"].map((n, k) => (
+            <div key={n} className="flex items-center gap-2.5">
+              <span className="grid h-7 w-7 place-items-center rounded-full bg-brand-500 text-[10px] font-bold text-brand-950">
+                {n.split(" ").map((w) => w[0]).join("")}
+              </span>
+              <span className={`flex-1 text-xs font-medium ${p.strong}`}>{n}</span>
+              <Check className={`h-4 w-4 ${k < 3 ? "text-brand-500" : p.text}`} />
+            </div>
+          ))}
+        </div>
+        <div className={`mt-3 h-1.5 overflow-hidden rounded-full ${p.line}`}>
+          <div className="h-full w-3/4 rounded-full bg-brand-500" />
+        </div>
+      </div>
+    );
+  }
+  if (step === 1) {
+    return (
+      <div className={`space-y-2.5 rounded-2xl p-4 shadow-pop ${p.box}`}>
+        {SEGMENTS.map((sg) => (
+          <div key={sg.name} className="flex items-center gap-3">
+            <span className={`w-20 text-xs font-semibold ${p.strong}`}>{sg.name}</span>
+            <span className={`h-2.5 flex-1 overflow-hidden rounded-full ${p.line}`}>
+              <span className={`block h-full rounded-full ${sg.tone}`} style={{ width: `${sg.pct * 2.4}%` }} />
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (step === 2) {
+    return (
+      <div className={`rounded-2xl p-4 shadow-pop ${p.box}`}>
+        <p className={`font-display text-[11px] font-semibold uppercase tracking-[0.14em] ${p.text}`}>Tu plan de hoy</p>
+        <div className="mt-3 space-y-2">
+          {[
+            { n: "Cumpleaños", c: 3, icon: Cake },
+            { n: "Hora de volver", c: 9, icon: Send },
+            { n: "Reactivación", c: 4, icon: TrendingUp },
+          ].map((r) => (
+            <div key={r.n} className="flex items-center gap-2.5">
+              <span className={`grid h-8 w-8 place-items-center rounded-xl ${p.line}`}>
+                <r.icon className={`h-4 w-4 ${p.strong}`} />
+              </span>
+              <span className={`flex-1 text-sm font-semibold ${p.strong}`}>{r.n}</span>
+              <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${p.line} ${p.strong}`}>{r.c}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-3">
+      <div className="ml-auto max-w-[90%] rounded-2xl rounded-tr-md bg-[#005c4b] px-3.5 py-2.5 text-[13px] leading-relaxed text-[#e9edef] shadow-pop">
+        ¡Hola Juan! Ya pasaron unas semanas de tu último corte. ¿Te guardo un lugar?
+      </div>
+      <div className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-pop">
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-500 text-brand-950">
+          <Check className="h-5 w-5" strokeWidth={3} />
+        </span>
+        <span className="leading-tight">
+          <span className="block text-sm font-bold text-brand-950">Juan volvió</span>
+          <span className="block text-xs text-brand-900/60">2 días después del mensaje</span>
+        </span>
+      </div>
+    </div>
   );
 }
 
@@ -788,8 +748,7 @@ function buildShowcase(): RubroShowcase[] {
 
 function RubroCampaignsSection() {
   return (
-    <section id="por-rubro" className="relative isolate scroll-mt-24 overflow-hidden py-28 md:py-44">
-      <div aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-b from-accent-500/[0.07] via-brand-500/[0.06] to-transparent" />
+    <section id="por-rubro" className="band-violet relative isolate scroll-mt-24 overflow-hidden py-16 md:py-24">
       <div aria-hidden="true" className="bg-grid-lines mask-radial pointer-events-none absolute inset-0 -z-10" />
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
         <Reveal className="max-w-4xl">
@@ -802,7 +761,7 @@ function RubroCampaignsSection() {
             catálogo y las campañas de su rubro, listas para mandar.
           </p>
         </Reveal>
-        <Reveal className="mt-12">
+        <Reveal className="mt-10">
           <RubroCampaigns items={buildShowcase()} />
         </Reveal>
       </div>
@@ -813,11 +772,12 @@ function RubroCampaignsSection() {
 // ---------------------------------------------------------------------------
 function TrustSection() {
   return (
-    <section className="py-28 md:py-40">
+    <section className="py-16 md:py-24">
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
         <Reveal>
-          <div className="grain relative overflow-hidden rounded-[2.25rem] bg-gradient-to-br from-accent-700 via-accent-800 to-accent-900 px-7 py-16 sm:px-14 sm:py-20">
+          <div className="grain relative overflow-hidden rounded-[2.25rem] bg-gradient-to-br from-accent-700 via-accent-800 to-accent-900 px-7 py-12 sm:px-14 sm:py-16">
             <Aurora className="opacity-70" />
+            <div aria-hidden="true" className="bg-grid-move pointer-events-none absolute inset-0 opacity-60" />
             <div className="relative grid gap-12 lg:grid-cols-[1fr_1.1fr] lg:items-center">
               <h2 className="text-balance font-display text-4xl font-bold leading-[1.05] tracking-tight text-white sm:text-5xl">
                 Simple de usar, serio para confiar.
@@ -846,7 +806,7 @@ function TrustSection() {
 // ---------------------------------------------------------------------------
 function FaqSection() {
   return (
-    <section id="preguntas" className="scroll-mt-24 pb-28 md:pb-40">
+    <section id="preguntas" className="scroll-mt-24 pb-16 md:pb-24">
       <div className="mx-auto grid max-w-6xl gap-10 px-5 sm:px-8 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
         <Reveal>
           <h2 className="text-balance font-display text-4xl font-bold leading-[1.05] tracking-tight text-ink sm:text-5xl">
@@ -882,7 +842,7 @@ function FinalCta() {
   const words = ["Vuelvo", "Volvé", "Vuelven", "Vuelvo", "Volvé", "Vuelven"];
   return (
     <section className="px-3 pb-6 sm:px-5">
-      <div className="grain relative isolate overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-accent-600 via-accent-700 to-accent-900 px-6 py-24 text-center shadow-pop sm:py-36">
+      <div className="grain relative isolate overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-accent-600 via-accent-700 to-accent-900 px-6 py-20 text-center shadow-pop sm:py-28">
         <Aurora />
         <div aria-hidden="true" className="absolute inset-x-0 top-1/2 -z-10 -translate-y-1/2 overflow-hidden">
           <div className="animate-marquee flex w-max">

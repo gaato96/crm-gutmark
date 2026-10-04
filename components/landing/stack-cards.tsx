@@ -27,7 +27,10 @@ export function StackCards({ children }: { children: React.ReactNode }) {
           const next = cards[i + 1];
           if (!next) return;
           const inner = card.querySelector("[data-stack-inner]") ?? card;
-          gsap.to(inner, {
+          // fromTo con el filtro de partida explícito: desde "none" GSAP
+          // interpolaba como si fuera brightness(0) y las tarjetas arrancaban
+          // casi negras.
+          gsap.fromTo(inner, { scale: 1, filter: "brightness(1) blur(0px)" }, {
             scale: 0.9 + i * 0.02,
             // Oscurecer y no bajar la opacidad: con opacidad, el texto de la
             // tarjeta de atrás se transparentaba a través de la de adelante.

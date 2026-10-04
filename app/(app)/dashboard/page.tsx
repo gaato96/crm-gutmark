@@ -11,7 +11,7 @@ import {
   CheckCircle2,
   Repeat,
   Hourglass,
-  UserMinus,
+  UserCheck,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import {
@@ -154,104 +154,72 @@ export default async function DashboardPage() {
         subtitle={`${todayLabel.charAt(0).toUpperCase()}${todayLabel.slice(1)} · Esto es lo que hoy te puede traer ventas.`}
       />
 
-      {/* Plan de hoy */}
-      <section
-        aria-labelledby="plan-hoy"
-        className="card mb-6 overflow-hidden lg:grid lg:grid-cols-[1.1fr_1fr]"
-      >
-        <div className="grain relative overflow-hidden bg-gradient-to-br from-accent-600 to-accent-800 p-6 text-white sm:p-7">
-          <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-brand-400/20 blur-3xl" />
-          <div className="relative">
+      {/* Plan de hoy, compacto: una franja y no media pantalla. Antes ocupaba
+          casi todo el primer scroll y tapaba el resto del panel. */}
+      <section aria-labelledby="plan-hoy" className="card mb-4 flex flex-col overflow-hidden lg:flex-row">
+        <div className="grain relative flex items-center gap-4 overflow-hidden bg-gradient-to-br from-accent-600 to-accent-800 px-5 py-4 text-white lg:w-[24rem] lg:shrink-0">
+          <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-brand-400/20 blur-2xl" />
+          <div className="relative min-w-0">
             <h2
               id="plan-hoy"
-              className="font-display text-xs font-semibold uppercase tracking-[0.14em] text-accent-100"
+              className="font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-accent-100"
             >
               Tu plan de hoy
             </h2>
-            {pendingSet.size > 0 ? (
-              <>
-                <p className="mt-3 font-display text-4xl font-bold tabular-nums sm:text-5xl">
-                  {pendingSet.size}
-                </p>
-                <p className="mt-1 text-lg font-semibold leading-snug">
-                  {pendingSet.size === 1 ? "cliente para contactar" : "clientes para contactar"}
-                </p>
-                <p className="mt-2 max-w-sm text-sm leading-relaxed text-accent-100">
-                  Cada mensaje ya está escrito con su nombre. Mandarlos te lleva menos que un café.
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="mt-3 font-display text-2xl font-bold">¡Estás al día!</p>
-                <p className="mt-2 max-w-sm text-sm leading-relaxed text-accent-100">
-                  No queda nadie pendiente en tus campañas activas. Mañana el sistema arma la lista de
-                  nuevo.
-                </p>
-              </>
-            )}
+            <p className="mt-0.5 flex items-baseline gap-2">
+              <span className="font-display text-3xl font-bold tabular-nums">{pendingSet.size}</span>
+              <span className="text-sm font-medium text-accent-100">
+                {pendingSet.size === 1 ? "cliente para contactar" : "clientes para contactar"}
+              </span>
+            </p>
             {planTotal > 0 && (
-              <div className="mt-5 max-w-sm">
-                <div className="mb-1.5 flex justify-between text-xs font-medium text-accent-100">
-                  <span>
-                    {sentSet.size} de {planTotal} ya contactados
-                  </span>
-                  <span className="tabular-nums">{planPct}%</span>
-                </div>
-                <div className="h-2 overflow-hidden rounded-full bg-white/15">
+              <div className="mt-2 flex items-center gap-2">
+                <div className="h-1.5 w-16 shrink-0 overflow-hidden rounded-full bg-white/15">
                   <div className="h-full rounded-full bg-brand-400" style={{ width: `${planPct}%` }} />
                 </div>
+                <span className="whitespace-nowrap text-[11px] font-medium text-accent-100">
+                  {sentSet.size} de {planTotal} contactados
+                </span>
               </div>
             )}
-            <Link
-              href="/campanas"
-              className="btn mt-6 bg-white !px-5 !py-3 text-accent-700 shadow-pop hover:bg-accent-50"
-            >
-              <Send className="h-4 w-4" aria-hidden="true" />
-              {pendingSet.size > 0 ? "Empezar a enviar" : "Ver campañas"}
-            </Link>
           </div>
+          <Link
+            href="/campanas"
+            className="btn relative ml-auto shrink-0 bg-white !px-4 !py-2.5 text-sm text-accent-700 hover:bg-accent-50"
+          >
+            <Send className="h-4 w-4" aria-hidden="true" />
+            {pendingSet.size > 0 ? "Enviar" : "Ver"}
+          </Link>
         </div>
-        <div className="p-5 sm:p-6">
-          <SectionTitle hint="Por campaña">A quién escribirle</SectionTitle>
+        <div className="flex-1 p-2.5">
           {plan.length === 0 ? (
-            <p className="py-6 text-sm text-ink-muted">
-              Ninguna campaña activa tiene clientes hoy. Revisá tus campañas o cargá ventas para que el
-              sistema detecte oportunidades.
+            <p className="px-2.5 py-3 text-sm text-ink-muted">
+              Ninguna campaña activa tiene clientes hoy.
             </p>
           ) : (
-            <ul className="space-y-1">
+            <ul className="grid gap-1 sm:grid-cols-2 xl:grid-cols-3">
               {plan.slice(0, 6).map((p) => (
                 <li key={p.id}>
                   <Link
                     href="/campanas"
-                    className="flex items-center gap-3 rounded-xl px-2.5 py-2.5 transition hover:bg-surface-2"
+                    className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 transition hover:bg-surface-2"
                   >
+                    {p.pending === 0 ? (
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-brand-600" aria-hidden="true" />
+                    ) : (
+                      <Send className="h-4 w-4 shrink-0 text-accent-600 dark:text-accent-300" aria-hidden="true" />
+                    )}
+                    <span className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">{p.name}</span>
                     <span
-                      className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-bold tabular-nums ${
                         p.pending === 0
                           ? "bg-brand-500/15 text-brand-700 dark:text-brand-300"
-                          : "bg-accent-500/10 text-accent-600 dark:text-accent-300"
+                          : "bg-surface-2 text-ink-soft"
                       }`}
+                      title={`${p.pending} por enviar · ${p.sent} enviados`}
                     >
-                      {p.pending === 0 ? (
-                        <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
-                      ) : (
-                        <Send className="h-4 w-4" aria-hidden="true" />
-                      )}
+                      {p.pending === 0 ? "Listo" : p.pending}
                     </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-semibold text-ink">{p.name}</span>
-                      <span className="block text-xs text-ink-muted">
-                        {p.pending === 0
-                          ? "Todos contactados"
-                          : `${p.pending} por enviar${p.sent ? ` · ${p.sent} enviados` : ""}`}
-                      </span>
-                    </span>
-                    {p.pending > 0 && (
-                      <span className="rounded-full bg-surface-2 px-2 py-0.5 text-xs font-bold tabular-nums text-ink-soft">
-                        {p.pending}
-                      </span>
-                    )}
                   </Link>
                 </li>
               ))}
@@ -260,7 +228,7 @@ export default async function DashboardPage() {
         </div>
       </section>
 
-      {/* Lo que está en juego: la razón de ser del sistema, en plata */}
+      {/* Lo que está en juego, en plata y en clientes del propio negocio */}
       <div className="mb-6 grid gap-4 md:grid-cols-3">
         <ValueCard
           tone="brand"
@@ -281,11 +249,15 @@ export default async function DashboardPage() {
           detail={`${stake.dueCustomers} ${stake.dueCustomers === 1 ? "cliente ya debería" : "clientes ya deberían"} haber vuelto. Si cada uno vuelve una vez, entra esto.`}
         />
         <ValueCard
-          tone="rose"
-          icon={<UserMinus className="h-5 w-5" aria-hidden="true" />}
-          label="Lo que se llevó la competencia"
-          value={`${formatMoney(stake.inactiveYearlyValue)}/año`}
-          detail={`Lo que gastaban por año tus ${stake.inactiveCustomers} clientes inactivos. Recuperar aunque sea uno de cada cinco ya paga el sistema.`}
+          tone="sky"
+          icon={<UserCheck className="h-5 w-5" aria-hidden="true" />}
+          label="Clientes que vuelven"
+          value={stake.repeatRate === null ? "—" : `${Math.round(stake.repeatRate * 100)}%`}
+          detail={
+            stake.repeatRate === null
+              ? "Cuando registres ventas, acá vas a ver cuántos de tus clientes vuelven a comprar."
+              : `De los que te compraron, este porcentaje volvió al menos una vez. Tenés ${stake.inactiveCustomers} inactivos para recuperar desde Campañas.`
+          }
         />
       </div>
 
@@ -528,7 +500,7 @@ function ValueCard({
   value,
   detail,
 }: {
-  tone: "brand" | "accent" | "rose";
+  tone: "brand" | "accent" | "sky";
   icon: React.ReactNode;
   label: string;
   value: string;
@@ -537,18 +509,18 @@ function ValueCard({
   const tones = {
     brand: "bg-brand-500/12 text-brand-700 dark:text-brand-300",
     accent: "bg-accent-500/10 text-accent-600 dark:text-accent-300",
-    rose: "bg-rose-500/10 text-rose-600 dark:text-rose-400",
+    sky: "bg-sky-500/10 text-sky-700 dark:text-sky-300",
   };
   return (
-    <div className="card p-5">
-      <div className="flex items-center gap-3">
-        <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${tones[tone]}`}>
+    <div className="card p-4">
+      <div className="flex items-center gap-2.5">
+        <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${tones[tone]}`}>
           {icon}
         </span>
         <span className="text-sm font-semibold text-ink-soft">{label}</span>
       </div>
-      <div className="mt-4 break-words font-display text-2xl font-bold tabular-nums text-ink md:text-xl lg:text-2xl">{value}</div>
-      <p className="mt-1.5 text-xs leading-relaxed text-ink-muted">{detail}</p>
+      <div className="mt-3 break-words font-display text-xl font-bold tabular-nums text-ink lg:text-2xl">{value}</div>
+      <p className="mt-1 text-xs leading-relaxed text-ink-muted">{detail}</p>
     </div>
   );
 }

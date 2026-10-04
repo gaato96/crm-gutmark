@@ -93,9 +93,6 @@ export interface MoneyAtStake {
   // Si cada uno vuelve una vez, lo que entra (su ticket promedio).
   dueRevenue: number;
   inactiveCustomers: number;
-  // Lo que gastaban por año los que ya se fueron: la plata que hoy cobra la
-  // competencia.
-  inactiveYearlyValue: number;
   // De los que compraron alguna vez, cuántos volvieron a comprar.
   repeatRate: number | null;
 }
@@ -104,15 +101,6 @@ export function moneyAtStake(customers: EnrichedCustomer[]): MoneyAtStake {
   const due = customers.filter((c) => c.needsWinback && c.segment !== "inactivo");
   const inactive = customers.filter((c) => c.segment === "inactivo" && c.purchaseCount > 0);
 
-  // Valor anual de un cliente ido: lo que gastó dividido los años que estuvo
-  // activo (mínimo uno, para no inflar a quien vino dos veces en un mes).
-  const inactiveYearlyValue = inactive.reduce((s, c) => {
-    const first = c.createdAt.getTime();
-    const last = c.lastPurchaseAt?.getTime() ?? first;
-    const years = Math.max(1, (last - first) / (365 * 86400000));
-    return s + c.totalSpent / years;
-  }, 0);
-
   const buyers = customers.filter((c) => c.purchaseCount > 0);
   const repeaters = buyers.filter((c) => c.purchaseCount >= 2);
 
@@ -120,7 +108,6 @@ export function moneyAtStake(customers: EnrichedCustomer[]): MoneyAtStake {
     dueCustomers: due.length,
     dueRevenue: due.reduce((s, c) => s + c.avgTicket, 0),
     inactiveCustomers: inactive.length,
-    inactiveYearlyValue,
     repeatRate: buyers.length ? repeaters.length / buyers.length : null,
   };
 }

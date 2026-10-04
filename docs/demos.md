@@ -50,8 +50,8 @@ hay forma de que borre un negocio real.
      dentro de las dos semanas de recibir un mensaje.
    - *Recompra pendiente*: lo que entra si vuelven los que ya deberían haber
      vuelto.
-   - *Lo que se llevó la competencia*: lo que gastaban por año los clientes que
-     se fueron.
+   - *Clientes que vuelven*: qué porcentaje de los clientes volvió a comprar
+     al menos una vez, y cuántos inactivos hay para recuperar.
 2. **Campañas** — mostrar las campañas del rubro (ej. en la barbería "Hora del
    corte", que avisa a cada cliente según el servicio que se hizo). Tocar
    **WhatsApp** en un cliente: se abre el chat con el mensaje escrito y el
