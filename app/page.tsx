@@ -36,7 +36,7 @@ import { RevealGroup } from "@/components/landing/reveal-group";
 import { Reveal } from "@/components/landing/reveal";
 import { LossCalculator } from "@/components/landing/loss-calculator";
 import { RubroCampaigns, type RubroShowcase } from "@/components/landing/rubro-campaigns";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { AmbientCanvas } from "@/components/landing/ambient-canvas";
 import { Logo } from "@/components/logo";
 
 const CTA_MESSAGE = "¡Hola! Quiero pedir acceso a Vuelvo CRM para mi negocio.";
@@ -70,7 +70,7 @@ const PAINS: PainSlice[] = [
     visual: "ranking",
   },
   {
-    title: "Querés escribirles, pero no sabés a quién ni qué decir",
+    title: "No sabés a quién escribirle ni qué decirle",
     detail:
       "Abrís WhatsApp, ves cientos de contactos y no sabés por dónde empezar ni qué decirle a cada uno. Al final no le escribís a nadie.",
     visual: "contacts",
@@ -158,7 +158,8 @@ export default async function LandingPage() {
   if (session) redirect("/dashboard");
 
   return (
-    <div className="relative min-h-screen w-full max-w-full overflow-x-clip bg-canvas">
+    <div className="landing-root dark relative isolate min-h-screen w-full max-w-full overflow-x-clip bg-canvas text-ink">
+      <AmbientCanvas />
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-xl focus:bg-brand-700 focus:px-4 focus:py-2.5 focus:text-sm focus:font-semibold focus:text-white"
@@ -223,7 +224,7 @@ function Hero() {
         />
         {/* Grilla en movimiento sobre el video: textura de marca. */}
         <div aria-hidden="true" className="bg-grid-move pointer-events-none absolute inset-0 opacity-50 [mask-image:linear-gradient(to_bottom,black,transparent_85%)]" />
-        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-b from-transparent to-canvas" />
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent to-canvas" />
         <div aria-hidden="true" className="grain pointer-events-none absolute inset-0 overflow-hidden">
           <div className="animate-drift-a absolute -left-40 -top-40 h-[30rem] w-[30rem] rounded-full bg-brand-400/25 blur-3xl" />
           <div className="animate-drift-b absolute -right-32 top-40 h-[24rem] w-[24rem] rounded-full bg-accent-400/25 blur-3xl" />
@@ -289,7 +290,7 @@ function RubroBand() {
   const names = RUBRO_PHOTOS.map((r) => r.name);
   const track = [...names, ...names];
   return (
-    <section aria-labelledby="rubros-title" className="band-green relative isolate overflow-hidden border-y border-line py-14 sm:py-16">
+    <section aria-labelledby="rubros-title" className="relative isolate overflow-hidden border-y border-white/5 bg-white/[0.015] py-14 sm:py-16">
       <Reveal className="mx-auto max-w-6xl px-5 sm:px-8">
         <h2 id="rubros-title" className="text-balance text-center font-display text-2xl font-bold text-ink sm:text-3xl">
           Para negocios donde el cliente vuelve
@@ -343,7 +344,7 @@ function ProblemSection() {
 // ---------------------------------------------------------------------------
 function LossSection() {
   return (
-    <section id="cuanto-perdes" className="band-violet relative isolate scroll-mt-24 overflow-hidden py-16 md:py-24">
+    <section id="cuanto-perdes" className="relative isolate scroll-mt-24 overflow-hidden py-16 md:py-24">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <div className="animate-drift-b absolute -right-24 top-20 h-[28rem] w-[28rem] rounded-full bg-accent-500/20 blur-[110px]" />
         <div className="animate-drift-a absolute -left-24 bottom-0 h-[26rem] w-[26rem] rounded-full bg-brand-400/15 blur-[110px]" />
@@ -421,16 +422,17 @@ function BentoSection() {
           {/* A: mensajes */}
           <article
             data-reveal
-            className="group relative overflow-hidden rounded-[1.75rem] bg-accent-800 p-7 text-white sm:col-span-2 sm:row-span-2"
+            className="group relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#100e1c] p-7 text-white sm:col-span-2 sm:row-span-2"
           >
             <Image
               src={msgPhoto.src}
               alt=""
               fill
               sizes="(min-width: 1024px) 50vw, 100vw"
-              className="object-cover opacity-30 mix-blend-luminosity transition-transform duration-1000 ease-out group-hover:scale-105"
+              className="object-cover opacity-25 mix-blend-luminosity transition-transform duration-1000 ease-out group-hover:scale-105"
             />
-            <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-accent-900 via-accent-900/80 to-accent-800/40" />
+            <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-[#100e1c] via-[#100e1c]/85 to-accent-900/40" />
+            <div aria-hidden="true" className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-accent-500/30 blur-3xl" />
             <div className="relative flex h-full flex-col">
               <span className="inline-flex w-fit items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-accent-100 ring-1 ring-inset ring-white/15">
                 <Send aria-hidden="true" className="h-3.5 w-3.5" /> Campañas listas
@@ -541,21 +543,28 @@ function BentoSection() {
 
 // ---------------------------------------------------------------------------
 const STEP_TONES = {
-  surface: "bg-surface text-ink border border-line",
-  accent: "bg-gradient-to-br from-accent-600 to-accent-800 text-white",
-  brand: "bg-gradient-to-br from-brand-300 to-brand-500 text-brand-950",
-  ink: "bg-[#0b0f17] text-white ring-1 ring-white/10",
+  surface: "bg-[#0e1019]/90 text-ink border border-white/10 backdrop-blur",
+  accent: "bg-[#0e1019]/90 text-ink border border-white/10 backdrop-blur",
+  brand: "bg-[#0e1019]/90 text-ink border border-white/10 backdrop-blur",
+  ink: "bg-[#0e1019]/90 text-ink border border-white/10 backdrop-blur",
 };
 const STEP_MUTED = {
   surface: "text-ink-soft",
-  accent: "text-accent-100",
-  brand: "text-brand-900",
-  ink: "text-white/70",
+  accent: "text-ink-soft",
+  brand: "text-ink-soft",
+  ink: "text-ink-soft",
+};
+// Brillo y número de cada paso: violeta y verde alternados.
+const STEP_GLOW = {
+  surface: { glow: "bg-accent-500/25", num: "text-accent-400" },
+  accent: { glow: "bg-brand-500/20", num: "text-brand-400" },
+  brand: { glow: "bg-accent-500/25", num: "text-accent-400" },
+  ink: { glow: "bg-brand-500/20", num: "text-brand-400" },
 };
 
 function StepsSection() {
   return (
-    <section id="como-funciona" className="band-green relative scroll-mt-24 py-16 md:py-24">
+    <section id="como-funciona" className="relative scroll-mt-24 py-16 md:py-24">
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
         <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <Reveal>
@@ -583,11 +592,12 @@ function StepsSection() {
                   data-stack-inner
                   className={`group grid origin-top overflow-hidden rounded-[2rem] shadow-pop md:min-h-[24rem] md:grid-cols-[1.1fr_0.9fr] ${STEP_TONES[s.tone]}`}
                 >
-                  <div className="flex flex-col justify-between gap-10 p-7 sm:p-10">
-                    <span className="font-display text-7xl font-bold leading-none tracking-tighter opacity-25 sm:text-8xl">
+                  <div className="relative flex flex-col justify-between gap-10 p-7 sm:p-10">
+                    <div aria-hidden="true" className={`pointer-events-none absolute -left-20 -top-20 h-64 w-64 rounded-full blur-3xl ${STEP_GLOW[s.tone].glow}`} />
+                    <span className={`relative font-display text-7xl font-bold leading-none tracking-tighter sm:text-8xl ${STEP_GLOW[s.tone].num}`}>
                       {i + 1}
                     </span>
-                    <div>
+                    <div className="relative">
                       <h3 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">{s.title}</h3>
                       <p className={`mt-4 max-w-md text-base leading-relaxed sm:text-lg ${STEP_MUTED[s.tone]}`}>
                         {s.body}
@@ -597,8 +607,8 @@ function StepsSection() {
                   {/* La pantalla de ese paso, dibujada con la interfaz real: antes
                       iba una foto de stock que no tenía relación con el texto. */}
                   <div aria-hidden="true" className="relative hidden items-center justify-center overflow-hidden p-8 md:flex">
-                    <div className={`pointer-events-none absolute inset-0 ${s.tone === "surface" ? "bg-grid-lines" : "bg-grid-move"} opacity-70`} />
-                    <div className="relative w-full max-w-xs transition-transform duration-700 ease-out group-hover:-translate-y-1">
+                    <div className="bg-grid-move pointer-events-none absolute inset-0 opacity-50" />
+                    <div className="relative w-full max-w-sm transition-transform duration-700 ease-out group-hover:-translate-y-1">
                       <StepVisual step={i} tone={s.tone} />
                     </div>
                   </div>
@@ -623,10 +633,10 @@ type StepTone = keyof typeof STEP_TONES;
 
 // Paneles de las ilustraciones de cada paso, según el color de la tarjeta.
 const PANEL: Record<StepTone, { box: string; line: string; text: string; strong: string }> = {
-  surface: { box: "bg-surface-2 ring-1 ring-line", line: "bg-surface-3", text: "text-ink-muted", strong: "text-ink" },
-  accent: { box: "bg-white/10 ring-1 ring-inset ring-white/15", line: "bg-white/20", text: "text-accent-100", strong: "text-white" },
-  brand: { box: "bg-brand-950/10 ring-1 ring-inset ring-brand-950/15", line: "bg-brand-950/15", text: "text-brand-900", strong: "text-brand-950" },
-  ink: { box: "bg-white/5 ring-1 ring-inset ring-white/10", line: "bg-white/15", text: "text-white/60", strong: "text-white" },
+  surface: { box: "bg-white/[0.05] ring-1 ring-inset ring-white/10", line: "bg-white/10", text: "text-ink-muted", strong: "text-white" },
+  accent: { box: "bg-white/[0.05] ring-1 ring-inset ring-white/10", line: "bg-white/10", text: "text-ink-muted", strong: "text-white" },
+  brand: { box: "bg-white/[0.05] ring-1 ring-inset ring-white/10", line: "bg-white/10", text: "text-ink-muted", strong: "text-white" },
+  ink: { box: "bg-white/[0.05] ring-1 ring-inset ring-white/10", line: "bg-white/10", text: "text-ink-muted", strong: "text-white" },
 };
 
 function StepVisual({ step, tone }: { step: number; tone: StepTone }) {
@@ -748,7 +758,7 @@ function buildShowcase(): RubroShowcase[] {
 
 function RubroCampaignsSection() {
   return (
-    <section id="por-rubro" className="band-violet relative isolate scroll-mt-24 overflow-hidden py-16 md:py-24">
+    <section id="por-rubro" className="relative isolate scroll-mt-24 overflow-hidden border-t border-white/5 py-16 md:py-24">
       <div aria-hidden="true" className="bg-grid-lines mask-radial pointer-events-none absolute inset-0 -z-10" />
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
         <Reveal className="max-w-4xl">
@@ -775,9 +785,9 @@ function TrustSection() {
     <section className="py-16 md:py-24">
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
         <Reveal>
-          <div className="grain relative overflow-hidden rounded-[2.25rem] bg-gradient-to-br from-accent-700 via-accent-800 to-accent-900 px-7 py-12 sm:px-14 sm:py-16">
-            <Aurora className="opacity-70" />
-            <div aria-hidden="true" className="bg-grid-move pointer-events-none absolute inset-0 opacity-60" />
+          <div className="relative overflow-hidden rounded-[2.25rem] border border-white/10 bg-[#0e1019]/90 px-7 py-12 backdrop-blur sm:px-14 sm:py-16">
+            <Aurora className="opacity-60" />
+            <div aria-hidden="true" className="bg-grid-move pointer-events-none absolute inset-0 opacity-40" />
             <div className="relative grid gap-12 lg:grid-cols-[1fr_1.1fr] lg:items-center">
               <h2 className="text-balance font-display text-4xl font-bold leading-[1.05] tracking-tight text-white sm:text-5xl">
                 Simple de usar, serio para confiar.
@@ -790,7 +800,7 @@ function TrustSection() {
                     </span>
                     <div>
                       <h3 className="font-semibold text-white">{t.title}</h3>
-                      <p className="mt-1 text-sm leading-relaxed text-accent-100">{t.body}</p>
+                      <p className="mt-1 text-sm leading-relaxed text-ink-muted">{t.body}</p>
                     </div>
                   </div>
                 ))}
@@ -906,7 +916,6 @@ function Footer() {
           <Link href="/login" className="font-medium text-ink-soft transition hover:text-ink">
             Iniciar sesión
           </Link>
-          <ThemeToggle compact />
         </nav>
       </div>
       <p className="mt-8 text-center text-xs text-ink-muted">

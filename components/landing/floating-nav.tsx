@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { LogIn, Menu, MessageCircle, X } from "lucide-react";
 import { Logo, LogoMark } from "@/components/logo";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 const LINKS = [
   { href: "#como-funciona", label: "Cómo funciona" },
@@ -45,8 +44,8 @@ export function FloatingNav({ ctaHref, ctaLabel }: { ctaHref: string; ctaLabel: 
       <div
         className={`pointer-events-auto mx-auto flex max-w-6xl items-center justify-between gap-2 rounded-full border px-3 transition-[padding,background-color,box-shadow,border-color] duration-300 sm:px-4 ${
           scrolled
-            ? "glass border-line py-2 shadow-pop"
-            : "border-transparent bg-surface/40 py-2.5 backdrop-blur-md sm:py-3"
+            ? "border-white/10 bg-[#0b0d16]/85 py-2 shadow-pop backdrop-blur-xl"
+            : "border-white/10 bg-[#0b0d16]/45 py-2.5 backdrop-blur-md sm:py-3"
         }`}
       >
         {/* En pantallas chicas va solo la marca: con el nombre completo, el
@@ -65,7 +64,7 @@ export function FloatingNav({ ctaHref, ctaLabel }: { ctaHref: string; ctaLabel: 
             <a
               key={l.href}
               href={l.href}
-              className="rounded-full px-3.5 py-2 text-sm font-medium text-ink-soft transition-colors hover:bg-surface-2 hover:text-ink"
+              className="rounded-full px-3.5 py-2 text-sm font-medium text-white/75 transition-colors hover:bg-white/10 hover:text-white"
             >
               {l.label}
             </a>
@@ -73,12 +72,9 @@ export function FloatingNav({ ctaHref, ctaLabel }: { ctaHref: string; ctaLabel: 
         </nav>
 
         <div className="flex items-center gap-1 sm:gap-2">
-          <span className="hidden sm:block">
-            <ThemeToggle compact />
-          </span>
           <Link
             href="/login"
-            className="btn-ghost min-h-[44px] whitespace-nowrap rounded-full !px-3 text-sm font-semibold"
+            className="btn min-h-[44px] whitespace-nowrap rounded-full !px-3 text-sm font-semibold text-white/85 hover:bg-white/10 hover:text-white"
           >
             <LogIn aria-hidden="true" className="hidden h-4 w-4 min-[420px]:block" />
             <span className="sm:hidden">Ingresar</span>
@@ -96,7 +92,7 @@ export function FloatingNav({ ctaHref, ctaLabel }: { ctaHref: string; ctaLabel: 
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="grid h-11 w-11 place-items-center rounded-full text-ink-soft transition hover:bg-surface-2 lg:hidden"
+            className="grid h-11 w-11 place-items-center rounded-full text-white/80 transition hover:bg-white/10 lg:hidden"
             aria-label="Abrir menú"
             aria-expanded={open}
           >
@@ -135,10 +131,6 @@ export function FloatingNav({ ctaHref, ctaLabel }: { ctaHref: string; ctaLabel: 
                 </a>
               ))}
             </nav>
-            <div className="mt-3 flex items-center justify-between rounded-2xl bg-surface-2 px-4 py-3">
-              <span className="text-sm font-medium text-ink-soft">Tema</span>
-              <ThemeToggle compact />
-            </div>
           </div>
         </div>
       )}

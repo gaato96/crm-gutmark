@@ -586,10 +586,23 @@ Las fotos solo van donde tienen relación directa (la cinta de rubros). Y el
 copy nunca puede sugerir envío automático: cada mensaje se manda a mano, uno
 por uno.
 
-Fondos: `.bg-dots`, `.bg-grid-lines` (se desplazan solos y en oscuro toman el
-violeta de marca), `.bg-grid-move` (para superficies de color) y las bandas
-`.band-violet` / `.band-green`, que en oscuro son violeta y verde profundos y no
-negro. Solo colores de marca: nada de rojos ni rosas de fondo.
+**La landing es siempre oscura y no tiene selector de tema** (el selector es
+solo del panel). Los tokens se redefinen en `.landing-root` (`app/globals.css`),
+no en `<html>`: así el tema que el usuario eligió para el panel no se toca, y al
+pasar al login no queda pintado de oscuro. El contenedor lleva además la clase
+`dark` para que funcionen las variantes `dark:`. La paleta es casi negra con un
+tinte frío; el color de marca va en acentos y brillos, no como fondo de bloques
+enteros — el violeta pleno queda para la calculadora y el CTA final.
+
+Fondo animado: `components/landing/ambient-canvas.tsx`, una red de puntos que
+flota y se conecta (canvas fijo detrás de todas las secciones, que por eso son
+transparentes). Se pausa con la pestaña oculta y queda quieto con
+reduced-motion. Además `.bg-grid-lines`, `.bg-dots` (se desplazan solos) y
+`.bg-grid-move` para superficies de color. Solo colores de marca.
+
+⚠️ En dev, si después de editar la landing el navegador sigue mostrando la
+versión vieja (o tira error de hidratación con el HTML anterior), es el service
+worker del panel cacheando chunks: ver "PWA" más abajo.
 
 Motion de la landing (todo dentro de `matchMedia` de movimiento):
 `hero-stage.tsx` (entrada escalonada y parallax del chat), `pain-accordion.tsx`

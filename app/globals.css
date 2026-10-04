@@ -44,6 +44,30 @@
   color-scheme: dark;
 }
 
+/* La landing pública es siempre oscura, aunque el usuario haya elegido el
+   tema claro para el panel: el selector de tema es solo del sistema. Los
+   tokens se redefinen en el contenedor (.landing-root) y no en <html>, así al
+   navegar al login no queda el panel pintado de oscuro. Es una paleta más
+   neutra que la del panel: casi negro con un tinte frío, y el color de marca
+   reservado para acentos. */
+.landing-root {
+  --canvas: 7 8 13;
+  --surface: 14 16 25;
+  --surface-2: 21 24 35;
+  --surface-3: 33 37 51;
+  --line: 34 38 52;
+  --line-soft: 24 27 38;
+  --ink: 240 242 247;
+  --ink-soft: 200 205 218;
+  --ink-muted: 145 152 172;
+  --ink-faint: 104 112 132;
+  color-scheme: dark;
+}
+html:has(.landing-root) {
+  background-color: rgb(7 8 13);
+  color-scheme: dark;
+}
+
 html,
 body {
   height: 100%;
@@ -163,12 +187,12 @@ body {
     background-size: 64px 64px;
     animation: pattern-pan-grid 30s linear infinite;
   }
-  :root.dark .bg-dots {
-    background-image: radial-gradient(rgb(178 156 243 / 0.22) 1px, transparent 1.3px);
+  .dark .bg-dots {
+    background-image: radial-gradient(rgb(178 156 243 / 0.28) 1px, transparent 1.3px);
   }
-  :root.dark .bg-grid-lines {
-    background-image: linear-gradient(rgb(151 122 238 / 0.13) 1px, transparent 1px),
-      linear-gradient(90deg, rgb(151 122 238 / 0.13) 1px, transparent 1px);
+  .dark .bg-grid-lines {
+    background-image: linear-gradient(rgb(151 122 238 / 0.2) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(151 122 238 / 0.2) 1px, transparent 1px);
   }
   /* Grilla clara para superficies que ya son de color (franjas violetas y
      verdes de la landing). */
@@ -184,13 +208,13 @@ body {
   .band-violet {
     background: linear-gradient(180deg, rgb(91 46 229 / 0.08) 0%, rgb(91 46 229 / 0.02) 100%);
   }
-  :root.dark .band-violet {
+  .dark .band-violet {
     background: linear-gradient(180deg, #160f34 0%, #0e0b20 100%);
   }
   .band-green {
     background: linear-gradient(180deg, rgb(0 190 134 / 0.09) 0%, rgb(0 190 134 / 0.02) 100%);
   }
-  :root.dark .band-green {
+  .dark .band-green {
     background: linear-gradient(180deg, #07231c 0%, #08130f 100%);
   }
   .mask-radial {
