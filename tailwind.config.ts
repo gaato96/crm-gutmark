@@ -115,6 +115,16 @@ const config: Config = {
           "0%, 100%": { transform: "translate3d(0,0,0) scale(1.06)" },
           "50%": { transform: "translate3d(-7%, 6%, 0) scale(1)" },
         },
+        // Segunda cinta de la landing, en sentido contrario a la primera.
+        "marquee-reverse": {
+          from: { transform: "translate3d(-50%,0,0)" },
+          to: { transform: "translate3d(0,0,0)" },
+        },
+        // Flotación de las tarjetas del marco de producto del hero.
+        float: {
+          "0%, 100%": { transform: "translate3d(0,0,0)" },
+          "50%": { transform: "translate3d(0,-10px,0)" },
+        },
       },
       animation: {
         "fade-in": "fade-in 0.3s cubic-bezier(0.16,1,0.3,1)",
@@ -123,6 +133,8 @@ const config: Config = {
         marquee: "marquee 46s linear infinite",
         "drift-a": "drift-a 19s ease-in-out infinite",
         "drift-b": "drift-b 26s ease-in-out infinite",
+        "marquee-reverse": "marquee-reverse 60s linear infinite",
+        float: "float 6s ease-in-out infinite",
       },
     },
   },

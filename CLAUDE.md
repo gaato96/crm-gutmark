@@ -568,22 +568,26 @@ se desplaza `-50%`. La separación entre ítems va como `padding-right` de cada
 uno y **no** como `gap` del flex: con `gap` el ancho total es `2·copia + gap` y
 el corte del bucle no cae justo, así que se ve un salto en cada vuelta.
 
-**El hero es la única banda que se queda oscura en los dos temas.** Su fondo es
-`public/hero.mp4` y sobre un video no se puede garantizar contraste con tokens
-que cambian de valor según el tema, así que el scrim y los colores del texto
-quedan fijos y el contraste se calcula una sola vez. Dentro del hero **no uses
-`text-ink` ni `bg-surface`**: en modo claro serían texto oscuro sobre negro. El
-botón secundario también es propio del hero por el mismo motivo. Lo único que
-sigue al tema es el fundido inferior, que va hacia `canvas` para que el corte
-con la sección siguiente no se note.
+**El hero sigue al tema; el video vive en el marco de producto.** El titular va
+centrado sobre `canvas` con manchas de marca (`Aurora`) y patrón de puntos
+(`.bg-dots` + `.mask-radial` en `app/globals.css`, que usan los tokens y se ven en
+los dos temas). Debajo, `ProductFrame`: un marco violeta con `public/hero.mp4` de
+fondo y piezas reales del panel flotando encima (plan del día, chat de WhatsApp,
+tarjeta de puntos, aviso de "volvió"). Ese marco **sí** es oscuro fijo: adentro
+no uses `text-ink` ni `bg-surface` salvo dentro de las tarjetas, que son
+superficies propias. En `lg` las piezas son absolutas dentro de un contenedor
+`absolute inset-0` — contra una caja de alto cero, las ancladas con `bottom-*`
+quedaban fuera de cuadro. Debajo de `lg` se apilan en grilla.
 
-El scrim son dos capas y cambia de forma según el ancho: en mobile es plano
-(el texto ocupa todo el ancho, un degradado horizontal dejaría el final de cada
-renglón sobre la zona clara) y en `lg:` es direccional (el texto vive en la
-mitad izquierda, así que la derecha se abre y deja ver el video). Los peores
-casos medidos sobre la base violeta (`accent-900`), suponiendo un cuadro blanco
-del video: 12.5:1 en el titular mobile, 19:1 en el titular desktop, 7.3:1 en la
-bajada. Si tocás las opacidades, rehacé esa cuenta.
+Motion de la landing (todo dentro de `matchMedia` de movimiento):
+`hero-motion.tsx` (titular palabra por palabra, el marco que se endereza y crece
+con el scroll, parallax de las piezas con `data-depth`), `pain-accordion.tsx`
+(acordeón horizontal con fotos), `stack-cards.tsx` (los cuatro pasos se apilan:
+`sticky` de CSS + GSAP que achica y oscurece la de atrás — oscurece, no baja la
+opacidad, porque si no se transparenta el texto de la anterior),
+`reveal-group.tsx` y `count-up.tsx`. ⚠️ La página usa `overflow-x-clip` y no
+`overflow-x-hidden`: `hidden` convierte al ancestro en contenedor de scroll y
+rompe en silencio el `position: sticky` de las tarjetas apiladas.
 
 `components/landing/hero-video.tsx` no hace autoplay a ciegas: se frena con
 `prefers-reduced-motion`, con `saveData`, y se pausa fuera de pantalla o con la

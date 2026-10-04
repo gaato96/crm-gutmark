@@ -146,6 +146,36 @@ body {
     );
   }
 
+  /* Patrones de fondo de la landing. Usan los tokens de tema, así que se ven
+     en claro y en oscuro sin un segundo juego de clases. Siempre van con una
+     máscara para que se desvanezcan y no parezcan papel cuadriculado. */
+  .bg-dots {
+    background-image: radial-gradient(rgb(var(--ink) / 0.13) 1px, transparent 1.2px);
+    background-size: 22px 22px;
+  }
+  .bg-grid-lines {
+    background-image: linear-gradient(rgb(var(--ink) / 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(var(--ink) / 0.06) 1px, transparent 1px);
+    background-size: 64px 64px;
+  }
+  .mask-radial {
+    mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black 30%, transparent 75%);
+    -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black 30%, transparent 75%);
+  }
+  .mask-fade-y {
+    mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent);
+    -webkit-mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent);
+  }
+  /* Texto calado para la cinta tipográfica y el CTA final. */
+  .text-outline {
+    color: transparent;
+    -webkit-text-stroke: 1.5px rgb(var(--ink) / 0.18);
+  }
+  .text-outline-light {
+    color: transparent;
+    -webkit-text-stroke: 1.5px rgb(255 255 255 / 0.22);
+  }
+
   /* Slider de la calculadora de la landing. El tramo recorrido va en verde
      (usa --pct, que fija el componente) y el pulgar es grande para el dedo. */
   .range-brand {
@@ -225,7 +255,9 @@ body {
   .animate-scale-in,
   .animate-slide-up,
   .animate-drift-a,
-  .animate-drift-b {
+  .animate-drift-b,
+  .animate-marquee-reverse,
+  .animate-float {
     animation: none !important;
   }
 }

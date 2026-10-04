@@ -1,87 +1,119 @@
 import Link from "next/link";
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import {
   ArrowRight,
   Cake,
-  CheckCircle2,
+  Check,
+  CheckCheck,
   FileSpreadsheet,
   HeartHandshake,
-  LogIn,
   MessageCircle,
   Puzzle,
   Send,
   ShieldCheck,
+  Sparkles,
+  TrendingUp,
   Users,
 } from "lucide-react";
 import { getSessionUser } from "@/lib/auth";
-import { businessWhatsappLink } from "@/lib/messages";
-import { HeroVideo } from "@/components/landing/hero-video";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { Reveal } from "@/components/landing/reveal";
-import { LoyaltyCard } from "@/components/landing/loyalty-card";
-import { HeroStage } from "@/components/landing/hero-stage";
-import { WordScrub } from "@/components/landing/word-scrub";
-import { StepFlow } from "@/components/landing/step-flow";
-import { RubroMarquee } from "@/components/landing/rubro-marquee";
-import { MagneticCta } from "@/components/landing/magnetic-cta";
-import { Logo } from "@/components/logo";
-import { LossCalculator } from "@/components/landing/loss-calculator";
-import { RubroCampaigns, type RubroShowcase } from "@/components/landing/rubro-campaigns";
+import { businessWhatsappLink, renderTemplate } from "@/lib/messages";
+import { RUBROS as RUBRO_PHOTOS } from "@/lib/landing-media";
 import { demoPresets } from "@/lib/rubro-presets";
 import { CAMPAIGN_SEED } from "@/lib/campaigns";
-import { renderTemplate } from "@/lib/messages";
 import { rubroLabel } from "@/lib/rubros";
+import { HeroVideo } from "@/components/landing/hero-video";
+import { HeroMotion } from "@/components/landing/hero-motion";
+import { FloatingNav } from "@/components/landing/floating-nav";
+import { LoyaltyCard } from "@/components/landing/loyalty-card";
+import { WordScrub } from "@/components/landing/word-scrub";
+import { RubroMarquee } from "@/components/landing/rubro-marquee";
+import { MagneticCta } from "@/components/landing/magnetic-cta";
+import { PainAccordion, type PainSlice } from "@/components/landing/pain-accordion";
+import { StackCards } from "@/components/landing/stack-cards";
+import { CountUp } from "@/components/landing/count-up";
+import { RevealGroup } from "@/components/landing/reveal-group";
+import { Reveal } from "@/components/landing/reveal";
+import { LossCalculator } from "@/components/landing/loss-calculator";
+import { RubroCampaigns, type RubroShowcase } from "@/components/landing/rubro-campaigns";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { Logo } from "@/components/logo";
 
 const CTA_MESSAGE = "¡Hola! Quiero pedir acceso a Vuelvo CRM para mi negocio.";
-
+const CTA_HREF = businessWhatsappLink(CTA_MESSAGE);
 // Un solo texto por intención en toda la página: el botón de WhatsApp dice
 // siempre "Pedir acceso", nunca "Escribinos" ni "Empezar".
 const CTA_LABEL = "Pedir acceso";
 
-const PAIN_POINTS = [
+// Las fotos de la landing son las de los rubros (lib/landing-media.ts), ya
+// verificadas y con el host declarado en next.config. Se buscan por nombre
+// para que reordenar esa lista no cambie qué foto va en cada lugar.
+const photo = (name: string) => RUBRO_PHOTOS.find((r) => r.name === name) ?? RUBRO_PHOTOS[0];
+
+const PAINS: PainSlice[] = [
   {
     title: "Compró una vez y nunca más supiste de él",
-    detail: "Sin un registro, cada venta empieza y termina en sí misma.",
+    detail:
+      "Sin un registro, cada venta empieza y termina en sí misma. No sabés si volvió, si se fue a otro lado o si simplemente se olvidó.",
+    src: photo("Indumentaria").src,
+    alt: photo("Indumentaria").alt,
   },
   {
     title: "Se te pasó el cumpleaños de una clienta de siempre",
-    detail: "Un saludo a tiempo rinde más que cualquier publicidad paga.",
+    detail:
+      "Un saludo a tiempo, con un beneficio, rinde más que cualquier publicidad paga. Y es lo primero que se olvida en un día de mostrador.",
+    src: photo("Estética").src,
+    alt: photo("Estética").alt,
   },
   {
     title: "No sabés quiénes son tus mejores clientes",
-    detail: "Ni cuánto gastan, ni hace cuánto que no aparecen por el local.",
+    detail:
+      "Ni cuánto gastan, ni cada cuánto vienen, ni hace cuánto que no aparecen. Los tratás igual que a alguien que vino una sola vez.",
+    src: photo("Peluquerías").src,
+    alt: photo("Peluquerías").alt,
   },
   {
-    title: "Avisar una promoción te lleva la tarde entera",
-    detail: "Escribís uno por uno y aun así te salteás la mitad de la lista.",
+    title: "Avisar una promo te lleva la tarde entera",
+    detail:
+      "Escribís uno por uno, copiás y pegás, y aun así te salteás la mitad de la lista. Al final no lo hacés.",
+    src: photo("Gimnasios").src,
+    alt: photo("Gimnasios").alt,
   },
 ];
 
 const STEPS = [
   {
     title: "Cargá tu cartera",
-    body: "Nombre, teléfono, cumpleaños y las compras que ya te hicieron. A mano o importando tu Excel. El catálogo y las campañas de tu rubro ya vienen armados.",
+    body: "Nombre, teléfono, cumpleaños y lo que ya te compraron. A mano o importando tu Excel. El catálogo y las campañas de tu rubro ya vienen armados.",
+    tone: "surface" as const,
+    img: photo("Perfumerías"),
   },
   {
     title: "Se ordena sola",
-    body: "Cada cliente queda clasificado en VIP, frecuente, ocasional, nuevo o inactivo, y se reacomoda con cada compra que registrás.",
+    body: "Cada cliente queda en VIP, frecuente, ocasional, nuevo o inactivo, y se reacomoda solo con cada venta que registrás.",
+    tone: "accent" as const,
+    img: photo("Veterinarias"),
   },
   {
     title: "Te avisa a quién escribirle",
-    body: "Los cumpleaños de la semana y los clientes que ya deberían haber vuelto te esperan cada mañana en el panel.",
+    body: "Los cumpleaños de la semana y los que ya deberían haber vuelto te esperan cada mañana en el panel, con el mensaje listo.",
+    tone: "brand" as const,
+    img: photo("Ópticas"),
   },
   {
-    title: "Escribís en un clic y ves qué volvió",
-    body: "El mensaje sale redactado y con el nombre puesto. Lo mandás por WhatsApp y el panel te muestra cuánta plata entró de los clientes que respondieron.",
+    title: "Mandás en un toque y ves qué volvió",
+    body: "Sale por tu WhatsApp con el nombre puesto. El panel te muestra cuántos clientes compraron después del mensaje y cuánta plata dejaron.",
+    tone: "ink" as const,
+    img: photo("Pet shops"),
   },
 ];
 
 const SEGMENTS = [
-  { name: "VIP", tone: "bg-accent-500/15 text-accent-700 dark:text-accent-300" },
-  { name: "Frecuente", tone: "bg-brand-500/15 text-brand-700 dark:text-brand-300" },
-  { name: "Ocasional", tone: "bg-surface-3 text-ink-soft" },
-  { name: "Nuevo", tone: "bg-brand-500/10 text-brand-600 dark:text-brand-400" },
-  { name: "Inactivo", tone: "bg-rose-500/12 text-rose-600 dark:text-rose-400" },
+  { name: "VIP", pct: 12, tone: "bg-accent-500" },
+  { name: "Frecuente", pct: 34, tone: "bg-brand-500" },
+  { name: "Ocasional", pct: 22, tone: "bg-sky-500" },
+  { name: "Nuevo", pct: 9, tone: "bg-amber-500" },
+  { name: "Inactivo", pct: 23, tone: "bg-ink-faint" },
 ];
 
 const TRUST = [
@@ -102,27 +134,54 @@ const TRUST = [
   },
 ];
 
+const FAQ = [
+  {
+    q: "¿Tengo que saber de computación?",
+    a: "No. Si usás WhatsApp, podés usar Vuelvo. El alta la hacemos juntos y te dejamos tu cartera cargada.",
+  },
+  {
+    q: "¿Los mensajes se mandan solos?",
+    a: "El sistema elige a quién escribirle y redacta el mensaje con su nombre; vos lo mandás desde tu WhatsApp con un toque. Así le llega un mensaje tuyo, no de un número desconocido, y no hay riesgo de que te bloqueen.",
+  },
+  {
+    q: "¿Cómo sé si me está sirviendo?",
+    a: "El panel te muestra cuántos clientes compraron después de recibir un mensaje y cuánta plata dejaron. Es la cuenta que justifica el sistema, mes a mes.",
+  },
+  {
+    q: "¿Funciona desde el celular?",
+    a: "Sí. Se instala como una app en el teléfono y registrás una venta en el mostrador en segundos.",
+  },
+  {
+    q: "Ya tengo mis clientes en un Excel. ¿Los pierdo?",
+    a: "No. Importás la planilla tal como está y cuando quieras descargás tu cartera completa. Los datos son tuyos.",
+  },
+  {
+    q: "¿Sirve para mi rubro?",
+    a: "Sirve para cualquier negocio donde el cliente vuelve: barberías, estéticas, gimnasios, veterinarias, ópticas, indumentaria, suplementos, lavaderos, talleres y muchos más.",
+  },
+];
+
 export default async function LandingPage() {
   const session = await getSessionUser();
   if (session) redirect("/dashboard");
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-canvas">
+    <div className="relative min-h-screen w-full max-w-full overflow-x-clip bg-canvas">
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-xl focus:bg-brand-700 focus:px-4 focus:py-2.5 focus:text-sm focus:font-semibold focus:text-white"
       >
         Saltar al contenido principal
       </a>
-      <Nav />
-      <main id="main-content">
+      <FloatingNav ctaHref={CTA_HREF} ctaLabel={CTA_LABEL} />
+      <main id="main-content" className="w-full max-w-full overflow-x-clip">
         <Hero />
-        <RubroSection />
+        <RubroBand />
         <ProblemSection />
         <LossSection />
-        <HowItWorks />
+        <BentoSection />
+        <StepsSection />
         <RubroCampaignsSection />
-        <WhatsInside />
         <TrustSection />
         <FaqSection />
         <FinalCta />
@@ -132,322 +191,308 @@ export default async function LandingPage() {
   );
 }
 
-function Nav() {
+// ---------------------------------------------------------------------------
+// Fondo ambiental reutilizable: manchas de color de marca a la deriva. Van
+// detrás de todo, sin eventos y fuera del árbol de accesibilidad.
+function Aurora({ className = "" }: { className?: string }) {
   return (
-    <header className="glass sticky top-0 z-40 border-b">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 sm:px-8">
-        <Logo size="sm" />
+    <div aria-hidden="true" className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}>
+      <div className="animate-drift-a absolute -left-32 -top-32 h-[34rem] w-[34rem] rounded-full bg-brand-400/25 blur-[110px] dark:bg-brand-500/20" />
+      <div className="animate-drift-b absolute -right-40 top-10 h-[30rem] w-[30rem] rounded-full bg-accent-500/25 blur-[110px] dark:bg-accent-600/30" />
+      <div className="animate-drift-a absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-accent-300/20 blur-[90px] [animation-duration:31s]" />
+    </div>
+  );
+}
 
-        <nav aria-label="Secciones" className="hidden items-center gap-7 md:flex">
-          <a
-            href="#como-funciona"
-            className="text-sm font-medium text-ink-soft transition hover:text-ink"
-          >
-            Cómo funciona
-          </a>
-          <a
-            href="#por-rubro"
-            className="text-sm font-medium text-ink-soft transition hover:text-ink"
-          >
-            Por rubro
-          </a>
-          <a
-            href="#que-incluye"
-            className="text-sm font-medium text-ink-soft transition hover:text-ink"
-          >
-            Qué incluye
-          </a>
-          <a
-            href="#preguntas"
-            className="text-sm font-medium text-ink-soft transition hover:text-ink"
-          >
-            Preguntas
-          </a>
-        </nav>
+// Imagen en píldora dentro del titular.
+function InlinePhoto({ name, className = "" }: { name: string; className?: string }) {
+  const p = photo(name);
+  return (
+    <span
+      data-hero-pill
+      className={`relative mx-[0.12em] hidden h-[0.82em] w-[1.75em] overflow-hidden rounded-full align-[-0.06em] ring-2 ring-surface shadow-pop sm:inline-block ${className}`}
+    >
+      <Image src={p.src} alt="" fill sizes="160px" className="object-cover" priority />
+    </span>
+  );
+}
 
-        {/* En mobile no entraban los tres controles y "Iniciar sesión" estaba
-            escondido (hidden sm:block): un cliente que ya tenía cuenta no tenía
-            cómo entrar desde el celular. Ahora el login está siempre, y el
-            selector de tema se va al pie en pantallas chicas. */}
-        <div className="flex items-center gap-1.5 sm:gap-3">
-          <span className="hidden sm:block">
-            <ThemeToggle compact />
-          </span>
-          <Link
-            href="/login"
-            className="btn-ghost min-h-[44px] whitespace-nowrap !px-2.5 text-sm font-semibold sm:!px-3"
+// Palabra del titular con máscara para la entrada de abajo hacia arriba.
+function W({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return (
+    <span className="inline-block overflow-hidden pb-[0.08em] align-bottom">
+      <span data-hero-word className={`inline-block ${className}`}>
+        {children}
+      </span>
+    </span>
+  );
+}
+
+function Hero() {
+  return (
+    <HeroMotion>
+      <section className="relative isolate overflow-hidden pb-24 pt-32 sm:pt-40 md:pb-32">
+        <Aurora />
+        <div aria-hidden="true" className="bg-dots mask-radial pointer-events-none absolute inset-0 -z-10" />
+
+        <div className="relative mx-auto w-full max-w-6xl px-5 text-center sm:px-8">
+          <h1 className="mx-auto max-w-6xl text-balance font-display text-[2.15rem] font-bold leading-[1.06] tracking-[-0.03em] text-ink sm:text-[clamp(2.6rem,6vw,5.4rem)]">
+            <W>Vendé</W> <W>más</W>
+            <InlinePhoto name="Peluquerías" />{" "}
+            <W className="text-brand-700 dark:text-brand-400">sin</W>{" "}
+            <W className="text-brand-700 dark:text-brand-400">conseguir</W>{" "}
+            <W>un</W> <W>solo</W> <W>cliente</W>
+            <InlinePhoto name="Veterinarias" />{" "}
+            <W>nuevo.</W>
+          </h1>
+
+          <p
+            data-hero-fade
+            className="mx-auto mt-7 max-w-2xl text-lg leading-relaxed text-ink-soft sm:text-xl"
           >
-            <LogIn aria-hidden="true" className="hidden h-4 w-4 min-[400px]:block sm:hidden" />
-            <span className="sm:hidden">Ingresar</span>
-            <span className="hidden sm:inline">Iniciar sesión</span>
-          </Link>
-          <a
-            href={businessWhatsappLink(CTA_MESSAGE)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-primary min-h-[44px] whitespace-nowrap !px-3.5 !py-2 text-sm sm:!px-4"
-          >
-            <MessageCircle aria-hidden="true" className="hidden h-4 w-4 min-[400px]:block" /> {CTA_LABEL}
-          </a>
+            Vuelvo conoce a cada cliente que ya tenés, te avisa quién está por volver y te deja el
+            WhatsApp escrito. Vos tocás enviar. Ellos vuelven.
+          </p>
+
+          <div data-hero-fade className="mt-10 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
+            <MagneticCta
+              href={CTA_HREF}
+              className="btn-primary justify-center whitespace-nowrap rounded-full !px-8 !py-4 text-base"
+            >
+              <MessageCircle aria-hidden="true" className="h-5 w-5" />
+              {CTA_LABEL}
+            </MagneticCta>
+            <a
+              href="#como-funciona"
+              className="btn-secondary justify-center whitespace-nowrap rounded-full !px-7 !py-4 text-base"
+            >
+              Ver cómo funciona
+              <ArrowRight aria-hidden="true" className="h-4 w-4" />
+            </a>
+          </div>
         </div>
-      </div>
-    </header>
+
+        <ProductFrame />
+      </section>
+    </HeroMotion>
   );
 }
 
 /**
- * El hero es la única banda que se queda oscura en los dos temas.
- *
- * Es a propósito: sobre un video no se puede garantizar contraste con tokens
- * que cambian de valor según el tema, así que el scrim y el texto quedan fijos
- * y el contraste se calcula una sola vez. El borde inferior se funde a `canvas`
- * para que el corte hacia la sección siguiente no se note en ningún tema.
- *
- * Por eso acá NO se usan `text-ink` ni `bg-surface`: sobre este fondo, en modo
- * claro, serían texto oscuro sobre negro.
+ * Marco de producto: el video del hero como escenario y, encima, las piezas
+ * reales del panel (plan del día, mensaje de WhatsApp, tarjeta de puntos).
+ * Es un panel de ejemplo con datos de una cuenta demo, no una promesa de
+ * resultados — por eso la leyenda de abajo lo aclara.
  */
-function Hero() {
+function ProductFrame() {
   return (
-    <HeroStage>
-      <section className="relative flex min-h-[calc(100dvh-4rem)] items-center overflow-hidden bg-accent-900">
-        {/* Capa 1: el video. Va detrás de todo y no aporta significado. */}
-        <HeroVideo
-          src="/hero.mp4"
-          className="absolute inset-0 h-full w-full object-cover"
-        />
+    <div className="relative mx-auto mt-16 w-full max-w-6xl px-4 sm:mt-20 sm:px-8">
+      <div
+        data-hero-frame
+        className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-accent-900 shadow-[0_40px_120px_-30px_rgba(91,46,229,0.55)] ring-1 ring-black/5 lg:aspect-[16/8.5]"
+      >
+        <HeroVideo src="/hero.mp4" className="absolute inset-0 h-full w-full object-cover opacity-70" />
+        <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-br from-accent-900/85 via-accent-900/55 to-brand-950/70" />
+        <div aria-hidden="true" className="grain absolute inset-0" />
 
-        {/* Capa 2: base plana. Fija el piso de oscuridad pase lo que pase en el
-            video, así ningún cuadro claro se come el titular. */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-accent-900/45"
-        />
-
-        {/* Capa 3, mobile: scrim parejo. Acá el texto ocupa todo el ancho, así
-            que un degradado horizontal dejaría el final de cada renglón sobre
-            la parte más clara. Con el peor cuadro posible del video (un píxel
-            blanco) esto da 12.5:1 en el titular y 7.3:1 en la bajada. */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-accent-900/72 lg:hidden"
-        />
-
-        {/* Capa 3, desktop: scrim direccional. El texto vive en la mitad
-            izquierda, que queda opaca (19:1 en el titular, 11:1 en la bajada),
-            y hacia la derecha baja al 20% para que el video se vea de verdad —
-            ahí solo va la tarjeta, que no es texto. */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 hidden bg-gradient-to-r from-accent-900 via-accent-900/80 to-accent-900/20 lg:block"
-        />
-
-        {/* Capa 4: fundido inferior hacia el color de fondo del tema activo. */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-canvas"
-        />
-        {/* Capa 5: luz de marca a la deriva. Le mete el verde y el violeta de
-            la marca al video, que viene con su propio color, y unifica la
-            paleta. */}
-        <div
-          aria-hidden="true"
-          className="grain pointer-events-none absolute inset-0 overflow-hidden"
-        >
-          <div className="animate-drift-a absolute -left-40 -top-40 h-[30rem] w-[30rem] rounded-full bg-brand-400/20 blur-3xl" />
-          <div className="animate-drift-b absolute -right-32 top-40 h-[24rem] w-[24rem] rounded-full bg-accent-400/[0.18] blur-3xl" />
-          <div className="animate-drift-b absolute -bottom-32 left-1/3 h-72 w-72 rounded-full bg-brand-300/10 blur-3xl [animation-duration:32s]" />
-        </div>
-
-        <div className="relative mx-auto grid w-full max-w-6xl gap-12 px-5 py-20 sm:px-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-center lg:gap-16">
-          <div>
-            <span
-              data-anim="hero-item"
-              className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-accent-200 ring-1 ring-inset ring-white/15 backdrop-blur"
-            >
-              <HeartHandshake aria-hidden="true" className="h-3.5 w-3.5" />
-              Fidelización para PYMES
-            </span>
-
-            <h1
-              data-anim="hero-item"
-              className="mt-5 max-w-2xl text-balance font-display text-[2.35rem] leading-[1.08] tracking-tight text-white sm:text-[2.9rem] lg:text-[3.25rem]"
-            >
-              Vendé más <span className="text-brand-300">sin conseguir</span> un
-              solo cliente nuevo.
-            </h1>
-
-            <p
-              data-anim="hero-item"
-              className="mt-6 max-w-xl text-lg leading-relaxed text-accent-100"
-            >
-              Conocé a los clientes que ya tenés, acordate de todos, y hacelos
-              volver antes de que se olviden de vos.
-            </p>
-
-            <div
-              data-anim="hero-item"
-              className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center"
-            >
-              <MagneticCta
-                href={businessWhatsappLink(CTA_MESSAGE)}
-                className="btn-accent justify-center whitespace-nowrap !px-7 !py-3.5 text-base"
-              >
-                <MessageCircle aria-hidden="true" className="h-5 w-5" />
-                {CTA_LABEL}
-              </MagneticCta>
-              {/* Botón propio del hero y no `.btn-secondary`: ese usa tokens de
-                  tema y en modo claro sería un botón blanco con texto oscuro
-                  sobre un fondo negro. Acá el fondo es fijo, así que el botón
-                  también. */}
-              <a
-                href="#como-funciona"
-                className="btn justify-center whitespace-nowrap border border-white/25 bg-white/10 !px-6 !py-3.5 text-base text-white backdrop-blur hover:bg-white/20"
-              >
-                Ver cómo funciona
-                <ArrowRight aria-hidden="true" className="h-4 w-4" />
-              </a>
+        {/* Mobile: apilado. Desktop: piezas flotando sobre el video. */}
+        {/* El contenedor ocupa todo el marco en lg (inset-0): las piezas de
+            abajo se anclan con bottom-*, y contra una caja de alto cero
+            quedaban fuera de cuadro. */}
+        <div className="relative grid gap-4 p-4 sm:grid-cols-2 sm:p-6 lg:absolute lg:inset-0 lg:block lg:p-0">
+          <div data-depth="0.6" className="lg:absolute lg:left-[5%] lg:top-[11%] lg:w-[33%]">
+            <div className="lg:animate-float">
+              <PlanCard />
             </div>
           </div>
 
-          {/* Foto de contexto con la tarjeta apoyada en una esquina. La tarjeta
-              ya no compite con una foto: el video es el fondo y la tarjeta es
-              el único objeto sólido, así que puede respirar y crecer. */}
-          <div
-            data-anim="hero-visual"
-            className="relative mx-auto w-full max-w-[19rem] lg:mx-0 lg:ml-auto lg:max-w-[20rem]"
-          >
-            {/* Halo detrás de la tarjeta: la despega del video, que en esa zona
-                del scrim es la parte más clara del hero. */}
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute -inset-8 rounded-[3rem] bg-accent-900/60 blur-2xl"
-            />
+          <div data-depth="1.1" className="lg:absolute lg:right-[5%] lg:top-[9%] lg:w-[31%]">
+            <div className="lg:animate-float lg:[animation-delay:-2s]">
+              <ChatCard />
+            </div>
+          </div>
 
-            <div data-anim="hero-photo" className="relative">
+          <div data-depth="1.5" className="hidden lg:absolute lg:bottom-[8%] lg:left-[39%] lg:block lg:w-[26%]">
+            <div className="animate-float [animation-delay:-4s]">
               <LoyaltyCard />
-
-              {/* Aviso de cumpleaños, montado en la esquina superior. Es el
-                  gancho del producto: el dato que el negocio hoy se pierde. */}
-              <div className="absolute -right-3 -top-5 flex items-center gap-2.5 rounded-2xl bg-white/95 px-3 py-2 shadow-pop ring-1 ring-black/5 backdrop-blur sm:-right-6">
-                <div className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-accent-500/20 text-accent-700">
-                  <Cake aria-hidden="true" className="h-3.5 w-3.5" />
-                </div>
-                <div className="leading-tight">
-                  <div className="text-[11px] font-bold text-brand-950">
-                    Cumple hoy
-                  </div>
-                  <div className="text-[10px] text-brand-900/60">
-                    María González
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
+
+          <div data-depth="0.9" className="lg:absolute lg:bottom-[13%] lg:right-[7%]">
+            <ReturnToast />
+          </div>
         </div>
-      </section>
-    </HeroStage>
+      </div>
+      <p className="mt-4 text-center text-xs text-ink-muted">Panel de ejemplo con datos de una cuenta demo.</p>
+    </div>
   );
 }
 
-function RubroSection() {
+function PlanCard() {
+  const rows = [
+    { name: "Cumpleaños", n: 3, icon: Cake, tone: "bg-accent-500/15 text-accent-700 dark:text-accent-300" },
+    { name: "Hora del corte", n: 9, icon: Send, tone: "bg-brand-500/15 text-brand-700 dark:text-brand-300" },
+    { name: "Recompra", n: 6, icon: TrendingUp, tone: "bg-sky-500/15 text-sky-700 dark:text-sky-300" },
+  ];
   return (
-    <section className="border-y border-line bg-surface-2/50 py-14 sm:py-16">
+    <div className="rounded-3xl border border-line bg-surface p-5 text-left shadow-pop">
+      <p className="font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-muted">
+        Tu plan de hoy
+      </p>
+      <p className="mt-2 font-display text-4xl font-bold tabular-nums text-ink">18</p>
+      <p className="text-sm font-medium text-ink-soft">clientes para contactar</p>
+      <div className="mt-3 h-2 overflow-hidden rounded-full bg-surface-3">
+        <div className="h-full w-[62%] rounded-full bg-brand-500" />
+      </div>
+      <ul className="mt-4 space-y-2">
+        {rows.map((r) => (
+          <li key={r.name} className="flex items-center gap-3">
+            <span className={`grid h-8 w-8 place-items-center rounded-xl ${r.tone}`}>
+              <r.icon aria-hidden="true" className="h-4 w-4" />
+            </span>
+            <span className="flex-1 text-sm font-semibold text-ink">{r.name}</span>
+            <span className="rounded-full bg-surface-2 px-2 py-0.5 text-xs font-bold tabular-nums text-ink-soft">
+              {r.n}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function ChatCard() {
+  return (
+    <div className="overflow-hidden rounded-3xl bg-[#efeae2] text-left shadow-pop dark:bg-[#0b141a]">
+      <div className="flex items-center gap-3 bg-[#008069] px-4 py-3 text-white dark:bg-[#202c33]">
+        <span className="grid h-9 w-9 place-items-center rounded-full bg-white/20 font-display text-sm font-bold">
+          MG
+        </span>
+        <div className="leading-tight">
+          <p className="text-sm font-semibold">María González</p>
+          <p className="text-[11px] text-white/75">en línea</p>
+        </div>
+      </div>
+      <div className="space-y-2 p-4">
+        <div className="ml-auto max-w-[88%] rounded-2xl rounded-tr-md bg-[#d9fdd3] px-3.5 py-2.5 text-[13px] leading-relaxed text-[#111b21] shadow-sm dark:bg-[#005c4b] dark:text-[#e9edef]">
+          ¡Hola María! Ya pasaron unas semanas de tu último corte. ¿Te guardo un lugar esta semana?
+          <span className="mt-1 flex items-center justify-end gap-1 text-[10px] text-[#667781] dark:text-[#8696a0]">
+            10:24 <CheckCheck aria-hidden="true" className="h-3.5 w-3.5 text-[#53bdeb]" />
+          </span>
+        </div>
+        <div className="max-w-[70%] rounded-2xl rounded-tl-md bg-white px-3.5 py-2.5 text-[13px] leading-relaxed text-[#111b21] shadow-sm dark:bg-[#202c33] dark:text-[#e9edef]">
+          ¡Sí! ¿El jueves a la tarde?
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ReturnToast() {
+  return (
+    <div className="flex items-center gap-3 rounded-2xl border border-line bg-surface/95 px-4 py-3 text-left shadow-pop backdrop-blur md:max-w-[17rem]">
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-500 text-brand-950">
+        <Check aria-hidden="true" className="h-5 w-5" strokeWidth={3} />
+      </span>
+      <div className="leading-tight">
+        <p className="text-sm font-bold text-ink">Martín volvió</p>
+        <p className="text-xs text-ink-muted">3 días después del mensaje</p>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+function RubroBand() {
+  const names = RUBRO_PHOTOS.map((r) => r.name);
+  const track = [...names, ...names];
+  return (
+    <section aria-labelledby="rubros-title" className="relative border-y border-line bg-surface-2/40 py-20 sm:py-24">
       <Reveal className="mx-auto max-w-6xl px-5 sm:px-8">
-        <h2 className="text-balance text-center font-display text-2xl text-ink sm:text-3xl">
+        <h2 id="rubros-title" className="text-balance text-center font-display text-2xl font-bold text-ink sm:text-3xl">
           Para negocios donde el cliente vuelve
         </h2>
       </Reveal>
-      <div className="mt-9">
+      <div className="mt-10">
         <RubroMarquee />
       </div>
-    </section>
-  );
-}
-
-function ProblemSection() {
-  return (
-    <section className="mx-auto max-w-6xl px-5 py-24 sm:px-8 sm:py-32">
-      <WordScrub
-        text="Conseguir un cliente nuevo cuesta mucho más que hacer volver a uno que ya te compró. Casi ningún negocio chico trabaja la segunda parte."
-        className="mx-auto max-w-4xl text-balance text-center font-display text-2xl leading-snug text-ink sm:text-[2.1rem] sm:leading-[1.28]"
-      />
-
-      <Reveal className="mt-16">
-        <h3 className="font-display text-2xl text-ink">¿Te suena familiar?</h3>
-      </Reveal>
-
-      <div className="mt-6 grid gap-x-12 sm:grid-cols-2">
-        {PAIN_POINTS.map((p, i) => (
-          <Reveal key={p.title} delay={i * 70}>
-            <div className="flex items-start gap-5 border-t border-line py-6">
-              <span className="mt-0.5 font-mono text-sm font-bold tabular-nums text-ink-faint">
-                {String(i + 1).padStart(2, "0")}
-              </span>
-              <div>
-                <h4 className="font-semibold leading-snug text-ink">{p.title}</h4>
-                <p className="mt-1.5 text-sm leading-relaxed text-ink-muted">
-                  {p.detail}
-                </p>
-              </div>
-            </div>
-          </Reveal>
-        ))}
+      {/* Segunda cinta, tipográfica y en sentido contrario: da ritmo sin sumar
+          información nueva, por eso va fuera del árbol de accesibilidad. */}
+      <div aria-hidden="true" className="marquee-mask mt-8 overflow-hidden">
+        <div className="animate-marquee-reverse flex w-max">
+          {track.map((n, i) => (
+            <span
+              key={`${n}-${i}`}
+              className="text-outline whitespace-nowrap pr-10 font-display text-5xl font-bold uppercase tracking-tight sm:text-7xl"
+            >
+              {n}
+            </span>
+          ))}
+        </div>
       </div>
     </section>
   );
 }
 
-// Fuentes reales y nombradas: un dato de marketing sin fuente en una landing
-// hace dudar de todo lo demás.
-const LOSS_STATS = [
-  {
-    value: "5 a 25×",
-    label: "más caro conseguir un cliente nuevo que retener uno que ya tenés",
-    source: "Harvard Business Review",
-  },
-  {
-    value: "+25% a 95%",
-    label: "de ganancia puede traer subir apenas un 5% la cantidad de clientes que vuelven",
-    source: "Bain & Company",
-  },
-  {
-    value: "0 avisos",
-    label: "te da el cliente que deja de venir. Simplemente un día empieza a comprarle a otro",
-    source: "Lo que pasa en todo mostrador",
-  },
-];
+// ---------------------------------------------------------------------------
+function ProblemSection() {
+  return (
+    <section className="relative isolate overflow-hidden py-28 md:py-44">
+      <div aria-hidden="true" className="bg-grid-lines mask-fade-y pointer-events-none absolute inset-0 -z-10" />
+      <div className="mx-auto max-w-6xl px-5 sm:px-8">
+        <WordScrub
+          text="Conseguir un cliente nuevo cuesta mucho más que hacer volver a uno que ya te compró. Casi ningún negocio chico trabaja la segunda parte."
+          className="mx-auto max-w-5xl text-balance text-center font-display text-[1.75rem] font-bold leading-[1.2] tracking-tight text-ink sm:text-[2.6rem] sm:leading-[1.15]"
+        />
 
+        <Reveal className="mt-24 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <h3 className="font-display text-3xl font-bold tracking-tight text-ink sm:text-4xl">¿Te suena familiar?</h3>
+          <p className="max-w-sm text-sm text-ink-muted">Pasá el mouse por cada historia. Las cuatro tienen arreglo.</p>
+        </Reveal>
+        <Reveal className="mt-8">
+          <PainAccordion items={PAINS} />
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
 function LossSection() {
   return (
-    <section
-      id="cuanto-perdes"
-      className="scroll-mt-20 border-y border-line bg-surface-2/40 py-24 sm:py-32"
-    >
+    <section id="cuanto-perdes" className="relative isolate scroll-mt-24 overflow-hidden bg-surface-2/50 py-28 md:py-44">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <div className="animate-drift-b absolute -right-24 top-20 h-[28rem] w-[28rem] rounded-full bg-rose-400/15 blur-[110px]" />
+        <div className="animate-drift-a absolute -left-24 bottom-0 h-[26rem] w-[26rem] rounded-full bg-accent-500/15 blur-[110px]" />
+      </div>
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
-        <Reveal className="max-w-2xl">
-          <span className="font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-rose-600 dark:text-rose-400">
-            Lo que perdés sin darte cuenta
-          </span>
-          <h2 className="mt-3 text-balance font-display text-3xl leading-tight text-ink sm:text-4xl">
-            El cliente que no vuelve no se queja. Se va.
+        <Reveal className="max-w-4xl">
+          <h2 className="text-balance font-display text-4xl font-bold leading-[1.05] tracking-tight text-ink sm:text-6xl">
+            El cliente que no vuelve no se queja. <span className="text-rose-600 dark:text-rose-400">Se va.</span>
           </h2>
-          <p className="mt-4 leading-relaxed text-ink-muted">
-            Ningún negocio chico lleva la cuenta de cuánta plata se le va por los que compraron una
-            vez y nunca más aparecieron. Hacela acá con tus números.
+          <p className="mt-6 max-w-2xl text-lg leading-relaxed text-ink-soft">
+            Ningún negocio chico lleva la cuenta de cuánta plata se le va por los que compraron una vez
+            y nunca más aparecieron. Hacela acá con tus números.
           </p>
         </Reveal>
 
-        <div className="mt-12 grid gap-4 sm:grid-cols-3">
-          {LOSS_STATS.map((st, i) => (
-            <Reveal key={st.value} delay={i * 80}>
-              <div className="card h-full p-6">
-                <div className="font-display text-3xl font-bold text-ink">{st.value}</div>
-                <p className="mt-2 text-sm leading-relaxed text-ink-soft">{st.label}</p>
-                <p className="mt-4 text-xs font-medium text-ink-muted">Fuente: {st.source}</p>
-              </div>
-            </Reveal>
-          ))}
-        </div>
+        <RevealGroup className="mt-16 grid gap-4 sm:grid-cols-3">
+          <StatCard
+            value={<CountUp to={25} prefix="5 a " suffix="×" />}
+            label="más caro conseguir un cliente nuevo que retener uno que ya tenés."
+            source="Harvard Business Review"
+          />
+          <StatCard
+            value={<CountUp to={95} prefix="+25% a " suffix="%" />}
+            label="de ganancia puede traer subir apenas un 5% la cantidad de clientes que vuelven."
+            source="Bain & Company"
+          />
+          <StatCard
+            value={<CountUp to={0} suffix=" avisos" />}
+            label="te da el cliente que deja de venir. Un día, simplemente, le compra a otro."
+            source="Lo que pasa en todo mostrador"
+          />
+        </RevealGroup>
 
         <Reveal className="mt-8">
           <LossCalculator />
@@ -457,6 +502,253 @@ function LossSection() {
   );
 }
 
+function StatCard({ value, label, source }: { value: React.ReactNode; label: string; source: string }) {
+  return (
+    <div data-reveal className="group card relative overflow-hidden p-7 transition-transform duration-500 hover:-translate-y-1">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-accent-500/10 blur-2xl transition-transform duration-700 group-hover:scale-150"
+      />
+      <div className="relative font-display text-4xl font-bold tabular-nums tracking-tight text-ink">{value}</div>
+      <p className="relative mt-3 text-sm leading-relaxed text-ink-soft">{label}</p>
+      <p className="relative mt-5 text-xs font-medium text-ink-muted">Fuente: {source}</p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Bento. Grilla de 4 columnas en lg:
+//   fila 1: A A B B · fila 2: A A C D · fila 3: E E E E  (12 de 12 celdas)
+// y de 2 en sm: AA / AA / BB / CD / EE (10 de 10). grid-flow-dense de todos
+// modos, por si algún día cambia una tarjeta de tamaño.
+function BentoSection() {
+  const msgPhoto = photo("Perfumerías");
+  return (
+    <section id="que-incluye" className="relative isolate scroll-mt-24 overflow-hidden py-28 md:py-44">
+      <div aria-hidden="true" className="bg-dots mask-radial pointer-events-none absolute inset-0 -z-10 opacity-70" />
+      <div className="mx-auto max-w-6xl px-5 sm:px-8">
+        <Reveal className="max-w-4xl">
+          <h2 className="text-balance font-display text-4xl font-bold leading-[1.05] tracking-tight text-ink sm:text-6xl">
+            Un solo panel, y nada que no vayas a usar.
+          </h2>
+        </Reveal>
+
+        <RevealGroup className="mt-14 grid grid-flow-dense auto-rows-[minmax(15rem,auto)] gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {/* A: mensajes */}
+          <article
+            data-reveal
+            className="group relative overflow-hidden rounded-[1.75rem] bg-accent-800 p-7 text-white sm:col-span-2 sm:row-span-2"
+          >
+            <Image
+              src={msgPhoto.src}
+              alt=""
+              fill
+              sizes="(min-width: 1024px) 50vw, 100vw"
+              className="object-cover opacity-30 mix-blend-luminosity transition-transform duration-1000 ease-out group-hover:scale-105"
+            />
+            <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-accent-900 via-accent-900/80 to-accent-800/40" />
+            <div className="relative flex h-full flex-col">
+              <span className="inline-flex w-fit items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-accent-100 ring-1 ring-inset ring-white/15">
+                <Send aria-hidden="true" className="h-3.5 w-3.5" /> Campañas listas
+              </span>
+              <h3 className="mt-5 max-w-md font-display text-3xl font-bold leading-tight">
+                El mensaje sale escrito, con su nombre y su motivo.
+              </h3>
+              <p className="mt-3 max-w-md text-sm leading-relaxed text-accent-100">
+                Cumpleaños, recompra, reactivación: cada campaña arma su lista sola todos los días.
+              </p>
+              <div className="mt-auto space-y-3 pt-8">
+                <div className="max-w-sm rounded-2xl rounded-tl-md bg-white/95 p-3.5 text-[13px] leading-relaxed text-brand-950 shadow-pop transition-transform duration-500 group-hover:-translate-y-1">
+                  ¡Hola Valentina! Se viene tu cumple: pasá esta semana por Perfumería Bella y tenés 15% off.
+                </div>
+                <div className="ml-auto max-w-[14rem] rounded-2xl rounded-tr-md bg-brand-500 p-3 text-[13px] font-medium leading-relaxed text-brand-950 shadow-pop transition-transform delay-75 duration-500 group-hover:-translate-y-1">
+                  ¡Gracias! Paso el jueves.
+                </div>
+              </div>
+            </div>
+          </article>
+
+          {/* B: segmentación */}
+          <article data-reveal className="group card relative overflow-hidden p-7 sm:col-span-2">
+            <h3 className="font-display text-2xl font-bold text-ink">Segmentación automática</h3>
+            <p className="mt-2 max-w-md text-sm leading-relaxed text-ink-muted">
+              Mira cuánto gastó cada cliente y hace cuánto no vuelve, y lo reubica solo con cada venta.
+            </p>
+            <div className="mt-6 flex h-3 overflow-hidden rounded-full">
+              {SEGMENTS.map((s) => (
+                <div
+                  key={s.name}
+                  className={`${s.tone}`}
+                  style={{ flexGrow: s.pct }}
+                />
+              ))}
+            </div>
+            <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
+              {SEGMENTS.map((s) => (
+                <span key={s.name} className="inline-flex items-center gap-2 text-xs font-semibold text-ink-soft">
+                  <span className={`h-2 w-2 rounded-full ${s.tone}`} /> {s.name}
+                </span>
+              ))}
+            </div>
+          </article>
+
+          {/* C: cumpleaños */}
+          <article data-reveal className="group card relative overflow-hidden p-6">
+            <span className="grid h-12 w-12 place-items-center rounded-2xl bg-accent-500/15 text-accent-700 transition-transform duration-500 group-hover:rotate-[-8deg] group-hover:scale-110 dark:text-accent-300">
+              <Cake aria-hidden="true" className="h-6 w-6" />
+            </span>
+            <h3 className="mt-8 font-display text-lg font-bold text-ink">Ningún cumpleaños se pasa</h3>
+            <p className="mt-1.5 text-sm leading-relaxed text-ink-muted">
+              Los de la semana, en la primera pantalla, con el saludo listo.
+            </p>
+          </article>
+
+          {/* D: excel */}
+          <article data-reveal className="group card relative overflow-hidden p-6">
+            <span className="grid h-12 w-12 place-items-center rounded-2xl bg-brand-500/15 text-brand-700 transition-transform duration-500 group-hover:rotate-[8deg] group-hover:scale-110 dark:text-brand-300">
+              <FileSpreadsheet aria-hidden="true" className="h-6 w-6" />
+            </span>
+            <h3 className="mt-8 font-display text-lg font-bold text-ink">Tu Excel entra y sale</h3>
+            <p className="mt-1.5 text-sm leading-relaxed text-ink-muted">
+              Importás la planilla que ya tenés. Los datos siguen siendo tuyos.
+            </p>
+          </article>
+
+          {/* E: módulos */}
+          <article
+            data-reveal
+            className="relative overflow-hidden rounded-[1.75rem] border border-line bg-gradient-to-r from-brand-500/10 via-surface to-accent-500/10 p-7 sm:col-span-2 lg:col-span-4"
+          >
+            <div className="flex h-full flex-col gap-6 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-start gap-4">
+                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-surface text-brand-700 ring-1 ring-line dark:text-brand-300">
+                  <Puzzle aria-hidden="true" className="h-6 w-6" />
+                </span>
+                <div>
+                  <h3 className="font-display text-xl font-bold text-ink">Sumá módulos cuando los necesites</h3>
+                  <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-ink-muted">
+                    Puntos y beneficios para premiar la constancia, y Caja y reportes: arqueo, comisiones
+                    de tu equipo y en qué día y horario vendés más.
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {["Puntos", "Caja y reportes"].map((m) => (
+                  <span key={m} className="rounded-full bg-brand-500 px-3.5 py-1.5 text-xs font-bold text-brand-950">
+                    {m}
+                  </span>
+                ))}
+                {["Turnos", "Vidriera", "Stock"].map((m) => (
+                  <span
+                    key={m}
+                    className="rounded-full border border-dashed border-line px-3.5 py-1.5 text-xs font-semibold text-ink-muted"
+                  >
+                    {m} · pronto
+                  </span>
+                ))}
+              </div>
+            </div>
+          </article>
+        </RevealGroup>
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+const STEP_TONES = {
+  surface: "bg-surface text-ink border border-line",
+  accent: "bg-gradient-to-br from-accent-600 to-accent-800 text-white",
+  brand: "bg-gradient-to-br from-brand-300 to-brand-500 text-brand-950",
+  ink: "bg-[#0b0f17] text-white ring-1 ring-white/10",
+};
+const STEP_MUTED = {
+  surface: "text-ink-soft",
+  accent: "text-accent-100",
+  brand: "text-brand-900",
+  ink: "text-white/70",
+};
+
+function StepsSection() {
+  return (
+    <section id="como-funciona" className="relative scroll-mt-24 py-28 md:py-44">
+      <div className="mx-auto max-w-6xl px-5 sm:px-8">
+        <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+          <Reveal>
+            <h2 className="max-w-3xl text-balance font-display text-4xl font-bold leading-[1.05] tracking-tight text-ink sm:text-6xl">
+              De la primera venta al cliente que vuelve.
+            </h2>
+          </Reveal>
+          <Reveal className="max-w-sm">
+            <p className="leading-relaxed text-ink-soft">
+              Cuatro pasos. El primero lo hacemos juntos. Los otros tres corren solos mientras vos atendés.
+            </p>
+          </Reveal>
+        </div>
+
+        <StackCards>
+          <div className="mt-14 space-y-6">
+            {STEPS.map((s, i) => (
+              <div
+                key={s.title}
+                data-stack-card
+                className="sticky"
+                style={{ top: `calc(6.5rem + ${i * 1.25}rem)` }}
+              >
+                <article
+                  data-stack-inner
+                  className={`grid origin-top overflow-hidden rounded-[2rem] shadow-pop md:min-h-[24rem] md:grid-cols-[1.1fr_0.9fr] ${STEP_TONES[s.tone]}`}
+                >
+                  <div className="flex flex-col justify-between gap-10 p-7 sm:p-10">
+                    <span className="font-display text-7xl font-bold leading-none tracking-tighter opacity-25 sm:text-8xl">
+                      {i + 1}
+                    </span>
+                    <div>
+                      <h3 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">{s.title}</h3>
+                      <p className={`mt-4 max-w-md text-base leading-relaxed sm:text-lg ${STEP_MUTED[s.tone]}`}>
+                        {s.body}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="group relative hidden overflow-hidden md:block">
+                    <Image
+                      src={s.img.src}
+                      alt={s.img.alt}
+                      fill
+                      sizes="45vw"
+                      className="object-cover transition-transform duration-1000 ease-out group-hover:scale-105"
+                    />
+                    <div
+                      aria-hidden="true"
+                      className={`absolute inset-0 ${
+                        s.tone === "surface"
+                          ? "bg-gradient-to-r from-surface via-surface/20 to-transparent"
+                          : s.tone === "accent"
+                          ? "bg-gradient-to-r from-accent-700 via-accent-700/30 to-transparent"
+                          : s.tone === "brand"
+                          ? "bg-gradient-to-r from-brand-500 via-brand-500/25 to-transparent"
+                          : "bg-gradient-to-r from-[#0b0f17] via-[#0b0f17]/40 to-transparent"
+                      }`}
+                    />
+                  </div>
+                </article>
+              </div>
+            ))}
+          </div>
+        </StackCards>
+
+        <div className="mt-16 flex justify-center">
+          <MagneticCta href={CTA_HREF} className="btn-primary whitespace-nowrap rounded-full !px-8 !py-4 text-base">
+            <MessageCircle aria-hidden="true" className="h-5 w-5" />
+            {CTA_LABEL}
+          </MagneticCta>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Las campañas que trae cada rubro, armadas desde los mismos presets que usa
 // el alta de negocios (lib/rubro-presets.ts).
 function buildShowcase(): RubroShowcase[] {
@@ -496,82 +788,87 @@ function buildShowcase(): RubroShowcase[] {
 
 function RubroCampaignsSection() {
   return (
-    <section id="por-rubro" className="mx-auto max-w-6xl scroll-mt-20 px-5 py-24 sm:px-8 sm:py-32">
-      <Reveal className="max-w-2xl">
-        <span className="font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-700 dark:text-brand-400">
-          Listo para tu rubro
-        </span>
-        <h2 className="mt-3 text-balance font-display text-3xl leading-tight text-ink sm:text-4xl">
-          Arrancás con las campañas que ya funcionan en tu negocio
-        </h2>
-        <p className="mt-4 leading-relaxed text-ink-muted">
-          Una barbería sabe que el corte se repite a las tres semanas. Una óptica, que los lentes
-          mensuales se terminan a los 30 días. Vuelvo también lo sabe: cada cuenta nueva viene con el
-          catálogo y las campañas de su rubro, listas para mandar.
-        </p>
-      </Reveal>
-      <div className="mt-10">
-        <RubroCampaigns items={buildShowcase()} />
+    <section id="por-rubro" className="relative isolate scroll-mt-24 overflow-hidden py-28 md:py-44">
+      <div aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-b from-accent-500/[0.07] via-brand-500/[0.06] to-transparent" />
+      <div aria-hidden="true" className="bg-grid-lines mask-radial pointer-events-none absolute inset-0 -z-10" />
+      <div className="mx-auto max-w-6xl px-5 sm:px-8">
+        <Reveal className="max-w-4xl">
+          <h2 className="text-balance font-display text-4xl font-bold leading-[1.05] tracking-tight text-ink sm:text-6xl">
+            Arrancás con las campañas que ya funcionan en tu rubro.
+          </h2>
+          <p className="mt-6 max-w-2xl text-lg leading-relaxed text-ink-soft">
+            Una barbería sabe que el corte se repite a las tres semanas. Una óptica, que los lentes
+            mensuales se terminan a los 30 días. Vuelvo también lo sabe: cada cuenta nueva viene con el
+            catálogo y las campañas de su rubro, listas para mandar.
+          </p>
+        </Reveal>
+        <Reveal className="mt-12">
+          <RubroCampaigns items={buildShowcase()} />
+        </Reveal>
       </div>
     </section>
   );
 }
 
-const FAQ = [
-  {
-    q: "¿Tengo que saber de computación?",
-    a: "No. Si usás WhatsApp, podés usar Vuelvo. El alta la hacemos juntos y te dejamos tu cartera cargada.",
-  },
-  {
-    q: "¿Los mensajes se mandan solos?",
-    a: "Los armás en un toque: el sistema elige a quién escribirle y redacta el mensaje con su nombre; vos lo mandás desde tu WhatsApp. Así el cliente recibe un mensaje tuyo, no de un número desconocido, y no hay riesgo de que te bloqueen.",
-  },
-  {
-    q: "¿Cómo sé si me está sirviendo?",
-    a: "El panel te muestra cuántos clientes compraron después de recibir un mensaje y cuánta plata dejaron. Es la cuenta que justifica el sistema, mes a mes.",
-  },
-  {
-    q: "¿Funciona desde el celular?",
-    a: "Sí. Se instala como una app en el teléfono y podés registrar una venta en el mostrador en segundos.",
-  },
-  {
-    q: "Ya tengo mis clientes en un Excel. ¿Los pierdo?",
-    a: "No. Importás la planilla tal como está y cuando quieras descargás tu cartera completa. Los datos son tuyos.",
-  },
-  {
-    q: "¿Sirve para mi rubro?",
-    a: "Sirve para cualquier negocio donde el cliente vuelve: barberías, estéticas, gimnasios, veterinarias, ópticas, indumentaria, suplementos, lavaderos, talleres y muchos más.",
-  },
-];
+// ---------------------------------------------------------------------------
+function TrustSection() {
+  return (
+    <section className="py-28 md:py-40">
+      <div className="mx-auto max-w-6xl px-5 sm:px-8">
+        <Reveal>
+          <div className="grain relative overflow-hidden rounded-[2.25rem] bg-gradient-to-br from-accent-700 via-accent-800 to-accent-900 px-7 py-16 sm:px-14 sm:py-20">
+            <Aurora className="opacity-70" />
+            <div className="relative grid gap-12 lg:grid-cols-[1fr_1.1fr] lg:items-center">
+              <h2 className="text-balance font-display text-4xl font-bold leading-[1.05] tracking-tight text-white sm:text-5xl">
+                Simple de usar, serio para confiar.
+              </h2>
+              <RevealGroup className="grid gap-6 sm:grid-cols-3 lg:grid-cols-1">
+                {TRUST.map((t) => (
+                  <div key={t.title} data-reveal className="flex items-start gap-4">
+                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white/10 text-brand-300 ring-1 ring-inset ring-white/15">
+                      <t.icon aria-hidden="true" className="h-5 w-5" />
+                    </span>
+                    <div>
+                      <h3 className="font-semibold text-white">{t.title}</h3>
+                      <p className="mt-1 text-sm leading-relaxed text-accent-100">{t.body}</p>
+                    </div>
+                  </div>
+                ))}
+              </RevealGroup>
+            </div>
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
 
+// ---------------------------------------------------------------------------
 function FaqSection() {
   return (
-    <section
-      id="preguntas"
-      className="scroll-mt-20 border-t border-line bg-surface-2/40 py-24 sm:py-32"
-    >
+    <section id="preguntas" className="scroll-mt-24 pb-28 md:pb-40">
       <div className="mx-auto grid max-w-6xl gap-10 px-5 sm:px-8 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
         <Reveal>
-          <h2 className="text-balance font-display text-3xl leading-tight text-ink sm:text-4xl">
+          <h2 className="text-balance font-display text-4xl font-bold leading-[1.05] tracking-tight text-ink sm:text-5xl">
             Preguntas frecuentes
           </h2>
-          <p className="mt-4 max-w-sm leading-relaxed text-ink-muted">
-            ¿Te quedó alguna? Escribinos por WhatsApp y te contestamos nosotros.
+          <p className="mt-5 max-w-sm leading-relaxed text-ink-soft">
+            ¿Te quedó alguna? Escribinos por WhatsApp y te contestamos nosotros, no un bot.
           </p>
         </Reveal>
         <div className="divide-y divide-line border-y border-line">
           {FAQ.map((f) => (
-            <details key={f.q} className="group py-1">
-              <summary className="flex min-h-[56px] cursor-pointer list-none items-center justify-between gap-4 py-3 font-semibold text-ink [&::-webkit-details-marker]:hidden">
+            <details key={f.q} className="group">
+              <summary className="flex min-h-[64px] cursor-pointer list-none items-center justify-between gap-4 py-4 font-display text-lg font-semibold text-ink [&::-webkit-details-marker]:hidden">
                 {f.q}
                 <span
                   aria-hidden="true"
-                  className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-surface text-ink-muted ring-1 ring-line transition-transform group-open:rotate-45"
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface-2 text-xl text-ink-soft transition-[transform,background-color] duration-300 group-open:rotate-45 group-open:bg-brand-500 group-open:text-brand-950"
                 >
                   +
                 </span>
               </summary>
-              <p className="pb-5 pr-10 text-sm leading-relaxed text-ink-muted">{f.a}</p>
+              <p className="pb-6 pr-12 leading-relaxed text-ink-soft">{f.a}</p>
             </details>
           ))}
         </div>
@@ -580,305 +877,79 @@ function FaqSection() {
   );
 }
 
-function HowItWorks() {
-  return (
-    <section
-      id="como-funciona"
-      className="scroll-mt-20 border-y border-line bg-surface-2/40 py-24 sm:py-32"
-    >
-      <div className="mx-auto grid max-w-6xl gap-14 px-5 sm:px-8 lg:grid-cols-[0.85fr_1.15fr] lg:gap-20">
-        {/* Centrado vertical y no pegado arriba: la columna de pasos es mucho
-            más alta y con `self-start` el título quedaba flotando solo contra
-            un bloque de espacio vacío. */}
-        <div className="lg:self-center">
-          <h2 className="text-balance font-display text-3xl leading-tight text-ink sm:text-4xl">
-            De la primera venta al cliente que vuelve
-          </h2>
-          <p className="mt-5 max-w-md leading-relaxed text-ink-muted">
-            Cuatro pasos. El primero lo hacés una vez, con nosotros al lado. Los
-            otros tres corren solos mientras vos atendés.
-          </p>
-          <MagneticCta
-            href={businessWhatsappLink(CTA_MESSAGE)}
-            className="btn-primary mt-8 whitespace-nowrap !px-6 !py-3"
-          >
-            <MessageCircle aria-hidden="true" className="h-4 w-4" />
-            {CTA_LABEL}
-          </MagneticCta>
-        </div>
-
-        <StepFlow>
-          {STEPS.map((step, i) => (
-            <li key={step.title} data-step className="relative sm:pl-16">
-              <span className="mb-3 grid h-10 w-10 place-items-center rounded-full bg-brand-700 font-mono text-sm font-bold text-white sm:absolute sm:left-0 sm:top-0 sm:mb-0">
-                {i + 1}
-              </span>
-              <h3 className="font-display text-xl text-ink sm:text-2xl">
-                {step.title}
-              </h3>
-              <p className="mt-2.5 max-w-lg leading-relaxed text-ink-muted">
-                {step.body}
-              </p>
-            </li>
-          ))}
-        </StepFlow>
-      </div>
-    </section>
-  );
-}
-
-function WhatsInside() {
-  return (
-    <section
-      id="que-incluye"
-      className="mx-auto max-w-6xl scroll-mt-20 px-5 py-24 sm:px-8 sm:py-32"
-    >
-      <Reveal className="max-w-2xl">
-        <span className="font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-600 dark:text-brand-400">
-          Qué incluye
-        </span>
-        <h2 className="mt-3 text-balance font-display text-3xl leading-tight text-ink sm:text-4xl">
-          Un solo panel, y nada que no vayas a usar
-        </h2>
-      </Reveal>
-
-      {/* Reparto: 3 columnas x 3 filas = 9 espacios, 9 ocupados.
-          Segmentación ocupa 2 columnas pero UNA sola fila (antes era 2x2 y le
-          sobraba media celda de aire); Mensajes es el único alto, que es lo que
-          la burbuja de chat necesita; Módulos cierra a lo ancho. */}
-      <div className="mt-12 grid auto-rows-[minmax(12rem,auto)] grid-flow-dense gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {/* Segmentación: ancha y baja */}
-        <Reveal className="sm:col-span-2">
-          <div className="card flex h-full flex-col justify-between gap-5 overflow-hidden p-6 sm:p-7">
-            <div>
-              <h3 className="font-display text-2xl text-ink">
-                Segmentación automática
-              </h3>
-              <p className="mt-2.5 max-w-lg leading-relaxed text-ink-muted">
-                No completás ninguna categoría a mano. El sistema mira cuánto
-                gastó cada cliente y hace cuánto no vuelve, y lo reubica solo con
-                cada venta que registrás.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {SEGMENTS.map((s) => (
-                <span key={s.name} className={`badge ring-0 ${s.tone}`}>
-                  {s.name}
-                </span>
-              ))}
-            </div>
-          </div>
-        </Reveal>
-
-        {/* Mensajes: la única celda alta. La burbuja es un objeto real de
-            WhatsApp, no una captura del panel simulada con divs. */}
-        <Reveal className="sm:row-span-2">
-          <div className="card grain relative flex h-full flex-col justify-between overflow-hidden bg-gradient-to-br from-accent-600 to-accent-800 p-6">
-            <div className="relative">
-              <div className="flex items-center gap-2 text-accent-100">
-                <Send aria-hidden="true" className="h-4 w-4" />
-                <span className="text-sm font-semibold">Mensajes listos</span>
-              </div>
-              <div className="mt-5 rounded-2xl rounded-tl-md bg-white/95 p-3.5 text-[13px] leading-relaxed text-brand-950 shadow-pop">
-                ¡Hola Valentina! Vimos que se viene tu cumple. Pasá esta semana
-                por Perfumería Bella y te hacemos 15% off.
-              </div>
-              <div className="mt-3 flex justify-end">
-                <div className="rounded-2xl rounded-tr-md bg-brand-600/70 p-3 text-[13px] leading-relaxed text-white ring-1 ring-white/10">
-                  ¡Gracias! Paso el jueves.
-                </div>
-              </div>
-            </div>
-            <p className="relative mt-6 text-xs leading-relaxed text-accent-200">
-              Sale redactado y con el nombre puesto. Vos lo revisás y lo mandás.
-            </p>
-          </div>
-        </Reveal>
-
-        {/* Recordatorios */}
-        <Reveal>
-          <div className="card flex h-full flex-col justify-between p-6">
-            <div className="grid h-11 w-11 place-items-center rounded-xl bg-accent-500/15 text-accent-600 dark:text-accent-400">
-              <Cake aria-hidden="true" className="h-5 w-5" />
-            </div>
-            <div className="mt-6">
-              <h3 className="font-bold text-ink">Recordatorios diarios</h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-ink-muted">
-                Los cumpleaños de la semana y quién ya debería haber vuelto, en
-                la primera pantalla del panel.
-              </p>
-            </div>
-          </div>
-        </Reveal>
-
-        {/* Excel */}
-        <Reveal>
-          <div className="card flex h-full flex-col justify-between p-6">
-            <div className="grid h-11 w-11 place-items-center rounded-xl bg-brand-500/12 text-brand-600 dark:text-brand-400">
-              <FileSpreadsheet aria-hidden="true" className="h-5 w-5" />
-            </div>
-            <div className="mt-6">
-              <h3 className="font-bold text-ink">Tu Excel entra y sale</h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-ink-muted">
-                Importás la planilla que ya tenés y bajás tu cartera completa
-                cuando quieras. Los datos siguen siendo tuyos.
-              </p>
-            </div>
-          </div>
-        </Reveal>
-
-        {/* Módulos: cierra a lo ancho */}
-        <Reveal className="sm:col-span-2 lg:col-span-3">
-          <div className="card flex h-full flex-col justify-center gap-6 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-7">
-            <div className="flex items-start gap-4">
-              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-500/12 text-brand-600 dark:text-brand-400">
-                <Puzzle aria-hidden="true" className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="font-bold text-ink">
-                  Sumá módulos cuando los necesites
-                </h3>
-                {/* Solo se nombra lo que ya está construido. Los módulos en
-                    desarrollo se anuncian como futuros, no como disponibles. */}
-                <p className="mt-1.5 max-w-lg text-sm leading-relaxed text-ink-muted">
-                  Hoy podés sumar Puntos y beneficios (premios por compra, sin tarjetas
-                  de cartón) y Caja y reportes: arqueo, comisiones de tu equipo y en qué
-                  día y horario vendés más. Turnos, vidriera y stock están en camino.
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-2 sm:shrink-0">
-              {["Puntos", "Caja y reportes"].map((m) => (
-                <span
-                  key={m}
-                  className="rounded-full border border-line bg-surface-2 px-3 py-1 text-xs font-semibold text-ink-soft"
-                >
-                  {m}
-                </span>
-              ))}
-              {["Turnos", "Vidriera", "Stock"].map((m) => (
-                <span
-                  key={m}
-                  className="rounded-full border border-dashed border-line px-3 py-1 text-xs font-semibold text-ink-faint"
-                >
-                  {m} · pronto
-                </span>
-              ))}
-            </div>
-          </div>
-        </Reveal>
-      </div>
-    </section>
-  );
-}
-
-function TrustSection() {
-  return (
-    <section className="border-y border-line bg-surface-2/40 py-24 sm:py-32">
-      <div className="mx-auto max-w-6xl px-5 sm:px-8">
-        {/* Banda tipográfica, sin foto. La foto de stock que había acá (una
-            florería) no tenía relación con el producto y leía como relleno.
-            TODO: cuando exista la imagen de marca generada, va de fondo acá
-            con un `bg-gradient-to-r from-brand-950/85` encima para el contraste. */}
-        <Reveal>
-          <div className="grain relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-accent-700 via-accent-800 to-accent-900 px-7 py-14 sm:px-12 sm:py-16">
-            <div className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-accent-400/15 blur-3xl" />
-            <div className="relative flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-              <h2 className="max-w-lg text-balance font-display text-3xl leading-tight text-white sm:text-4xl">
-                Simple de usar, serio para confiar
-              </h2>
-              <p className="max-w-xs text-sm leading-relaxed text-accent-200">
-                Lo construimos para negocios que atienden de verdad, con la
-                cartera de clientes como el activo más valioso que tienen.
-              </p>
-            </div>
-          </div>
-        </Reveal>
-
-        <div className="mt-12 grid gap-8 sm:grid-cols-3">
-          {TRUST.map((t, i) => (
-            <Reveal key={t.title} delay={i * 80}>
-              <div>
-                <div className="grid h-11 w-11 place-items-center rounded-xl bg-brand-500/12 text-brand-600 dark:text-brand-400">
-                  <t.icon aria-hidden="true" className="h-5 w-5" />
-                </div>
-                <h3 className="mt-4 font-bold text-ink">{t.title}</h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-ink-muted">
-                  {t.body}
-                </p>
-              </div>
-            </Reveal>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
+// ---------------------------------------------------------------------------
 function FinalCta() {
+  const words = ["Vuelvo", "Volvé", "Vuelven", "Vuelvo", "Volvé", "Vuelven"];
   return (
-    <section className="mx-auto max-w-6xl px-5 py-24 sm:px-8 sm:py-32">
-      <Reveal>
-        <div className="grain relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-accent-600 via-accent-700 to-accent-900 px-6 py-16 text-center shadow-pop sm:px-12 sm:py-24">
-          <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-accent-400/20 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-24 -left-16 h-64 w-64 rounded-full bg-brand-400/15 blur-3xl" />
-
-          <div className="relative">
-            <h2 className="mx-auto max-w-2xl text-balance font-display text-3xl leading-tight text-white sm:text-[2.75rem]">
-              Empezá a fidelizar esta semana
-            </h2>
-            <p className="mx-auto mt-5 max-w-md leading-relaxed text-accent-100">
-              Escribinos por WhatsApp y dejamos tu cuenta andando con tu cartera
-              cargada.
-            </p>
-            <div className="mt-9 flex flex-col items-center gap-4">
-              <MagneticCta
-                href={businessWhatsappLink(CTA_MESSAGE)}
-                className="btn-accent whitespace-nowrap !px-8 !py-4 text-base"
+    <section className="px-3 pb-6 sm:px-5">
+      <div className="grain relative isolate overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-accent-600 via-accent-700 to-accent-900 px-6 py-24 text-center shadow-pop sm:py-36">
+        <Aurora />
+        <div aria-hidden="true" className="absolute inset-x-0 top-1/2 -z-10 -translate-y-1/2 overflow-hidden">
+          <div className="animate-marquee flex w-max">
+            {[...words, ...words].map((w, i) => (
+              <span
+                key={`${w}-${i}`}
+                className="text-outline-light whitespace-nowrap pr-12 font-display text-[6rem] font-bold leading-none tracking-tighter sm:text-[11rem]"
               >
-                <MessageCircle aria-hidden="true" className="h-5 w-5" />
-                {CTA_LABEL}
-              </MagneticCta>
-              <span className="inline-flex items-center gap-1.5 text-sm text-accent-200">
-                <CheckCircle2 aria-hidden="true" className="h-4 w-4" />
-                Te contestamos nosotros, no un bot
+                {w}
               </span>
-            </div>
+            ))}
           </div>
         </div>
-      </Reveal>
+        <div className="relative mx-auto max-w-4xl">
+          <Sparkles aria-hidden="true" className="mx-auto h-8 w-8 text-brand-300" />
+          <h2 className="mt-6 text-balance font-display text-4xl font-bold leading-[1.02] tracking-tight text-white sm:text-7xl">
+            Empezá a fidelizar esta semana.
+          </h2>
+          <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-accent-100">
+            Escribinos por WhatsApp y dejamos tu cuenta andando, con tu cartera cargada y las campañas de
+            tu rubro listas.
+          </p>
+          <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <MagneticCta href={CTA_HREF} className="btn-primary whitespace-nowrap rounded-full !px-9 !py-4 text-base">
+              <MessageCircle aria-hidden="true" className="h-5 w-5" />
+              {CTA_LABEL}
+            </MagneticCta>
+            <Link
+              href="/login"
+              className="btn whitespace-nowrap rounded-full border border-white/25 bg-white/10 !px-8 !py-4 text-base text-white backdrop-blur hover:bg-white/20"
+            >
+              Ya tengo cuenta
+            </Link>
+          </div>
+        </div>
+      </div>
     </section>
   );
 }
 
 function Footer() {
   return (
-    <footer className="border-t border-line py-10">
-      <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-5 text-center sm:flex-row sm:justify-between sm:px-8 sm:text-left">
-        <div className="flex items-center gap-2.5">
-          <Logo size="sm" byline />
-        </div>
-        <div className="flex items-center gap-5 text-sm">
-          <span className="sm:hidden">
-            <ThemeToggle compact />
-          </span>
+    <footer className="px-5 py-12 sm:px-8">
+      <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 text-center sm:flex-row sm:justify-between sm:text-left">
+        <Logo size="sm" byline />
+        <nav aria-label="Pie de página" className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm">
+          <a href="#como-funciona" className="font-medium text-ink-soft transition hover:text-ink">
+            Cómo funciona
+          </a>
+          <a href="#preguntas" className="font-medium text-ink-soft transition hover:text-ink">
+            Preguntas
+          </a>
           <a
-            href={businessWhatsappLink(CTA_MESSAGE)}
+            href={CTA_HREF}
             target="_blank"
             rel="noopener noreferrer"
-            className="font-medium text-ink-soft transition hover:text-brand-600 dark:hover:text-brand-400"
+            className="font-medium text-ink-soft transition hover:text-brand-700 dark:hover:text-brand-400"
           >
             WhatsApp
           </a>
-          <Link
-            href="/login"
-            className="font-medium text-ink-soft transition hover:text-ink"
-          >
+          <Link href="/login" className="font-medium text-ink-soft transition hover:text-ink">
             Iniciar sesión
           </Link>
-        </div>
+          <ThemeToggle compact />
+        </nav>
       </div>
-      <p className="mt-6 text-center text-xs text-ink-muted">
+      <p className="mt-8 text-center text-xs text-ink-muted">
         © {new Date().getFullYear()} Vuelvo CRM · Desarrollado por GUTMARK
       </p>
     </footer>

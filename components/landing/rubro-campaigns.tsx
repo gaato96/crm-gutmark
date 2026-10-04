@@ -49,15 +49,20 @@ export function RubroCampaigns({ items }: { items: RubroShowcase[] }) {
 
       <div id="rubro-panel" role="tabpanel" className="mt-6 grid gap-4 md:grid-cols-3" key={current.rubro}>
         {current.campaigns.map((c) => (
-          <article key={c.name} className="card flex flex-col p-5 animate-fade-in">
+          <article
+            key={c.name}
+            className="group flex flex-col rounded-[1.75rem] border border-line bg-surface p-5 shadow-card transition-[transform,box-shadow] duration-500 animate-fade-in hover:-translate-y-1.5 hover:shadow-pop"
+          >
             <h3 className="font-display text-lg font-bold text-ink">{c.name}</h3>
             <p className="mt-1.5 flex items-start gap-1.5 text-sm text-ink-muted">
               <Clock className="mt-0.5 h-4 w-4 shrink-0 text-ink-faint" aria-hidden="true" />
               {c.when}
             </p>
             {/* Burbuja de WhatsApp: el mensaje real, con un nombre de ejemplo. */}
-            <div className="mt-4 flex-1 rounded-2xl rounded-tl-md bg-[#e7ffdb] p-3.5 text-[13px] leading-relaxed text-[#111b21] shadow-sm dark:bg-[#005c4b] dark:text-[#e9edef]">
-              {c.message}
+            <div className="mt-4 flex-1 rounded-2xl bg-[#efeae2] p-3 dark:bg-[#0b141a]">
+              <div className="ml-auto max-w-[94%] rounded-2xl rounded-tr-md bg-[#d9fdd3] p-3.5 text-[13px] leading-relaxed text-[#111b21] shadow-sm transition-transform duration-500 group-hover:-translate-y-0.5 dark:bg-[#005c4b] dark:text-[#e9edef]">
+                {c.message}
+              </div>
             </div>
             <p className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-ink-muted">
               <MessageCircle className="h-3.5 w-3.5" aria-hidden="true" /> Sale con un toque, por WhatsApp
