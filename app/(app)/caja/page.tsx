@@ -6,6 +6,8 @@ import { cashExpected, periodRange } from "@/lib/cash";
 import { commissionsByEmployee, commissionDebtByEmployee } from "@/lib/reports";
 import { PageHeader } from "@/components/ui";
 import { CajaView, type CajaData } from "@/components/caja-view";
+import { StartTourButton } from "@/components/tour";
+import { CircleHelp } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -98,6 +100,11 @@ export default async function CajaPage() {
       <PageHeader
         title="Caja"
         subtitle="Abrí la caja al empezar el día y cerrala contando la plata. Las ventas entran solas."
+        action={
+          <StartTourButton tour="caja" className="btn-secondary">
+            <CircleHelp className="h-4 w-4" /> Cómo funciona
+          </StartTourButton>
+        }
       />
       <CajaView data={data} />
     </div>

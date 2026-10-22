@@ -31,6 +31,7 @@ import {
   LayoutGrid,
   BookUser,
   Receipt,
+  PlayCircle,
 } from "lucide-react";
 import { getCurrentBusiness } from "@/lib/queries";
 import { catalogWords, rubroLabel } from "@/lib/rubros";
@@ -41,6 +42,7 @@ import { formatMoney } from "@/lib/format";
 import { businessWhatsappLink } from "@/lib/messages";
 import { SegmentBadge } from "@/components/ui";
 import { Logo } from "@/components/logo";
+import { StartTourButton } from "@/components/tour";
 
 // Guía interna de onboarding. Vive dentro de (app) a propósito: solo la ve
 // quien ya tiene sesión con un negocio (no es pública como la landing), y por
@@ -97,6 +99,12 @@ export default async function GuiaPage() {
               para {rubroLabel(biz.rubro).toLowerCase()}. Porque vender una vez no alcanza —
               esto es para que los clientes que ya conseguiste, vuelvan.
             </p>
+            <StartTourButton
+              tour="bienvenida"
+              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-accent-700 shadow-sm transition hover:bg-white/90"
+            >
+              <PlayCircle className="h-4 w-4" /> Hacer el recorrido guiado
+            </StartTourButton>
           </div>
         </div>
 

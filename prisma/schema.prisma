@@ -70,6 +70,10 @@ model User {
   // owner | superadmin
   role         String    @default("owner")
   lastLoginAt  DateTime?
+  // Recorridos guiados que este usuario ya vio o salteó (TOUR_IDS de
+  // lib/tours.ts). Es por usuario y no por navegador: el que lo vio en la
+  // compu no lo vuelve a ver en el celular.
+  toursDone    String[]  @default([])
   createdAt    DateTime  @default(now())
 
   business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)

@@ -19,6 +19,7 @@ const DOCUMENTS = [
   { file: "prospeccion.md", slug: "prospeccion", label: "Prospección" },
   { file: "precios.md", slug: "precios", label: "Recomendación de precios" },
   { file: "mensajes-en-frio.md", slug: "mensajes", label: "Mensajes en frío" },
+  { file: "programa-fundadores.md", slug: "fundadores", label: "Programa Fundadores y mejoras" },
 ] as const;
 
 function readDoc(file: string): string {

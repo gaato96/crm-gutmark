@@ -80,12 +80,27 @@ export interface CajaData {
 const EMPTY: CashFormState = {};
 type Tab = "caja" | "equipo" | "costos";
 
+// Una línea bajo las pestañas que dice para qué sirve cada una. Sin esto,
+// "Costos por venta" no se distinguía de un egreso de caja.
+const TAB_HINT: Record<Tab, string> = {
+  caja: "El día a día: abrís, se cargan las ventas y cerrás contando el efectivo.",
+  equipo: "Quién atiende y cuánto cobra por cada venta. Lo que se les debe se va sumando solo.",
+  costos: "Lo que te descuentan en cada venta, como la comisión de Mercado Pago o un impuesto.",
+};
+
+// Qué es cada movimiento manual, dicho como lo diría el que está en la caja.
+const KIND_HINT: Record<string, string> = {
+  egreso: "Egreso: pagué algo",
+  retiro: "Retiro: saqué plata",
+  ingreso: "Ingreso: puse plata",
+};
+
 export function CajaView({ data }: { data: CajaData }) {
   const [tab, setTab] = useState<Tab>("caja");
 
   return (
     <div>
-      <div className="mb-5 inline-flex rounded-xl bg-surface-2 p-1">
+      <div data-tour="caja-tabs" className="inline-flex max-w-full overflow-x-auto rounded-xl bg-surface-2 p-1">
         <TabButton on={tab === "caja"} onClick={() => setTab("caja")}>
           Caja
         </TabButton>
@@ -96,6 +111,7 @@ export function CajaView({ data }: { data: CajaData }) {
           Costos por venta
         </TabButton>
       </div>
+      <p className="mb-5 mt-2 text-sm text-ink-muted">{TAB_HINT[tab]}</p>
 
       {tab === "caja" && <CajaTab data={data} />}
       {tab === "equipo" && <EquipoTab data={data} />}
@@ -116,7 +132,7 @@ function TabButton({
   return (
     <button
       onClick={onClick}
-      className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+      className={`shrink-0 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-semibold transition ${
         on ? "bg-surface text-ink shadow-sm" : "text-ink-muted hover:text-ink-soft"
       }`}
     >
@@ -137,7 +153,9 @@ function CajaCerrada({ cierres }: { cierres: CajaData["cierres"] }) {
 
   return (
     <div className="space-y-6">
-      <div className="card p-5 sm:p-6">
+      <ComoFunciona />
+
+      <div data-tour="caja-abrir" className="card p-5 sm:p-6">
         <div className="mb-4 flex items-center gap-3">
           <span className="grid h-10 w-10 place-items-center rounded-xl bg-brand-500/10 text-brand-600">
             <Unlock className="h-5 w-5" />
@@ -203,8 +221,8 @@ function CajaAbierta({ data }: { data: CajaData }) {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="card p-5 lg:col-span-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div data-tour="caja-movimientos" className="card p-5 lg:col-span-2">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-display font-bold text-ink">Movimientos del turno</h2>
             <span className="text-xs text-ink-muted">
@@ -212,11 +230,15 @@ function CajaAbierta({ data }: { data: CajaData }) {
             </span>
           </div>
 
+          <p className="mb-2 text-sm text-ink-muted">
+            Las ventas se suman solas. A mano solo cargás lo que entra o sale del cajón sin
+            ser una venta.
+          </p>
           <form action={movAction} className="mb-4 grid gap-2 sm:grid-cols-[auto_1fr_auto_auto]">
-            <select name="kind" defaultValue="egreso" className="input" aria-label="Tipo">
+            <select name="kind" defaultValue="egreso" className="input" aria-label="Tipo de movimiento">
               {MOVEMENT_KINDS.filter((k) => k.code !== "venta").map((k) => (
                 <option key={k.code} value={k.code}>
-                  {k.label}
+                  {KIND_HINT[k.code] ?? k.label}
                 </option>
               ))}
             </select>
@@ -232,7 +254,7 @@ function CajaAbierta({ data }: { data: CajaData }) {
             />
             <input type="hidden" name="paymentMethod" value="efectivo" />
             <SubmitButton className="btn-secondary">
-              <Plus className="h-4 w-4" />
+              <Plus className="h-4 w-4" /> Agregar
             </SubmitButton>
           </form>
 
@@ -246,7 +268,7 @@ function CajaAbierta({ data }: { data: CajaData }) {
         </div>
 
         {/* Cierre */}
-        <div className="card p-5">
+        <div data-tour="caja-cerrar" className="card p-5">
           <div className="mb-4 flex items-center gap-2.5">
             <span className="grid h-9 w-9 place-items-center rounded-xl bg-accent-500/10 text-accent-600">
               <Wallet className="h-4 w-4" />
@@ -371,6 +393,31 @@ function CajaAbierta({ data }: { data: CajaData }) {
   );
 }
 
+// Los tres momentos de la caja, a la vista mientras está cerrada: es cuando
+// alguien que recién empieza no sabe qué se espera de él.
+function ComoFunciona() {
+  const pasos = [
+    { n: 1, titulo: "Abrí", texto: "Con el efectivo que dejás para dar cambio." },
+    { n: 2, titulo: "Vendé", texto: "Las ventas entran solas. A mano, solo pagos o retiros." },
+    { n: 3, titulo: "Cerrá", texto: "Contá el efectivo y el sistema te dice si cuadra." },
+  ];
+  return (
+    <ol className="grid gap-3 sm:grid-cols-3">
+      {pasos.map((p) => (
+        <li key={p.n} className="flex gap-3 rounded-2xl bg-surface-2 p-4">
+          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand-500 font-display text-sm font-bold text-brand-950">
+            {p.n}
+          </span>
+          <div>
+            <div className="font-display text-sm font-bold text-ink">{p.titulo}</div>
+            <div className="text-sm text-ink-muted">{p.texto}</div>
+          </div>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 // --- Movimientos y detalle de venta -----------------------------------------
 
 function MovimientosList({
@@ -466,7 +513,7 @@ function Row({ label, value, strong }: { label: string; value: string; strong?: 
 function Cierres({ cierres }: { cierres: CajaData["cierres"] }) {
   if (cierres.length === 0) return null;
   return (
-    <div className="card p-5">
+    <div data-tour="caja-cierres" className="card p-5">
       <h2 className="mb-1 font-display font-bold text-ink">Últimos cierres</h2>
       <p className="mb-3 text-sm text-ink-muted">
         Tocá un cierre para ver las ventas de ese turno.

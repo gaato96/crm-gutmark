@@ -27,6 +27,7 @@ import { stopImpersonatingAction } from "@/app/admin-actions";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { QuickSaleModal } from "@/components/quick-sale-modal";
 import { Logo } from "@/components/logo";
+import { TourProvider } from "@/components/tour";
 import { MODULE_NAV } from "@/lib/modules";
 import { catalogWords, rubroLabel } from "@/lib/rubros";
 
@@ -57,6 +58,12 @@ const BASE_NAV_END: NavItem[] = [
   { href: "/configuracion", label: "Configuración", icon: Settings },
 ];
 
+// Nombre con el que los recorridos guiados ubican cada ítem del menú
+// ("/dashboard" → "nav-dashboard"). Ver lib/tours.ts.
+function tourName(href: string): string {
+  return `nav-${href.slice(1).replace(/\//g, "-")}`;
+}
+
 // Solo entran al sidebar los módulos contratados QUE ADEMÁS estén construidos:
 // el catálogo se puede activar antes de que exista la página, y un link a una
 // ruta inexistente le da un 404 al negocio.
@@ -85,6 +92,7 @@ function NavItems({ items, onNavigate }: { items: NavItem[]; onNavigate?: () => 
             key={item.href}
             href={item.href}
             onClick={onNavigate}
+            data-tour={tourName(item.href)}
             className={`nav-link ${active ? "nav-link-active" : ""}`}
           >
             <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={2.2} />
@@ -109,6 +117,7 @@ export function AppShell({
   isImpersonating,
   modules,
   isDemo,
+  toursDone,
 }: {
   children: React.ReactNode;
   businessName: string;
@@ -118,6 +127,7 @@ export function AppShell({
   isImpersonating?: boolean;
   modules: string[];
   isDemo?: boolean;
+  toursDone: string[];
 }) {
   const [open, setOpen] = useState(false);
   const [quickSaleOpen, setQuickSaleOpen] = useState(false);
@@ -143,6 +153,11 @@ export function AppShell({
 
 
   return (
+    <TourProvider
+      context={{ catalogMode, modules }}
+      toursDone={toursDone}
+      autoStart={!isImpersonating}
+    >
     <div className="min-h-screen">
       {isImpersonating && (
         <div className="sticky top-0 z-50 flex items-center justify-center gap-2.5 bg-accent-500 px-4 py-2 text-sm font-semibold text-ink">
@@ -168,6 +183,7 @@ export function AppShell({
 
         <button
           onClick={() => setQuickSaleOpen(true)}
+          data-tour="nueva-venta"
           className="btn-primary group mt-5 w-full justify-between !py-3"
         >
           <span className="flex items-center gap-2">
@@ -290,6 +306,7 @@ export function AppShell({
           <div className="flex justify-center">
             <button
               onClick={() => setQuickSaleOpen(true)}
+              data-tour="nueva-venta"
               className="-mt-5 mb-1 flex flex-col items-center gap-1"
               aria-label="Nueva venta"
             >
@@ -302,6 +319,7 @@ export function AppShell({
           <BottomLink href="/campanas" label="Campañas" icon={Send} />
           <button
             onClick={() => setOpen(true)}
+            data-tour="nav-mas"
             className="flex min-h-[56px] flex-col items-center justify-center gap-1 text-ink-muted"
             aria-label="Abrir menú completo"
           >
@@ -314,6 +332,7 @@ export function AppShell({
       <QuickSaleModal open={quickSaleOpen} onClose={() => setQuickSaleOpen(false)} />
       </div>
     </div>
+    </TourProvider>
   );
 }
 
@@ -333,6 +352,7 @@ function BottomLink({
   return (
     <Link
       href={href}
+      data-tour={tourName(href)}
       aria-current={active ? "page" : undefined}
       className={`flex min-h-[56px] flex-col items-center justify-center gap-1 transition-colors ${
         active ? "text-brand-700 dark:text-brand-300" : "text-ink-muted hover:text-ink-soft"

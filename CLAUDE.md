@@ -532,6 +532,32 @@ es obligatorio y no hay dónde colgarlo. `commissionDebtByEmployee()`
 integrante del equipo); `commissionsByEmployee()` ahora también filtra
 `paidAt: null`, así que "A pagar esta semana" dejó de contar lo que ya se saldó.
 
+### Recorridos guiados (`lib/tours.ts` + `components/tour.tsx`)
+
+Hecho a mano, sin librería: un recorte oscurecido sobre el elemento y una
+tarjeta al lado. Hay dos: `bienvenida` (el menú, arranca solo la primera vez
+que el usuario entra, en cualquier pantalla) y `caja` (arranca solo la primera
+vez que abre `/caja`). Se repiten desde la Guía ("Hacer el recorrido guiado")
+y desde "Cómo funciona" en el encabezado de Caja.
+
+Los pasos apuntan a elementos por `data-tour`, nunca por clase o texto. Un paso
+puede dar varios candidatos y se usa el primero **visible**: así el mismo paso
+señala el link del sidebar en la compu y el botón "Más" de la barra inferior
+en el celular (el sidebar está en el DOM pero con `display:none`). Si no hay
+ninguno visible el paso sale centrado — por eso el texto de cada paso tiene que
+entenderse sin el resaltado (la caja cerrada no tiene "Cerrar caja"). Los
+links del menú se marcan solos con `nav-<ruta>` (`tourName()` en
+`app-shell.tsx`); si se renombra una ruta, revisar `lib/tours.ts`.
+
+Lo visto se guarda en `User.toursDone` (por usuario, no por navegador). Saltar
+cuenta como visto. **Mientras un superadmin suplanta no arranca nada solo ni
+se guarda nada** (`markTourDone` lo ignora): si no, el dueño se perdería su
+recorrido. Como el layout no se vuelve a renderizar al navegar, el
+`TourProvider` además anota lo visto en su propio estado.
+
+Para sumar un recorrido: agregarlo a `TOUR_IDS` y a `buildTours()`, poner los
+`data-tour` en la pantalla y, si tiene que arrancar solo, darle `route`.
+
 ### Theming: CSS variables, no dark: className soup
 
 `app/globals.css` define triplets RGB (`--canvas`, `--surface`, `--surface-2/3`, `--line`,

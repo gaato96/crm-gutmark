@@ -51,6 +51,7 @@ export default async function AppLayout({
         isImpersonating={session.isImpersonating}
         modules={session.business.modules}
         isDemo={session.business.isDemo}
+        toursDone={session.toursDone}
       >
         {children}
       </AppShell>

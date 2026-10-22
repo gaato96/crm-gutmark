@@ -101,6 +101,8 @@ export interface SessionUser {
   name: string | null;
   role: string;
   isImpersonating: boolean;
+  // Recorridos guiados ya vistos (ver lib/tours.ts).
+  toursDone: string[];
   business: {
     id: string;
     name: string;
@@ -153,6 +155,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     name: user.name,
     role: user.role,
     isImpersonating: !!session.impersonatorToken,
+    toursDone: user.toursDone,
     business: {
       id: user.business.id,
       name: user.business.name,
