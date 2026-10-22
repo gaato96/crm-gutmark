@@ -20,6 +20,7 @@ const DOCUMENTS = [
   { file: "precios.md", slug: "precios", label: "Recomendación de precios" },
   { file: "mensajes-en-frio.md", slug: "mensajes", label: "Mensajes en frío" },
   { file: "programa-fundadores.md", slug: "fundadores", label: "Programa Fundadores y mejoras" },
+  { file: "redes/prompts-nano-banana.md", slug: "prompts", label: "Prompts de imágenes (fundadores)" },
 ] as const;
 
 function readDoc(file: string): string {
