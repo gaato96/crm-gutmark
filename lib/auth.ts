@@ -119,6 +119,12 @@ export interface SessionUser {
     isDemo: boolean;
     // Códigos de módulo activos para este negocio (ver lib/modules.ts).
     modules: string[];
+    // Personalización (Configuración → Apariencia). El logo en sí NO viaja en
+    // la sesión — pesa decenas de KB y la sesión se lee en cada request —:
+    // solo su fecha, que arma la URL de /mi-logo.
+    displayName: string | null;
+    logoVersion: number | null;
+    accentColor: string;
   };
 }
 
@@ -132,8 +138,23 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     include: {
       user: {
         include: {
+          // select y no include: Business tiene columnas pesadas (el logo) que
+          // no tienen que leerse en cada request.
           business: {
-            include: {
+            select: {
+              id: true,
+              name: true,
+              rubro: true,
+              catalogMode: true,
+              inactivityDays: true,
+              recompraDays: true,
+              vipMinSpend: true,
+              active: true,
+              timezone: true,
+              isDemo: true,
+              displayName: true,
+              logoUpdatedAt: true,
+              accentColor: true,
               modules: { where: { enabled: true }, select: { moduleCode: true } },
             },
           },
@@ -168,6 +189,9 @@ export async function getSessionUser(): Promise<SessionUser | null> {
       timezone: user.business.timezone,
       isDemo: user.business.isDemo,
       modules: user.business.modules.map((m) => m.moduleCode),
+      displayName: user.business.displayName,
+      logoVersion: user.business.logoUpdatedAt?.getTime() ?? null,
+      accentColor: user.business.accentColor,
     },
   };
 }

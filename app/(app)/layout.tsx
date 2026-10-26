@@ -6,6 +6,8 @@ import { RegisterServiceWorker } from "@/components/register-sw";
 import { after } from "next/server";
 import { refreshDemoDates } from "@/lib/demo-data";
 import { topUpDemoToday } from "@/lib/demo-live";
+import { accentCss } from "@/lib/appearance";
+import { db } from "@/lib/db";
 
 // La app instalable (manifest + apple-web-app) es solo el panel: la landing
 // pública y el login no deben ofrecer "instalar como app" (ver "PWA" en CLAUDE.md).
@@ -41,8 +43,19 @@ export default async function AppLayout({
     after(() => topUpDemoToday(businessId).catch(() => 0));
   }
 
+  // Respuestas del equipo a reportes que el dueño todavía no vio: prenden el
+  // punto del botón "Reportar un problema o idea".
+  const feedbackUnread = await db.feedback.count({
+    where: { businessId: session.business.id, repliedAt: { not: null }, seenAt: null },
+  });
+
+  // El acento que eligió el negocio pisa las variables de :root. Va como
+  // <style> en este layout y no en <html> para que solo pinte el panel.
+  const accent = accentCss(session.business.accentColor);
+
   return (
     <>
+      {accent && <style>{accent}</style>}
       <AppShell
         businessName={session.business.name}
         rubro={session.business.rubro}
@@ -52,6 +65,8 @@ export default async function AppLayout({
         modules={session.business.modules}
         isDemo={session.business.isDemo}
         toursDone={session.toursDone}
+        feedbackUnread={feedbackUnread}
+        logoUrl={session.business.logoVersion ? `/mi-logo?v=${session.business.logoVersion}` : null}
       >
         {children}
       </AppShell>

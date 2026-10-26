@@ -28,6 +28,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { QuickSaleModal } from "@/components/quick-sale-modal";
 import { Logo } from "@/components/logo";
 import { TourProvider } from "@/components/tour";
+import { FeedbackButton } from "@/components/feedback-button";
 import { MODULE_NAV } from "@/lib/modules";
 import { catalogWords, rubroLabel } from "@/lib/rubros";
 
@@ -118,6 +119,8 @@ export function AppShell({
   modules,
   isDemo,
   toursDone,
+  feedbackUnread = 0,
+  logoUrl = null,
 }: {
   children: React.ReactNode;
   businessName: string;
@@ -128,6 +131,9 @@ export function AppShell({
   modules: string[];
   isDemo?: boolean;
   toursDone: string[];
+  feedbackUnread?: number;
+  // /mi-logo?v=… si el negocio subió su logo (Configuración → Apariencia).
+  logoUrl?: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const [quickSaleOpen, setQuickSaleOpen] = useState(false);
@@ -212,7 +218,11 @@ export function AppShell({
           <NavItems items={navItems} />
         </div>
 
-        <BusinessCard businessName={businessName} rubro={rubro} userEmail={userEmail} />
+        <div className="mt-2 border-t border-line pt-2">
+          <FeedbackButton unread={feedbackUnread} />
+        </div>
+
+        <BusinessCard businessName={businessName} rubro={rubro} userEmail={userEmail} logoUrl={logoUrl} />
       </aside>
 
       {/* Topbar mobile */}
@@ -283,7 +293,10 @@ export function AppShell({
             <div className="mt-6 flex-1 overflow-y-auto">
               <NavItems items={navItems} onNavigate={() => setOpen(false)} />
             </div>
-            <BusinessCard businessName={businessName} rubro={rubro} userEmail={userEmail} />
+            <div className="mt-2 border-t border-line pt-2">
+              <FeedbackButton unread={feedbackUnread} />
+            </div>
+            <BusinessCard businessName={businessName} rubro={rubro} userEmail={userEmail} logoUrl={logoUrl} />
           </aside>
         </div>
       )}
@@ -381,17 +394,28 @@ function BusinessCard({
   businessName,
   rubro,
   userEmail,
+  logoUrl,
 }: {
   businessName: string;
   rubro: string;
   userEmail: string;
+  logoUrl: string | null;
 }) {
   return (
-    <div className="mt-4 rounded-xl bg-surface-2 p-3">
+    <div className="mt-3 rounded-xl bg-surface-2 p-3">
       <div className="flex items-center gap-2.5">
-        <div className="grid h-9 w-9 place-items-center rounded-lg bg-surface text-sm font-bold text-brand-700 ring-1 ring-line dark:text-brand-400">
-          {businessName.slice(0, 1).toUpperCase()}
-        </div>
+        <Link
+          href="/configuracion?tab=apariencia"
+          title="Cambiar logo y apariencia"
+          className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-lg bg-surface text-sm font-bold text-accent-700 ring-1 ring-line dark:text-accent-300"
+        >
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logoUrl} alt="" className="h-full w-full object-cover" />
+          ) : (
+            businessName.slice(0, 1).toUpperCase()
+          )}
+        </Link>
         <div className="min-w-0 flex-1 leading-tight">
           <div className="truncate text-sm font-semibold text-ink">{businessName}</div>
           <div className="truncate text-[11px] text-ink-muted">{rubroLabel(rubro)}</div>

@@ -331,6 +331,8 @@ export default async function ClienteDetailPage({
               name: sv.name,
               price: sv.price,
               category: sv.category,
+              sku: sv.sku,
+              stock: biz.modules.includes("stock") && sv.trackStock ? sv.stock : null,
             }))}
             employees={employees}
             sellerLabel={catalogWords(biz.catalogMode).sellerLabel}

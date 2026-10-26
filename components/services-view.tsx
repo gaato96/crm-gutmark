@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useCallback, useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, X, Tags, RotateCcw, EyeOff, Eye } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Tags, RotateCcw, EyeOff, Eye, Package } from "lucide-react";
+import Link from "next/link";
 import {
   createService,
   updateService,
@@ -23,6 +24,11 @@ export interface ServiceItem {
   recompraDays: number | null;
   active: boolean;
   timesSold: number;
+  trackStock: boolean;
+  stock: number;
+  minStock: number | null;
+  cost: number | null;
+  sku: string;
 }
 
 const EMPTY: ServiceFormState = {};
@@ -31,10 +37,14 @@ export function ServicesView({
   services,
   recompraDaysDefault,
   catalogMode,
+  stockEnabled = false,
 }: {
   services: ServiceItem[];
   recompraDaysDefault: number;
   catalogMode: string;
+  // Con el módulo Stock, cada producto muestra cuánto queda y el editor suma
+  // los campos de stock (controlar, inicial, mínimo, costo, código).
+  stockEnabled?: boolean;
 }) {
   const words = catalogWords(catalogMode);
   const [editing, setEditing] = useState<string | null>(null);
@@ -53,6 +63,7 @@ export function ServicesView({
           service={current}
           recompraDaysDefault={recompraDaysDefault}
           catalogMode={catalogMode}
+          stockEnabled={stockEnabled}
           onClose={close}
         />
       )}
@@ -77,6 +88,7 @@ export function ServicesView({
                   s={s}
                   recompraDaysDefault={recompraDaysDefault}
                   catalogMode={catalogMode}
+                  stockEnabled={stockEnabled}
                   onEdit={() => setEditing(s.id)}
                 />
               ))}
@@ -95,6 +107,7 @@ export function ServicesView({
                     s={s}
                     recompraDaysDefault={recompraDaysDefault}
                     catalogMode={catalogMode}
+                    stockEnabled={stockEnabled}
                     onEdit={() => setEditing(s.id)}
                   />
                 ))}
@@ -111,11 +124,13 @@ function ServiceCard({
   s,
   recompraDaysDefault,
   catalogMode,
+  stockEnabled,
   onEdit,
 }: {
   s: ServiceItem;
   recompraDaysDefault: number;
   catalogMode: string;
+  stockEnabled: boolean;
   onEdit: () => void;
 }) {
   const [busy, setBusy] = useState(false);
@@ -158,6 +173,20 @@ function ServiceCard({
         )}
         {s.category && (
           <span className="badge bg-surface-2 text-ink-muted ring-line">{s.category}</span>
+        )}
+        {stockEnabled && s.trackStock && (
+          <Link
+            href="/stock"
+            className={`badge ${
+              s.stock <= 0
+                ? "bg-rose-500/12 text-rose-600 ring-rose-500/25"
+                : s.minStock !== null && s.stock <= s.minStock
+                ? "bg-amber-500/15 text-amber-700 ring-amber-500/25 dark:text-amber-300"
+                : "bg-surface-2 text-ink-soft ring-line"
+            }`}
+          >
+            <Package className="h-3 w-3" /> {s.stock <= 0 ? "Sin stock" : `${s.stock} en stock`}
+          </Link>
         )}
       </div>
 
@@ -220,14 +249,20 @@ function ServiceEditor({
   service,
   recompraDaysDefault,
   catalogMode,
+  stockEnabled,
   onClose,
 }: {
   service: ServiceItem | null;
   recompraDaysDefault: number;
   catalogMode: string;
+  stockEnabled: boolean;
   onClose: () => void;
 }) {
   const words = catalogWords(catalogMode);
+  // Por defecto se controla el stock de los productos y no el de los servicios.
+  const [track, setTrack] = useState(
+    service ? service.trackStock : defaultItemKind(catalogMode) === "producto"
+  );
   const action = service ? updateService.bind(null, service.id) : createService;
   const [state, formAction] = useActionState(action, EMPTY);
 
@@ -332,6 +367,54 @@ function ServiceEditor({
             className="input"
           />
         </div>
+
+        {stockEnabled && (
+          <div className="rounded-xl border border-line p-4">
+            <label className="flex items-center gap-2 text-sm font-semibold text-ink">
+              <input
+                type="checkbox"
+                name="trackStock"
+                checked={track}
+                onChange={(e) => setTrack(e.target.checked)}
+              />
+              <Package className="h-4 w-4 text-brand-600" /> Controlar stock
+            </label>
+            <p className="mt-1 text-xs text-ink-muted">
+              Cada venta descuenta las unidades. Las cargas de mercadería se hacen desde Stock.
+            </p>
+            {track && (
+              <div className="mt-3 grid gap-3 sm:grid-cols-4">
+                {!service && (
+                  <div>
+                    <label className="label" htmlFor="svc-initial">Stock inicial</label>
+                    <input id="svc-initial" name="initialStock" type="number" min={0} step={1} placeholder="0" className="input" />
+                  </div>
+                )}
+                <div>
+                  <label className="label" htmlFor="svc-min">Mínimo</label>
+                  <input id="svc-min" name="minStock" type="number" min={0} step={1} defaultValue={service?.minStock ?? ""} placeholder="Sin alerta" className="input" />
+                </div>
+                <div>
+                  <label className="label" htmlFor="svc-cost">Costo c/u</label>
+                  <input id="svc-cost" name="cost" type="number" min={0} step="any" defaultValue={service?.cost ?? ""} placeholder="Opcional" className="input" />
+                </div>
+                <div>
+                  <label className="label" htmlFor="svc-sku">Código</label>
+                  <input id="svc-sku" name="sku" maxLength={40} defaultValue={service?.sku ?? ""} placeholder="Opcional" className="input" />
+                </div>
+              </div>
+            )}
+            {/* Con el control apagado los campos no se muestran, pero el costo y
+                el código se conservan: si no viajan, el server los pisaría. */}
+            {!track && (
+              <>
+                <input type="hidden" name="minStock" value={service?.minStock ?? ""} />
+                <input type="hidden" name="cost" value={service?.cost ?? ""} />
+                <input type="hidden" name="sku" value={service?.sku ?? ""} />
+              </>
+            )}
+          </div>
+        )}
 
         {state.error && (
           <p className="rounded-xl bg-rose-500/10 px-3.5 py-2.5 text-sm text-rose-700 dark:text-rose-300">

@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
-import { MODULE_SEED } from "../lib/modules";
+import { MODULE_SEED, BASE_PLAN_PRICE, isModuleImplemented } from "../lib/modules";
 import { CAMPAIGN_SEED } from "../lib/campaigns";
 
 const db = new PrismaClient();
@@ -354,13 +354,16 @@ async function main() {
         description: m.description,
         monthlyPrice: m.monthlyPrice,
         sortOrder: m.sortOrder,
+        // Lo que no está construido no se ofrece: un negocio podía pedir
+        // Turnos y encontrarse con un módulo que no existe.
+        available: isModuleImplemented(m.code),
       },
       update: {},
     });
   }
   await db.platformSetting.upsert({
     where: { id: "singleton" },
-    create: { id: "singleton", basePlanPrice: 15000, currency: "ARS", dueDay: 10 },
+    create: { id: "singleton", basePlanPrice: BASE_PLAN_PRICE, currency: "ARS", dueDay: 10 },
     update: {},
   });
   // Habilitamos "puntos" en el negocio demo para poder probar el módulo

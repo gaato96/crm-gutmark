@@ -34,18 +34,21 @@ const config: Config = {
         // Violeta de acento. Ancla accent-600 = #5B2EE5, también del manual.
         // A diferencia del verde, este SÍ funciona como fondo con texto blanco
         // (7.08:1). Reemplaza a la escala `gold` de la identidad anterior.
+        // Las variables las define :root en globals.css con estos mismos
+        // valores, y el negocio puede cambiarlas por otro preset desde
+        // Configuración → Apariencia (lib/appearance.ts).
         accent: {
-          50: "#F2EFFD",
-          100: "#E6DFFB",
-          200: "#CCBEF7",
-          300: "#B29CF3",
-          400: "#977AEE",
-          500: "#7B56EA",
-          600: "#5B2EE5",
-          700: "#3C1E97",
-          800: "#261360",
-          900: "#12092E",
-          950: "#090517",
+          50: "rgb(var(--accent-50) / <alpha-value>)",
+          100: "rgb(var(--accent-100) / <alpha-value>)",
+          200: "rgb(var(--accent-200) / <alpha-value>)",
+          300: "rgb(var(--accent-300) / <alpha-value>)",
+          400: "rgb(var(--accent-400) / <alpha-value>)",
+          500: "rgb(var(--accent-500) / <alpha-value>)",
+          600: "rgb(var(--accent-600) / <alpha-value>)",
+          700: "rgb(var(--accent-700) / <alpha-value>)",
+          800: "rgb(var(--accent-800) / <alpha-value>)",
+          900: "rgb(var(--accent-900) / <alpha-value>)",
+          950: "rgb(var(--accent-950) / <alpha-value>)",
         },
         // Tokens semánticos (cambian con el tema via CSS vars)
         canvas: "rgb(var(--canvas) / <alpha-value>)",

@@ -25,6 +25,21 @@
      Para texto de contenido real usar --ink-muted, no este. */
   --ink-faint: 125 139 158;
 
+  /* Escala de acento (violeta de marca, ancla 600 = #5B2EE5). Va como
+     variables y no fija en tailwind.config.ts porque cada negocio puede
+     elegir otro acento para su panel (lib/appearance.ts → accentCss). */
+  --accent-50: 242 239 253;
+  --accent-100: 230 223 251;
+  --accent-200: 204 190 247;
+  --accent-300: 178 156 243;
+  --accent-400: 151 122 238;
+  --accent-500: 123 86 234;
+  --accent-600: 91 46 229;
+  --accent-700: 60 30 151;
+  --accent-800: 38 19 96;
+  --accent-900: 18 9 46;
+  --accent-950: 9 5 23;
+
   color-scheme: light;
 }
 

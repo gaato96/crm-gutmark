@@ -16,6 +16,7 @@
     "db:migrate-modules": "tsx scripts/migrate-modules.ts",
     "db:migrate-rubros": "tsx scripts/migrate-rubros.ts",
     "db:migrate-trigger-units": "tsx scripts/migrate-trigger-units.ts",
+    "db:migrate-platform": "tsx scripts/migrate-platform.ts",
     "demo:setup": "tsx scripts/demo-accounts.ts"
   },
   "prisma": {

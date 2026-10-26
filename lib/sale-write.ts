@@ -2,6 +2,7 @@ import "server-only";
 import { db } from "./db";
 import { awardPointsForPurchase } from "./points";
 import { applySaleSideEffects } from "./cash-write";
+import { applySaleStock } from "./stock-write";
 import {
   saleTotals,
   lineSubtotal,
@@ -164,6 +165,15 @@ export async function recordSale(input: RecordSaleInput): Promise<RecordedSale> 
   if (cashSessionId) {
     await db.purchase.update({ where: { id: purchase.id }, data: { cashSessionId } });
   }
+
+  // Descuenta stock de los productos que lo llevan y registra el costo de lo
+  // vendido. También se auto-gatea con su módulo.
+  await applySaleStock({
+    businessId,
+    purchaseId: purchase.id,
+    date,
+    items: items.map((i) => ({ serviceId: i.serviceId, quantity: i.quantity })),
+  });
 
   const customer = await db.customer.findUnique({
     where: { id: customerId },

@@ -23,9 +23,14 @@ export function LoginForm() {
           <input id="email" name="email" type="email" required autoFocus className="input" />
         </div>
         <div>
-          <label className="label" htmlFor="password">
-            Contraseña
-          </label>
+          <div className="flex items-baseline justify-between">
+            <label className="label" htmlFor="password">
+              Contraseña
+            </label>
+            <Link href="/recuperar" className="text-xs font-semibold text-brand-700 hover:underline dark:text-brand-400">
+              ¿La olvidaste?
+            </Link>
+          </div>
           <PasswordInput id="password" name="password" required autoComplete="current-password" />
         </div>
 

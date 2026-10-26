@@ -57,7 +57,7 @@ export const MODULE_NAV: {
   { code: "pos", href: "/pos", label: "Punto de venta", icon: ScanBarcode, implemented: false },
   { code: "caja", href: "/caja", label: "Caja", icon: Wallet, implemented: true },
   { code: "caja", href: "/reportes", label: "Reportes", icon: BarChart3, implemented: true },
-  { code: "stock", href: "/stock", label: "Stock", icon: Package, implemented: false },
+  { code: "stock", href: "/stock", label: "Stock", icon: Package, implemented: true },
     // /catalogo lo usa la lista de precios del plan base. Este módulo es la
   // vidriera PÚBLICA que el negocio comparte, que es otra cosa.
   { code: "catalogo", href: "/vidriera", label: "Vidriera digital", icon: LayoutGrid, implemented: false },
@@ -79,10 +79,13 @@ export function isModuleImplemented(code: string): boolean {
 // puede editar libremente desde /admin/modulos sin que un re-seed los pise
 // (ver lib/default-templates.ts-style upsert en admin-actions.ts).
 //
-// Valores alineados con docs/marketing/precios.md v2, que los reescaló sobre
-// un plan base de $39.900. Si se cambia el plan base, revisar ese documento
-// antes de tocar estos números: la escala relativa entre módulos es
-// deliberada (Puntos es el más barato a propósito, como puerta de entrada).
+// Valores sobre un plan base de $35.000 (decisión del 26/10/2026, ver
+// docs/marketing/precios.md). Se mantiene la escala relativa de la v2 —
+// Puntos es el más barato a propósito, como puerta de entrada — redondeada a
+// precios terminados en 900. Si se cambia el plan base, revisar ese documento
+// antes de tocar estos números. Los precios viejos quedan en
+// PREVIOUS_MODULE_PRICES para que scripts/migrate-platform.ts sepa cuáles
+// puede actualizar sin pisar un precio que el superadmin cambió a mano.
 export const MODULE_SEED: {
   code: ModuleCode;
   name: string;
@@ -94,21 +97,22 @@ export const MODULE_SEED: {
     code: "puntos",
     name: "Puntos / beneficios",
     description: "Programa de puntos o sellos por compra, con canje de premios.",
-    monthlyPrice: 9900,
+    monthlyPrice: 8900,
     sortOrder: 10,
   },
   {
     code: "stock",
     name: "Stock / Inventario",
-    description: "Catálogo de productos, control de stock y precios.",
-    monthlyPrice: 21900,
+    description:
+      "Stock por producto que se descuenta solo con cada venta, carga de mercadería (pagada desde la caja si querés), alertas para reponer, pedido listo para el proveedor y ganancia real por venta.",
+    monthlyPrice: 16900,
     sortOrder: 20,
   },
   {
     code: "pos",
     name: "Punto de venta (POS)",
     description: "Vendé productos del stock y descontá inventario automáticamente.",
-    monthlyPrice: 26900,
+    monthlyPrice: 22900,
     sortOrder: 30,
   },
   {
@@ -116,28 +120,28 @@ export const MODULE_SEED: {
     name: "Caja y Reportes",
     description:
       "Apertura y cierre de caja con arqueo, comisiones por empleado y reportes de facturación y rentabilidad por semana y mes.",
-    monthlyPrice: 26900,
+    monthlyPrice: 22900,
     sortOrder: 40,
   },
   {
     code: "gastos",
     name: "Gastos y rentabilidad",
     description: "Registro de gastos y margen real del negocio.",
-    monthlyPrice: 12900,
+    monthlyPrice: 10900,
     sortOrder: 50,
   },
   {
     code: "cuenta-corriente",
     name: "Cuenta corriente",
     description: "Fiado por cliente, pagos parciales y recordatorio de deuda.",
-    monthlyPrice: 12900,
+    monthlyPrice: 10900,
     sortOrder: 60,
   },
   {
     code: "turnos",
     name: "Turnos / Reservas",
     description: "Agenda con link público para que el cliente reserve solo.",
-    monthlyPrice: 17900,
+    monthlyPrice: 14900,
     sortOrder: 70,
   },
   {
@@ -145,7 +149,25 @@ export const MODULE_SEED: {
     name: "Vidriera digital",
     description:
       "Página pública con lo que vendés, para compartir por WhatsApp o poner en la bio de Instagram.",
-    monthlyPrice: 14900,
+    monthlyPrice: 12900,
     sortOrder: 80,
   },
 ];
+
+// Precios de catálogo anteriores (plan base de $39.900). Solo los usa
+// scripts/migrate-platform.ts: si un módulo en la base todavía tiene este
+// precio, nadie lo tocó y se puede pasar al nuevo.
+export const PREVIOUS_MODULE_PRICES: Record<ModuleCode, number> = {
+  puntos: 9900,
+  stock: 21900,
+  pos: 26900,
+  caja: 26900,
+  gastos: 12900,
+  "cuenta-corriente": 12900,
+  turnos: 17900,
+  catalogo: 14900,
+};
+
+// Plan base recomendado. Lo usa el seed y la migración de plataforma; el
+// valor vigente vive en PlatformSetting y se edita en /admin/configuracion.
+export const BASE_PLAN_PRICE = 35000;

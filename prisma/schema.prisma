@@ -9,56 +9,92 @@ datasource db {
 }
 
 model Business {
-  id            String   @id @default(cuid())
-  name          String
+  id              String    @id @default(cuid())
+  name            String
   // Código de RUBROS en lib/rubros.ts. Es la vertical del negocio.
-  rubro         String   @default("otro")
+  rubro           String    @default("otro")
   // "productos" | "servicios" | "ambos". Decide el vocabulario de toda la
   // interfaz: un kiosco no vende "servicios" y un consultorio no vende
   // "productos". Nace del rubro y el superadmin lo puede forzar aparte.
-  catalogMode   String   @default("ambos")
-  timezone      String   @default("America/Argentina/Buenos_Aires")
+  catalogMode     String    @default("ambos")
+  timezone        String    @default("America/Argentina/Buenos_Aires")
   // Días sin comprar para considerar a un cliente "inactivo"
-  inactivityDays Int     @default(60)
+  inactivityDays  Int       @default(60)
   // Días esperados entre compras (para recordatorio de recompra)
-  recompraDays  Int      @default(45)
+  recompraDays    Int       @default(45)
   // Gasto acumulado para marcar VIP
-  vipMinSpend   Float    @default(50000)
+  vipMinSpend     Float     @default(50000)
   // Si está en false, los usuarios del negocio no pueden iniciar sesión
-  active        Boolean  @default(true)
+  active          Boolean   @default(true)
   // Negocios internos (ej. la cuenta del superadmin) o de cortesía: no
   // figuran como deudores aunque no tengan pagos registrados.
-  billingExempt Boolean  @default(false)
+  billingExempt   Boolean   @default(false)
   // Módulo Puntos/beneficios: ARS gastados para ganar 1 punto. Solo tiene
   // efecto si el negocio tiene el módulo "puntos" activo (ver lib/points.ts).
-  pointsPerAmount Float  @default(1000)
+  pointsPerAmount Float     @default(1000)
   // Cuenta de demostración (la usa el equipo para mostrar el sistema a
   // potenciales clientes). Solo sobre estas se puede "Restaurar datos demo",
   // que BORRA todos sus clientes y ventas: nunca marcar un negocio real.
   // Tampoco suman al MRR ni a los contadores de /admin.
-  isDemo        Boolean  @default(false)
+  isDemo          Boolean   @default(false)
   // Momento al que corresponden los datos demo. Al entrar se corren todas las
   // fechas hacia adelante (ver lib/demo-data.ts → refreshDemoDates) para que la
   // cuenta siempre se vea "como si se hubiera usado hasta hoy".
-  demoAnchorAt  DateTime?
-  createdAt     DateTime @default(now())
+  demoAnchorAt    DateTime?
 
-  customers     Customer[]
-  purchases     Purchase[]
-  templates     Template[]
-  campaigns     Campaign[]
-  services      Service[]
-  purchaseItems PurchaseItem[]
-  employees     Employee[]
-  costRules     CostRule[]
-  saleCosts     SaleCost[]
-  cashSessions  CashSession[]
-  cashMovements CashMovement[]
-  contacts      ContactLog[]
-  users         User[]
-  modules       BusinessModule[]
-  payments      Payment[]
-  pointsEntries PointsEntry[]
+  // --- Personalización (Configuración → Apariencia) -------------------------
+  // Cómo saluda el panel ("Hola, Juan"). Null = el nombre del negocio.
+  displayName   String?
+  // Logo como data URL (PNG/WebP chico, ya redimensionado en el navegador). No
+  // hay storage de archivos en el proyecto y un logo de 256 px pesa ~30 KB. NO
+  // viaja en la sesión: se sirve aparte desde /mi-logo, y logoUpdatedAt es lo
+  // que va en la URL para que el navegador sepa cuándo pedirlo de nuevo.
+  logoData      String?
+  logoUpdatedAt DateTime?
+  // Color de acento del panel (ACCENT_PRESETS en lib/appearance.ts). Pinta las
+  // superficies de marca del negocio; el verde de las acciones no cambia.
+  accentColor   String    @default("violeta")
+  // Datos de contacto del negocio. El teléfono además es por donde lo contacta
+  // el equipo desde el CRM de /admin.
+  phone         String?
+  instagram     String?
+  address       String?
+
+  // Resumen semanal por email al dueño (lib/weekly-summary.ts).
+  weeklySummary       Boolean   @default(true)
+  lastWeeklySummaryAt DateTime?
+
+  // --- CRM interno (/admin): la relación del equipo con este negocio --------
+  // "prueba" | "activo" | "pausado" | "baja" (CRM_STAGES en lib/admin-crm.ts)
+  crmStage       String    @default("activo")
+  // Negocio del Programa Fundadores (docs/marketing/programa-fundadores.md).
+  isFounder      Boolean   @default(false)
+  trialEndsAt    DateTime?
+  // Próximo contacto agendado. Registrar un contacto lo corre solo según
+  // PlatformSetting.followUpDays (14 por defecto).
+  nextFollowUpAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  customers      Customer[]
+  purchases      Purchase[]
+  templates      Template[]
+  campaigns      Campaign[]
+  services       Service[]
+  purchaseItems  PurchaseItem[]
+  employees      Employee[]
+  costRules      CostRule[]
+  saleCosts      SaleCost[]
+  cashSessions   CashSession[]
+  cashMovements  CashMovement[]
+  contacts       ContactLog[]
+  users          User[]
+  modules        BusinessModule[]
+  payments       Payment[]
+  pointsEntries  PointsEntry[]
+  stockMovements StockMovement[]
+  feedback       Feedback[]
+  adminNotes     AdminNote[]
 }
 
 model User {
@@ -76,18 +112,19 @@ model User {
   toursDone    String[]  @default([])
   createdAt    DateTime  @default(now())
 
-  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  sessions Session[]
+  business       Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  sessions       Session[]
+  passwordResets PasswordReset[]
 
   @@index([businessId])
 }
 
 model Session {
-  id        String   @id @default(cuid())
-  token     String   @unique
-  userId    String
-  expiresAt DateTime
-  createdAt DateTime @default(now())
+  id                String   @id @default(cuid())
+  token             String   @unique
+  userId            String
+  expiresAt         DateTime
+  createdAt         DateTime @default(now())
   // Si un superadmin "entró como" este usuario, acá queda el token de su
   // propia sesión para poder volver al panel de admin.
   impersonatorToken String?
@@ -109,7 +146,7 @@ model Customer {
   lastPurchaseAt DateTime?
   createdAt      DateTime  @default(now())
 
-  business      Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business      Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
   purchases     Purchase[]
   contacts      ContactLog[]
   pointsEntries PointsEntry[]
@@ -163,30 +200,48 @@ model Purchase {
 // módulo: sin esto las campañas no pueden filtrar por qué compró el cliente,
 // que es la función que hace que la fidelización sirva de verdad.
 model Service {
-  id          String  @id @default(cuid())
-  businessId  String
-  name        String
-  description String  @default("")
+  id           String  @id @default(cuid())
+  businessId   String
+  name         String
+  description  String  @default("")
   // "producto" | "servicio". Solo se elige en los negocios de modo "ambos";
   // en los demás lo fija el modo. Sirve para separar en los reportes cuánto
   // vino de vender cosas y cuánto de prestar servicios.
-  kind        String  @default("servicio")
-  price       Float
+  kind         String  @default("servicio")
+  price        Float
   // Agrupador libre que escribe el negocio ("Cortes", "Color", "Productos").
-  category    String  @default("")
+  category     String  @default("")
   // Cada cuántos días se espera que el cliente vuelva por ESTE servicio. Un
   // corte se repite a los 15 días y una coloración a los 60, así que un único
   // recompraDays por negocio no alcanza. En null, la campaña cae al valor
   // general de Configuración.
   recompraDays Int?
   // Se desactiva en vez de borrarse cuando ya tiene ventas asociadas.
-  active      Boolean  @default(true)
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
+  active       Boolean @default(true)
+  sortOrder    Int     @default(0)
 
-  business  Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  items     PurchaseItem[]
-  campaigns Campaign[]
+  // --- Módulo Stock -----------------------------------------------------------
+  // Solo los ítems con trackStock descuentan unidades al venderse: un corte de
+  // pelo no tiene stock, y la mayoría de los negocios "ambos" mezclan las dos
+  // cosas en el mismo catálogo.
+  trackStock Boolean  @default(false)
+  // Unidades en el local. Puede quedar negativo: el mostrador no se bloquea por
+  // un conteo mal cargado, y el negativo es justamente la señal de revisarlo.
+  // Nunca se escribe directo: lo mueve un StockMovement (lib/stock-write.ts).
+  stock      Int      @default(0)
+  // Debajo de esto, avisa que hay que reponer. Null = sin alerta.
+  minStock   Int?
+  // Último costo unitario de compra. Sale de la última carga de mercadería y
+  // es con lo que se calcula el costo de lo vendido y el valor del inventario.
+  cost       Float?
+  // Código interno o de barras, para buscar en el mostrador.
+  sku        String   @default("")
+  createdAt  DateTime @default(now())
+
+  business       Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  items          PurchaseItem[]
+  campaigns      Campaign[]
+  stockMovements StockMovement[]
 
   @@index([businessId])
 }
@@ -258,31 +313,31 @@ model Campaign {
 
   // Disparador. Ver TRIGGER_META en lib/campaigns.ts para qué campo usa cada
   // tipo; los que no aplican quedan en null.
-  triggerType String
+  triggerType     String
   // Cuánto tiempo tiene que pasar. La unidad la fija `triggerUnit`: hay
   // campañas que se miden en días (volvé a cortarte a los 15) y otras en horas
   // (dos horas después del servicio, preguntá cómo salió).
-  triggerValue Int?
+  triggerValue    Int?
   // "dias" | "horas"
-  triggerUnit  String @default("dias")
+  triggerUnit     String  @default("dias")
   // Tope opcional, en la misma unidad: "entre 2 y 24 horas después". Sin tope,
   // "2 horas después del servicio" alcanzaba a todos los que alguna vez
   // compraron. Null = sin tope (el comportamiento de siempre).
   triggerMaxValue Int?
   // OBSOLETA: la reemplazó triggerValue + triggerUnit. Se mantiene hasta
   // confirmar que todos los negocios pasaron por db:migrate-trigger-units.
-  triggerDays Int?
-  segment     String?
-  minSpend    Float?
+  triggerDays     Int?
+  segment         String?
+  minSpend        Float?
   // Para triggerType = "service-recompra": qué servicio tiene que haber
   // comprado. Si el servicio se borra, la campaña queda sin disparador y no
   // alcanza a nadie (mejor que alcanzar a todos por error). Null también
   // cuando `allServices` es true: son mutuamente excluyentes.
-  serviceId   String?
+  serviceId       String?
   // "Cualquier servicio", para no tener que armar una campaña por cada ítem
   // del catálogo. No es parte de `serviceId` porque esa columna tiene FK a
   // Service — "cualquiera" no es un id real que se pueda referenciar.
-  allServices Boolean @default(false)
+  allServices     Boolean @default(false)
   // Para los disparadores por tiempo: no incluir a quien ya se dio por perdido.
   // El mensaje de "hace poco que no venís" no aplica a un cliente inactivo, que
   // tiene su propia campaña de reactivación.
@@ -361,12 +416,15 @@ model BusinessModule {
 
 model PlatformSetting {
   id                String   @id @default("singleton")
-  basePlanPrice     Float    @default(0)
+  basePlanPrice     Float    @default(35000)
   currency          String   @default("ARS")
   // Día del mes en que se considera vencido el pago si no hay uno registrado.
   dueDay            Int      @default(10)
   // Si está en false, el owner no ve precios en /modulos (solo el catálogo).
   showPricesToOwner Boolean  @default(true)
+  // Cada cuántos días hay que volver a contactar a un negocio desde el CRM de
+  // /admin. Registrar un contacto agenda el siguiente a esta distancia.
+  followUpDays      Int      @default(14)
   updatedAt         DateTime @updatedAt
 }
 
@@ -420,20 +478,20 @@ model PointsEntry {
 // cuenta propia sería agregar permisos por rol dentro del negocio, que es otro
 // problema (ver docs/roadmap.md).
 model Employee {
-  id         String  @id @default(cuid())
-  businessId String
-  name       String
+  id              String   @id @default(cuid())
+  businessId      String
+  name            String
   // Cuánto se lleva por venta. Si `commissionKind` es "percent", es un
   // porcentaje (40 = 40%); si es "fixed", es un importe por venta. En 0 no
   // genera comisión, que es el caso del dueño cuando atiende él mismo.
-  commissionValue Float @default(0)
+  commissionValue Float    @default(0)
   // "percent" | "fixed" — mismo par que usa CostRule.
-  commissionKind  String @default("percent")
+  commissionKind  String   @default("percent")
   // OBSOLETA: la reemplazó commissionValue + commissionKind.
-  commissionPct Float @default(0)
-  active     Boolean  @default(true)
-  sortOrder  Int      @default(0)
-  createdAt  DateTime @default(now())
+  commissionPct   Float    @default(0)
+  active          Boolean  @default(true)
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
 
   business  Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
   purchases Purchase[]
@@ -446,19 +504,19 @@ model Employee {
 // pasarela, etc. La comisión del empleado NO se modela acá — sale de
 // Employee.commissionPct, porque cambia según quién atendió y no según la venta.
 model CostRule {
-  id         String  @id @default(cuid())
-  businessId String
-  name       String
+  id            String   @id @default(cuid())
+  businessId    String
+  name          String
   // "percent" (sobre el total cobrado) | "fixed" (importe por venta)
-  kind       String  @default("percent")
-  value      Float   @default(0)
+  kind          String   @default("percent")
+  value         Float    @default(0)
   // Si está seteado, la regla se aplica SOLO a las ventas con ese método de
   // pago. Es el caso real: la comisión de Mercado Pago no corresponde cobrarla
   // en una venta en efectivo.
   paymentMethod String?
-  active     Boolean  @default(true)
-  sortOrder  Int      @default(0)
-  createdAt  DateTime @default(now())
+  active        Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
 
   business Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
   costs    SaleCost[]
@@ -470,7 +528,7 @@ model CostRule {
 // importe calculado en ese momento, así cambiar la comisión de un empleado no
 // reescribe lo que se le debía por los cortes del mes pasado.
 model SaleCost {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   businessId String
   purchaseId String
   // "comision" (de un empleado) | "regla" (de una CostRule)
@@ -498,21 +556,21 @@ model SaleCost {
 
 // Una jornada de caja: se abre con un fondo y se cierra contando la plata.
 model CashSession {
-  id            String    @id @default(cuid())
-  businessId    String
-  openedAt      DateTime  @default(now())
-  closedAt      DateTime?
-  openingAmount Float     @default(0)
+  id             String    @id @default(cuid())
+  businessId     String
+  openedAt       DateTime  @default(now())
+  closedAt       DateTime?
+  openingAmount  Float     @default(0)
   // Lo que se contó al cerrar. Null mientras está abierta.
-  countedAmount Float?
+  countedAmount  Float?
   // Lo que el sistema esperaba en efectivo. Se congela al cerrar en vez de
   // recalcularse al leer: si después se edita una venta vieja, el arqueo de
   // aquel día tiene que seguir diciendo lo que decía cuando se cerró.
   expectedAmount Float?
   // countedAmount - expectedAmount. Negativo = falta plata.
-  difference    Float?
+  difference     Float?
   openedByUserId String?
-  notes         String?
+  notes          String?
 
   business  Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
   movements CashMovement[]
@@ -525,22 +583,150 @@ model CashSession {
 // Movimiento de caja. Las ventas en efectivo entran solas; el resto lo carga
 // el negocio a mano (pagó un proveedor, retiró plata, puso cambio).
 model CashMovement {
-  id         String   @id @default(cuid())
-  businessId String
-  sessionId  String
+  id            String   @id @default(cuid())
+  businessId    String
+  sessionId     String
   // "venta" | "ingreso" | "egreso" | "retiro"
-  kind       String
+  kind          String
   // Positivo suma, negativo resta. El signo lo fija la acción según `kind`,
   // no el formulario, para que un egreso no pueda cargarse como ingreso.
-  amount     Float
-  paymentMethod String @default("efectivo")
-  description   String @default("")
+  amount        Float
+  paymentMethod String   @default("efectivo")
+  description   String   @default("")
   purchaseId    String?
-  createdAt  DateTime @default(now())
+  createdAt     DateTime @default(now())
 
   business Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
   session  CashSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([businessId])
   @@index([sessionId])
+}
+
+// --- Módulo: Stock ------------------------------------------------------------
+
+// Cada cambio de stock deja una fila. El stock de Service es la suma de estas
+// (se guarda además en la columna para no recalcularlo en cada pantalla) y
+// stockAfter es la foto del saldo después del movimiento, para poder leer el
+// historial sin sumar.
+model StockMovement {
+  id             String   @id @default(cuid())
+  businessId     String
+  serviceId      String
+  // "venta" | "compra" | "ajuste" | "merma" | "devolucion" (STOCK_KINDS en lib/stock.ts)
+  kind           String
+  // Con signo: + entra, - sale. El signo lo pone el tipo (salvo "ajuste", que
+  // es la diferencia contra lo contado), nunca el formulario.
+  quantity       Int
+  stockAfter     Int
+  // Costo unitario de la compra. En una venta es el costo con que se valuó lo
+  // que salió (foto, igual que SaleCost).
+  unitCost       Float?
+  supplier       String?
+  note           String?
+  // Venta que generó la salida.
+  purchaseId     String?
+  // Egreso de caja con que se pagó la mercadería, si se pagó desde la caja.
+  cashMovementId String?
+  userId         String?
+  createdAt      DateTime @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  service  Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, createdAt])
+  @@index([serviceId])
+  @@index([purchaseId])
+}
+
+// --- Soporte: reportes de problemas e ideas desde el panel ----------------------
+
+// Lo que manda un negocio desde el botón "Reportar un problema o idea". Guarda
+// solo el contexto (pantalla, dispositivo, hora) para que nadie tenga que
+// explicarlo. El equipo lo responde desde /admin/soporte y el dueño ve la
+// respuesta en el mismo botón.
+model Feedback {
+  id                String    @id @default(cuid())
+  businessId        String
+  userId            String?
+  // "problema" | "idea" | "duda"
+  kind              String
+  message           String
+  path              String    @default("")
+  userAgent         String    @default("")
+  viewport          String    @default("")
+  // Captura opcional como data URL, ya comprimida en el navegador.
+  screenshot        String?
+  // Lo mandó un superadmin mientras veía la cuenta como el negocio.
+  fromImpersonation Boolean   @default(false)
+  // "nuevo" | "en-curso" | "resuelto"
+  status            String    @default("nuevo")
+  reply             String?
+  repliedAt         DateTime?
+  // Cuándo vio el dueño la respuesta. Mientras sea null, el botón muestra un punto.
+  seenAt            DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([status, createdAt])
+}
+
+// --- Recuperar contraseña -------------------------------------------------------
+
+// Se guarda el hash del token, no el token: si alguien lee la tabla no puede
+// usar los links pendientes. Un solo uso y vence en una hora.
+model PasswordReset {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  // "self" (lo pidió el usuario por email) | "admin" (link generado desde /admin)
+  source    String    @default("self")
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+// --- CRM interno de /admin -------------------------------------------------------
+
+// Historial de la relación del equipo con un negocio: notas, llamadas,
+// mensajes y campañas enviadas. Es el "ContactLog" del CRM del CRM.
+model AdminNote {
+  id         String   @id @default(cuid())
+  businessId String
+  // "nota" | "llamada" | "whatsapp" | "email" | "reunion" | "campana"
+  kind       String   @default("nota")
+  body       String
+  campaignId String?
+  authorId   String?
+  createdAt  DateTime @default(now())
+
+  business Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  campaign AdminCampaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+
+  @@index([businessId, createdAt])
+  @@index([campaignId])
+}
+
+// Campaña del equipo hacia sus negocios ("cómo te fue estas dos semanas").
+// Igual que las del negocio, la audiencia se calcula al leer y quien ya
+// recibió el mensaje dentro de `everyDays` no vuelve a aparecer como pendiente.
+model AdminCampaign {
+  id        String   @id @default(cuid())
+  name      String
+  // ADMIN_AUDIENCES en lib/admin-crm.ts
+  audience  String   @default("todos")
+  message   String
+  everyDays Int      @default(14)
+  active    Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  notes AdminNote[]
 }

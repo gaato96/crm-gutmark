@@ -12,7 +12,11 @@ import {
   Repeat,
   Hourglass,
   UserCheck,
+  PackageX,
 } from "lucide-react";
+import { getSessionUser } from "@/lib/auth";
+import { activationSteps } from "@/lib/activation";
+import { ActivationChecklist } from "@/components/activation-checklist";
 import { db } from "@/lib/db";
 import {
   getCurrentBusiness,
@@ -45,14 +49,26 @@ function pctDelta(current: number, previous: number): number | undefined {
 
 export default async function DashboardPage() {
   const biz = await getCurrentBusiness();
+  const session = await getSessionUser();
   const cfg = toConfig(biz);
-  const [customers, campaigns, services, contacts, impact] = await Promise.all([
+  const [customers, campaigns, services, contacts, impact, steps] = await Promise.all([
     getEnrichedCustomers(biz.id, cfg),
     getCampaigns(biz.id),
     getServices(biz.id),
     getCampaignContacts(biz.id),
     campaignImpact(biz.id),
+    // Las cuentas demo ya vienen "activadas": el checklist ahí solo estorba.
+    biz.isDemo ? Promise.resolve([]) : activationSteps(biz),
   ]);
+  const showChecklist = steps.some((s) => !s.done);
+
+  // Con el módulo Stock, lo que se terminó o está por terminarse va arriba:
+  // un producto sin stock es una venta que se pierde hoy.
+  const lowStock = biz.modules.includes("stock")
+    ? services.filter(
+        (s) => s.active && s.trackStock && (s.stock <= 0 || (s.minStock !== null && s.stock <= s.minStock))
+      )
+    : [];
   const defaults = ruleDefaults(biz, services);
   const activeCampaigns = campaigns.filter((c) => c.active);
   const stats = buildDashboard(customers, activeCampaigns, defaults, contacts);
@@ -149,10 +165,43 @@ export default async function DashboardPage() {
 
   return (
     <div className="animate-fade-in">
-      <PageHeader
-        title={`Hola, ${biz.name}`}
-        subtitle={`${todayLabel.charAt(0).toUpperCase()}${todayLabel.slice(1)} · Esto es lo que hoy te puede traer ventas.`}
-      />
+      <div className="flex items-start gap-4">
+        {session?.business.logoVersion && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={`/mi-logo?v=${session.business.logoVersion}`}
+            alt=""
+            className="mt-1 hidden h-14 w-14 shrink-0 rounded-2xl object-cover ring-1 ring-line sm:block"
+          />
+        )}
+        <div className="min-w-0 flex-1">
+          <PageHeader
+            title={`Hola, ${biz.displayName || biz.name}`}
+            subtitle={`${todayLabel.charAt(0).toUpperCase()}${todayLabel.slice(1)} · Esto es lo que hoy te puede traer ventas.`}
+          />
+        </div>
+      </div>
+
+      {showChecklist && <ActivationChecklist steps={steps} />}
+
+      {lowStock.length > 0 && (
+        <Link
+          href="/stock"
+          className="card mb-4 flex items-center gap-3 border-l-4 border-l-amber-500 px-5 py-3 transition hover:bg-surface-2"
+        >
+          <PackageX className="h-5 w-5 shrink-0 text-amber-600" aria-hidden="true" />
+          <span className="min-w-0 flex-1 text-sm text-ink">
+            <strong>
+              {lowStock.length === 1 ? "1 producto" : `${lowStock.length} productos`} para reponer:
+            </strong>{" "}
+            <span className="text-ink-muted">
+              {lowStock.slice(0, 4).map((s) => `${s.name} (${s.stock})`).join(", ")}
+              {lowStock.length > 4 ? "…" : ""}
+            </span>
+          </span>
+          <ArrowRight className="h-4 w-4 shrink-0 text-ink-faint" aria-hidden="true" />
+        </Link>
+      )}
 
       {/* Plan de hoy, compacto: una franja y no media pantalla. Antes ocupaba
           casi todo el primer scroll y tapaba el resto del panel. */}

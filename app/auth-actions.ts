@@ -14,6 +14,8 @@ import {
   revokeOtherSessions,
 } from "@/lib/auth";
 import { applyRubroPreset } from "@/lib/rubro-setup";
+import { createResetToken, findValidReset, consumeResets, RESET_VALID_MINUTES } from "@/lib/password-reset";
+import { sendEmail, appUrl, emailLayout, escapeHtml } from "@/lib/email";
 import { isRubroCode, modeForRubro } from "@/lib/rubros";
 
 export interface AuthState {
@@ -147,4 +149,72 @@ export async function changePassword(
   revalidatePath("/configuracion");
   revalidatePath("/admin/configuracion");
   return { ok: true, closed };
+}
+
+// --- Olvidé mi contraseña ---------------------------------------------------
+
+export interface ResetRequestState {
+  error?: string;
+  sent?: boolean;
+}
+
+// Siempre responde lo mismo, exista o no la cuenta: si dijera "ese email no
+// existe", cualquiera podría averiguar quién usa el sistema.
+export async function requestPasswordReset(
+  _prev: ResetRequestState,
+  formData: FormData
+): Promise<ResetRequestState> {
+  const email = clean(formData.get("email")).toLowerCase();
+  if (!email || !email.includes("@")) return { error: "Ingresá un email válido." };
+
+  const user = await db.user.findUnique({
+    where: { email },
+    select: { id: true, name: true, business: { select: { active: true } } },
+  });
+  if (user && user.business.active) {
+    const token = await createResetToken(user.id, "self");
+    if (token) {
+      const link = `${await appUrl()}/restablecer?token=${token}`;
+      const hola = user.name ? `Hola ${escapeHtml(user.name)},` : "Hola,";
+      await sendEmail({
+        to: email,
+        subject: "Cambiá tu contraseña de Vuelvo",
+        text: `${user.name ? `Hola ${user.name},` : "Hola,"}\n\nPara elegir una contraseña nueva entrá a este link (vence en ${RESET_VALID_MINUTES} minutos):\n${link}\n\nSi no lo pediste vos, ignorá este email: tu contraseña no cambia.`,
+        html: emailLayout({
+          title: "Elegí una contraseña nueva",
+          body: `<p>${hola}</p><p>Pediste cambiar la contraseña de tu cuenta de Vuelvo. El link vence en ${RESET_VALID_MINUTES} minutos y se puede usar una sola vez.</p><p style="font-size:13px;color:#64748B">Si no lo pediste vos, ignorá este email: tu contraseña no cambia.</p>`,
+          cta: { label: "Cambiar mi contraseña", href: link },
+        }),
+      });
+    }
+  }
+  return { sent: true };
+}
+
+export async function resetPassword(
+  _prev: AuthState,
+  formData: FormData
+): Promise<AuthState> {
+  const token = clean(formData.get("token"));
+  const password = clean(formData.get("password"));
+  const confirm = clean(formData.get("confirmPassword"));
+
+  const reset = await findValidReset(token);
+  if (!reset) return { error: "El link venció o ya se usó. Pedí uno nuevo." };
+  if (password.length < 8) return { error: "La contraseña tiene que tener al menos 8 caracteres." };
+  if (password !== confirm) return { error: "Las dos contraseñas no coinciden." };
+
+  await db.user.update({
+    where: { id: reset.userId },
+    data: { passwordHash: await hashPassword(password) },
+  });
+  await consumeResets(reset.userId);
+  // Quien tenía la cuenta abierta en otro lado queda afuera: si la contraseña
+  // se cambió porque alguien más la sabía, esto lo corta.
+  await db.session.deleteMany({ where: { userId: reset.userId } });
+
+  const user = await db.user.findUnique({ where: { id: reset.userId }, select: { role: true } });
+  await touchLastLogin(reset.userId);
+  await createSession(reset.userId);
+  redirect(user?.role === "superadmin" ? "/admin" : "/dashboard");
 }

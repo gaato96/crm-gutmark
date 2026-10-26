@@ -31,6 +31,11 @@ export default async function CatalogoPage() {
     recompraDays: s.recompraDays,
     active: s.active,
     timesSold: soldById.get(s.id) ?? 0,
+    trackStock: s.trackStock,
+    stock: s.stock,
+    minStock: s.minStock,
+    cost: s.cost,
+    sku: s.sku,
   }));
 
   return (
@@ -40,6 +45,7 @@ export default async function CatalogoPage() {
         services={items}
         recompraDaysDefault={biz.recompraDays}
         catalogMode={biz.catalogMode}
+        stockEnabled={biz.modules.includes("stock")}
       />
     </div>
   );

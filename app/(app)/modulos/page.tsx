@@ -27,10 +27,11 @@ export default async function ModulosPage({
 
   const showPrices = settings?.showPricesToOwner ?? true;
   const active = modules.filter((m) => m.businesses[0]?.enabled);
-  const notActive = modules.filter((m) => m.available && !m.businesses[0]?.enabled);
-  // Solo se ofrece contratar lo que ya está construido; el resto se muestra
-  // como adelanto, sin CTA, para no vender una página que todavía no existe.
-  const available = notActive.filter((m) => isModuleImplemented(m.code));
+  const notActive = modules.filter((m) => !m.businesses[0]?.enabled);
+  // Solo se ofrece contratar lo que ya está construido y marcado como
+  // disponible; lo que todavía no existe se muestra como adelanto, sin CTA ni
+  // precio a pedir, para no vender una página que no está.
+  const available = notActive.filter((m) => m.available && isModuleImplemented(m.code));
   const comingSoon = notActive.filter((m) => !isModuleImplemented(m.code));
 
   const bloqueadoInfo =

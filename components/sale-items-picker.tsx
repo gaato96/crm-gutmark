@@ -17,6 +17,10 @@ export interface PickableService {
   name: string;
   price: number;
   category: string;
+  // Solo con el módulo Stock y en productos que lo controlan. No bloquea la
+  // venta: el mostrador no se frena por un conteo mal cargado, pero avisa.
+  stock?: number | null;
+  sku?: string;
 }
 
 // Un renglón ya elegido, con el precio editable por si se pactó otro.
@@ -69,10 +73,14 @@ export function SaleItemsPicker({
 
   const filtered = useMemo(() => {
     if (!query.trim()) return services;
-    return services.filter((s) => matchesSearch(`${s.name} ${s.category}`, query));
+    return services.filter((s) => matchesSearch(`${s.name} ${s.category} ${s.sku ?? ""}`, query));
   }, [services, query]);
 
   const totals = saleTotals(items, discount);
+  const stockById = useMemo(
+    () => new Map(services.filter((s) => s.stock != null).map((s) => [s.id, s.stock as number])),
+    [services]
+  );
 
   function addService(s: PickableService) {
     onItemsChange((prev) => {
@@ -129,6 +137,17 @@ export function SaleItemsPicker({
                 <Plus className="h-3 w-3" />
                 {s.name}
                 <span className="text-ink-faint">{formatMoney(s.price)}</span>
+                {s.stock != null && (
+                  <span
+                    className={`rounded-full px-1.5 text-[10px] font-bold ${
+                      s.stock <= 0
+                        ? "bg-rose-500/15 text-rose-600"
+                        : "bg-surface-3 text-ink-muted"
+                    }`}
+                  >
+                    {s.stock <= 0 ? "sin stock" : `${s.stock} u.`}
+                  </span>
+                )}
               </button>
             ))}
             {filtered.length === 0 && (
@@ -142,7 +161,14 @@ export function SaleItemsPicker({
         <ul className="divide-y divide-line-soft rounded-xl border border-line">
           {items.map((i) => (
             <li key={i.key} className="flex items-center gap-2 px-3 py-2">
-              <span className="min-w-0 flex-1 truncate text-sm text-ink">{i.name}</span>
+              <span className="min-w-0 flex-1 truncate text-sm text-ink">
+                {i.name}
+                {i.serviceId && stockById.has(i.serviceId) && i.quantity > stockById.get(i.serviceId)! && (
+                  <span className="mt-0.5 block text-[11px] font-medium text-amber-700 dark:text-amber-300">
+                    Quedan {Math.max(stockById.get(i.serviceId)!, 0)} en stock
+                  </span>
+                )}
+              </span>
 
               <div className="flex shrink-0 items-center gap-1">
                 <button

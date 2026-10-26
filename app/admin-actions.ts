@@ -12,7 +12,7 @@ import {
 } from "@/lib/auth";
 import { applyRubroPreset } from "@/lib/rubro-setup";
 import { ensureAllDemoBusinesses, resetDemoBusiness } from "@/lib/demo-data";
-import { isModuleCode, MODULE_SEED } from "@/lib/modules";
+import { isModuleCode, isModuleImplemented, MODULE_SEED } from "@/lib/modules";
 import { isRubroCode, modeForRubro, isCatalogMode } from "@/lib/rubros";
 
 export interface AdminFormState {
@@ -222,6 +222,7 @@ export async function syncModuleCatalog() {
         description: m.description,
         monthlyPrice: m.monthlyPrice,
         sortOrder: m.sortOrder,
+        available: isModuleImplemented(m.code),
       },
       update: {},
     });
