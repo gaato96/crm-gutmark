@@ -49,6 +49,10 @@ export async function createBusiness(
   // restaurar después sin riesgo de tocar un negocio real.
   const isDemo = formData.get("isDemo") === "on";
   const withModules = formData.get("presetModules") === "on";
+  // Programa Fundadores: un mes de prueba, con el primer seguimiento a los 3
+  // días (el calendario de docs/marketing/programa-fundadores.md).
+  const isFounder = !isDemo && formData.get("isFounder") === "on";
+  const phone = clean(formData.get("phone")).slice(0, 30);
 
   const business = await db.business.create({
     data: {
@@ -57,6 +61,15 @@ export async function createBusiness(
       catalogMode: modeForRubro(rubro),
       isDemo,
       billingExempt: isDemo,
+      phone: phone || null,
+      ...(isFounder
+        ? {
+            isFounder: true,
+            crmStage: "prueba",
+            trialEndsAt: new Date(Date.now() + 30 * 86400000),
+            nextFollowUpAt: new Date(Date.now() + 3 * 86400000),
+          }
+        : {}),
     },
   });
   await db.user.create({

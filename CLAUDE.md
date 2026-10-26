@@ -70,6 +70,7 @@ npm run db:migrate-sales       # rellena Purchase.subtotal en ventas anteriores 
 npm run db:migrate-modules     # fusiona el módulo "reportes" dentro de "caja"; idempotente
 npm run db:migrate-rubros      # pasa Business.rubro de texto libre a códigos + fija catalogMode; idempotente
 npm run db:migrate-trigger-units  # triggerDays→triggerValue+unidad y commissionPct→valor+tipo; idempotente
+npm run db:migrate-platform    # plan base $35.000, precios nuevos de módulos, no construidos fuera; idempotente
 npm run demo:setup        # crea/regenera las cuentas demo (una por rubro); `-- barberia` para una sola
 npm run icons:generate    # regenera íconos PWA + og.png desde public/logo.svg via sharp
 node scripts/pdf-to-svg.cjs   # regenera public/logo*.svg desde el PDF del manual de marca
@@ -531,6 +532,95 @@ es obligatorio y no hay dónde colgarlo. `commissionDebtByEmployee()`
 (`lib/reports.ts`) es la deuda total histórica (para la tarjeta de cada
 integrante del equipo); `commissionsByEmployee()` ahora también filtra
 `paidAt: null`, así que "A pagar esta semana" dejó de contar lo que ya se saldó.
+
+### Módulo Stock (`lib/stock.ts` puro, `lib/stock-write.ts`, `app/stock-actions.ts`)
+
+El stock vive en `Service` (`trackStock`, `stock`, `minStock`, `cost`, `sku`):
+un producto del catálogo **es** el ítem de inventario, no hay una tabla aparte
+que se pueda desincronizar del precio. Solo descuentan los ítems con
+`trackStock` — un corte no tiene stock.
+
+`Service.stock` **nunca se escribe directo**: lo mueve `applyStockChange()`,
+que hace un `increment` atómico y deja un `StockMovement` con el saldo
+resultante (`stockAfter`). El signo lo pone el tipo (`signedQuantity()`),
+salvo el ajuste por conteo, donde se escribe lo que HAY y se guarda la
+diferencia.
+
+`recordSale()` llama siempre a `applySaleStock()`, que se auto-gatea con el
+módulo igual que caja y puntos. Si el producto tiene costo, registra un
+`SaleCost` de `kind: "mercaderia"`: así Reportes muestra la ganancia real sin
+saber nada de stock (para él es un costo más). El stock puede quedar
+**negativo** a propósito: el mostrador no se bloquea por un conteo mal cargado.
+
+Una compra de mercadería con varios productos genera un movimiento por
+producto y, si se marcó "Pagado con la caja", **un solo** `CashMovement` de
+egreso por el total (necesita caja abierta: `sessionId` es obligatorio). La
+compra actualiza `Service.cost`, que es con lo que se valúa lo que se venda
+después. Un producto con movimientos de stock se desactiva en vez de borrarse.
+
+### Programa Fundadores: soporte, contraseña y activación
+
+- **"Reportar o sugerir"** (`components/feedback-button.tsx`, modelo
+  `Feedback`): guarda solo la pantalla, el dispositivo y una captura opcional
+  ya comprimida en el navegador (data URL, con tope). Se responde desde
+  `/admin/soporte`; responder pone `seenAt` en null y prende el punto del
+  botón del dueño. Abrir "Mis reportes" lo apaga (salvo suplantando).
+- **Recuperar contraseña** (`lib/password-reset.ts`): en la base va el hash
+  SHA-256 del token, no el token. Un uso, 1 h (24 h si lo genera el
+  superadmin desde la ficha del negocio, para mandarlo por WhatsApp). La
+  respuesta de "mandame el link" es la misma exista o no la cuenta. Al usarlo
+  se borran todas las sesiones del usuario.
+- **Emails** (`lib/email.ts`): Resend por `fetch`, sin SDK. Sin
+  `RESEND_API_KEY` no se manda nada y el flujo sigue.
+- **Checklist de activación** (`lib/activation.ts`): se calcula al leer, no
+  se marca a mano. No se muestra en cuentas demo.
+
+### Resumen semanal e informe del mes
+
+El resumen semanal (`lib/weekly-summary.ts`) es **el único cron** del sistema:
+`vercel.json` llama a `/api/cron/resumen-semanal` los lunes 11:00 UTC, que
+exige `Authorization: Bearer $CRON_SECRET`. `lastWeeklySummaryAt` evita
+duplicados (6 días), así que se puede reintentar o mandar a mano desde
+`/admin/configuracion`. Vista previa en `/configuracion/resumen`.
+
+`/informe` vive **fuera de `(app)`** a propósito: es una hoja sin menú que se
+imprime tal cual (PDF desde el diálogo de impresión, sin librería). Valida la
+sesión por su cuenta.
+
+El plan del día (`buildDailyPlan` / `loadDailyPlan`) y el impacto por rango
+(`campaignImpactBetween`) son compartidos: dashboard, resumen, informe y CRM
+de admin tienen que decir los mismos números.
+
+### Personalización del negocio (`lib/appearance.ts`)
+
+`displayName` (el "Hola, …"), logo y `accentColor`. El **logo no viaja en la
+sesión**: `getSessionUser()` usa `select` (no `include`) sobre Business para no
+leer `logoData` en cada request, y el logo se sirve desde `/mi-logo?v=<fecha>`
+con caché inmutable. El navegador lo achica a 256 px antes de mandarlo.
+
+El acento redefine la escala `accent-*`: en `tailwind.config.ts` ahora son
+variables CSS (`--accent-50`…`--accent-950`, defaults en `:root`) y el layout
+del panel inyecta un `<style>` con el preset elegido. Cambia el **acento**, no
+el verde de las acciones. Regla para sumar un preset: su tono 600 tiene que dar
+≥4.5:1 con texto blanco (por eso rosa, terracota y turquesa están corridos un
+tono respecto de Tailwind).
+
+### CRM interno de `/admin` (`lib/admin-crm.ts`, `lib/admin-crm-meta.ts`)
+
+`getBusinessHealth()` calcula, para todos los negocios a la vez (un `groupBy`
+por métrica, no una consulta por negocio), ventas 7/30 días y su variación,
+última venta, último ingreso, mensajes, reportes abiertos y el semáforo
+(`riesgo` / `atencion` / `bien`) **con sus razones en texto**. Rojo = más de
+`RISK_DAYS_WITHOUT_SALE` (5) días sin ventas, más de 10 sin entrar, o el mes
+vencido. Un negocio en prueba no "debe el mes" ni suma al MRR.
+
+Etapa (`crmStage`), fundador, fin de prueba y próximo seguimiento son columnas
+de `Business`. `AdminNote` es el historial (notas, llamadas, WhatsApp,
+campañas); registrar un contacto que no sea una nota interna agenda el
+siguiente a `PlatformSetting.followUpDays` (14). `AdminCampaign` funciona como
+las campañas de los negocios: audiencia calculada al leer y "pendiente" si no
+recibió esa campaña en `everyDays`. Las variables (`{dueño}`, `{ventas_mes}`…)
+quedan visibles si están mal escritas, igual que en `renderTemplate`.
 
 ### Recorridos guiados (`lib/tours.ts` + `components/tour.tsx`)
 

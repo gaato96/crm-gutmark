@@ -76,6 +76,19 @@ export function AdminNewBusinessForm() {
             <label className="flex items-start gap-2.5 text-sm text-ink-soft">
               <input
                 type="checkbox"
+                name="isFounder"
+                className="mt-0.5 h-4 w-4 rounded border-line text-brand-600 focus:ring-brand-600"
+              />
+              <span>
+                Negocio fundador
+                <span className="block text-xs text-ink-muted">
+                  Queda “En prueba” por 30 días y entra al seguimiento del Programa Fundadores.
+                </span>
+              </span>
+            </label>
+            <label className="flex items-start gap-2.5 text-sm text-ink-soft">
+              <input
+                type="checkbox"
                 name="isDemo"
                 className="mt-0.5 h-4 w-4 rounded border-line text-brand-600 focus:ring-brand-600"
               />
@@ -112,6 +125,13 @@ export function AdminNewBusinessForm() {
               className="input"
               placeholder="negocio@email.com"
             />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="label" htmlFor="phone">
+              WhatsApp del dueño
+            </label>
+            <input id="phone" name="phone" type="tel" className="input" placeholder="11 5555-5555" />
+            <p className="mt-1 text-xs text-ink-muted">Para escribirle desde Seguimiento.</p>
           </div>
           <div className="sm:col-span-2">
             <label className="label" htmlFor="password">

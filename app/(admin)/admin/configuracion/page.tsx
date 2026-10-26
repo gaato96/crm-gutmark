@@ -3,6 +3,8 @@ import { getPlatformSettings } from "@/lib/platform";
 import { PageHeader } from "@/components/ui";
 import { ChangePasswordForm } from "@/components/change-password-form";
 import { AdminPlatformSettings } from "@/components/admin-platform-settings";
+import { AdminEmailStatus } from "@/components/admin-email-status";
+import { emailConfigured } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +26,7 @@ export default async function AdminConfiguracionPage() {
           showPricesToOwner: settings.showPricesToOwner,
         }}
       />
+      <AdminEmailStatus configured={emailConfigured()} cronConfigured={Boolean(process.env.CRON_SECRET)} />
       <ChangePasswordForm />
     </div>
   );

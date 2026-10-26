@@ -17,7 +17,7 @@ export function ActivationChecklist({ steps }: { steps: ActivationStep[] }) {
         <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-500/12 text-brand-700 dark:text-brand-300">
           <Rocket className="h-5 w-5" />
         </span>
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 basis-48">
           <h2 id="activacion" className="font-display text-sm font-bold text-ink">
             Dejá tu cuenta lista
           </h2>
@@ -25,8 +25,8 @@ export function ActivationChecklist({ steps }: { steps: ActivationStep[] }) {
             {done} de {steps.length} pasos. Con los cuatro hechos, el sistema ya te dice a quién escribirle cada día.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="h-2 w-28 overflow-hidden rounded-full bg-surface-2">
+        <div className="flex w-full items-center gap-2 sm:w-auto">
+          <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-2 sm:w-28 sm:flex-none">
             <div className="h-full rounded-full bg-brand-500 transition-all" style={{ width: `${pct}%` }} />
           </div>
           <span className="text-xs font-bold tabular-nums text-ink-soft">{pct}%</span>

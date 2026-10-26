@@ -16,7 +16,7 @@ export default async function AdminLayout({
   return (
     <div className="min-h-screen bg-canvas">
       <header className="glass sticky top-0 z-40 border-b">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3.5 sm:px-8">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3.5 sm:px-8">
           <div className="flex items-center gap-6">
             <Link href="/admin" className="flex items-center gap-2.5">
               <Logo />
@@ -40,8 +40,11 @@ export default async function AdminLayout({
             </form>
           </div>
         </div>
+        <div className="mx-auto max-w-7xl px-5 sm:px-8">
+          <AdminNav mobile />
+        </div>
       </header>
-      <main className="mx-auto max-w-6xl px-5 py-8 sm:px-8">{children}</main>
+      <main className="mx-auto max-w-7xl px-5 py-8 sm:px-8">{children}</main>
     </div>
   );
 }

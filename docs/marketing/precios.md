@@ -1,5 +1,28 @@
 # Recomendación de precios — Vuelvo
 
+> **Actualización 2026-10-26 (vigente):** el dueño fijó el **plan base en
+> $35.000/mes**. Los módulos se reescalaron sobre ese número manteniendo la
+> escala relativa de la v2 (Puntos sigue siendo la puerta de entrada):
+>
+> | Módulo | v2 (base $39.900) | **Vigente (base $35.000)** |
+> |---|---|---|
+> | Puntos / beneficios | $9.900 | **$8.900** |
+> | Gastos y rentabilidad | $12.900 | **$10.900** |
+> | Cuenta corriente | $12.900 | **$10.900** |
+> | Vidriera digital | $14.900 | **$12.900** |
+> | Turnos / Reservas | $17.900 | **$14.900** |
+> | **Stock / Inventario** | $21.900 | **$16.900** |
+> | Caja y Reportes | $26.900 | **$22.900** |
+> | Punto de venta (POS) | $26.900 | **$22.900** |
+>
+> Stock queda un escalón más abajo que la proporción exacta (≈$19.000) a
+> propósito: es el primer módulo nuevo que se lanza y lo pidieron clientes;
+> conviene que el "sí" sea fácil. Base + Caja + Stock = $74.800/mes, todavía
+> debajo de lo que cobra un sistema de gestión con stock y POS.
+> Fuente de verdad en código: `MODULE_SEED` y `BASE_PLAN_PRICE` en
+> `lib/modules.ts`; se aplican a la base con `npm run db:migrate-platform`.
+> El resto de este documento conserva el razonamiento de la v2.
+
 **Versión:** v2 · **Fecha:** 2026-07-29
 **Contexto base:** [`.agents/product-marketing.md`](../../.agents/product-marketing.md)
 

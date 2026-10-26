@@ -4,7 +4,21 @@ Estado real de lo construido y orden de lo que sigue. **Este archivo es la fuent
 de verdad del plan**: antes vivía solo en la conversación y no se podía encontrar
 después. Si cambia el orden de las fases, se actualiza acá.
 
-Última actualización: 2026-10-03.
+Última actualización: 2026-10-26.
+
+### Novedades 2026-10-26
+
+- **Stock** (módulo pago, $16.900): stock por producto que descuenta cada
+  venta, carga de mercadería pagada opcionalmente desde la caja, mermas,
+  devoluciones, ajuste por conteo, alertas para reponer con pedido para el
+  proveedor y costo de lo vendido en Reportes.
+- P0 del Programa Fundadores: botón "Reportar o sugerir" (+ /admin/soporte),
+  recuperar contraseña por email, checklist de activación en Inicio, plan
+  base en $35.000 y módulos sin construir fuera del catálogo.
+- P1: CRM de negocios en /admin (semáforo de salud, actividad, notas,
+  seguimiento cada 14 días y campañas del equipo a los negocios), resumen
+  semanal por email los lunes e informe del mes en PDF.
+- Configuración en pestañas, con logo, saludo y color de acento del panel.
 
 ### Novedades 2026-10-03
 
@@ -42,14 +56,14 @@ después. Si cambia el orden de las fases, se actualiza acá.
 
 | Módulo | Precio | Estado |
 |---|---|---|
-| Puntos / beneficios | $9.900 | ✅ construido |
-| **Caja y Reportes** | $26.900 | ✅ construido |
-| Stock / Inventario | $21.900 | ✗ |
-| Punto de venta (POS) | $26.900 | ✗ |
-| Cuenta corriente | $12.900 | ✗ |
-| Turnos / Reservas | $17.900 | ✗ |
-| Vidriera digital (pública) | $14.900 | ✗ |
-| Gastos y rentabilidad | $12.900 | ✗ |
+| Puntos / beneficios | $8.900 | ✅ construido |
+| **Caja y Reportes** | $22.900 | ✅ construido |
+| **Stock / Inventario** | $16.900 | ✅ construido |
+| Punto de venta (POS) | $22.900 | ✗ |
+| Cuenta corriente | $10.900 | ✗ |
+| Turnos / Reservas | $14.900 | ✗ |
+| Vidriera digital (pública) | $12.900 | ✗ |
+| Gastos y rentabilidad | $10.900 | ✗ |
 | Asistente IA | a definir | ✗ |
 
 "✗" significa que la carpeta de la ruta no existe. No son pantallas a medias:
@@ -108,7 +122,7 @@ recompra**, que es la promesa del producto:
 |---|---|---|
 | 1 | Vidriera digital | Página pública con lo que vende, para compartir por WhatsApp o Instagram. La más barata de construir y la que más se comparte. |
 | 2 | Turnos / Reservas | Recompra calendarizada. Es el corazón del producto para peluquería, estética y veterinaria. |
-| 3 | Stock | Prerrequisito de POS y de un catálogo con precios reales. |
+| 3 | ~~Stock~~ ✅ | Adelantado el 26/10 porque lo pidieron clientes. Prerrequisito de POS. |
 | 4 | Cuenta corriente | El fiado es universal en el barrio y hoy se lleva en papel. |
 | 5 | Gastos y rentabilidad | Simple y de alto valor percibido. Se apoya en lo que deje la Fase 3. |
 | 6 | POS | El más caro. Requiere Stock y Caja andando. |

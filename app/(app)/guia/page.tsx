@@ -528,6 +528,16 @@ export default async function GuiaPage() {
             como pagadas — una vez pagada, queda pagada para siempre, no hay "despagar".
           </div>
         )}
+        {activeModules.has("stock") && (
+          <div className="mt-3 rounded-xl border border-line bg-surface-2/60 p-4 text-sm text-ink-soft">
+            <b className="text-ink">Stock, en la práctica:</b> cada venta descuenta sola las
+            unidades de los productos que tienen el control activado. Cuando llega mercadería
+            la cargás desde Stock → Cargar mercadería (si la pagaste con la plata del cajón,
+            marcá “Pagado con la caja” y sale el egreso solo). Con el costo cargado, Reportes
+            te muestra la ganancia real de cada venta. Una vez por mes conviene contar el
+            estante y usar “Ajustar”: escribís lo que hay y el sistema guarda la diferencia.
+          </div>
+        )}
       </Section>
 
       {/* Buenas prácticas */}
