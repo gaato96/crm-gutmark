@@ -313,3 +313,68 @@ export function buildDashboard(
     segmentCounts,
   };
 }
+
+export interface DailyPlan {
+  // Clientes distintos que hoy tienen al menos un mensaje pendiente.
+  pending: number;
+  // Clientes distintos que ya recibieron todo lo que les tocaba.
+  sent: number;
+  byCampaign: { id: string; name: string; pending: number; sent: number }[];
+}
+
+// "Tu plan de hoy": por campaña activa, a cuántos falta escribirles y a
+// cuántos ya. Un cliente que cae en dos campañas cuenta una vez en el total
+// (si le falta alguna, está pendiente). Lo usan el dashboard, el resumen
+// semanal y el CRM de /admin — que los tres digan el mismo número es la razón
+// de que viva acá.
+export function buildDailyPlan(
+  customers: EnrichedCustomer[],
+  activeCampaigns: (CampaignRule & { id: string; name: string })[],
+  defaults: RuleDefaults,
+  contacts: CampaignContacts
+): DailyPlan {
+  const pendingSet = new Set<string>();
+  const sentSet = new Set<string>();
+  const byCampaign = activeCampaigns
+    .map((c) => {
+      let pending = 0;
+      let sent = 0;
+      for (const cu of customers) {
+        if (!matchesCampaign(cu, c, defaults)) continue;
+        if (coveringContact(contacts, c, cu)) {
+          sent++;
+          sentSet.add(cu.id);
+        } else {
+          pending++;
+          pendingSet.add(cu.id);
+        }
+      }
+      return { id: c.id, name: c.name, pending, sent };
+    })
+    .filter((p) => p.pending + p.sent > 0)
+    .sort((a, b) => b.pending - a.pending);
+  for (const id of pendingSet) sentSet.delete(id);
+  return { pending: pendingSet.size, sent: sentSet.size, byCampaign };
+}
+
+// El plan de hoy de un negocio cualquiera, sin sesión (resumen semanal, /admin).
+export async function loadDailyPlan(biz: {
+  id: string;
+  inactivityDays: number;
+  recompraDays: number;
+  vipMinSpend: number;
+  catalogMode: string;
+}): Promise<DailyPlan> {
+  const [customers, campaigns, services, contacts] = await Promise.all([
+    getEnrichedCustomers(biz.id, toConfig(biz)),
+    getCampaigns(biz.id),
+    getServices(biz.id),
+    getCampaignContacts(biz.id),
+  ]);
+  return buildDailyPlan(
+    customers,
+    campaigns.filter((c) => c.active),
+    ruleDefaults(biz, services),
+    contacts
+  );
+}

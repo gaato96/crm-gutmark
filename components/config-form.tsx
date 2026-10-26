@@ -377,6 +377,14 @@ export function WeeklySummaryToggle({ enabled, email }: { enabled: boolean; emai
           vendiste la semana pasada, cuántos clientes volvieron por tus mensajes y a cuántos tenés
           para escribirles hoy.
         </p>
+        <a
+          href="/configuracion/resumen"
+          target="_blank"
+          rel="noopener"
+          className="mt-2 inline-block text-sm font-semibold text-brand-700 hover:underline dark:text-brand-400"
+        >
+          Ver cómo llega con tus números →
+        </a>
       </div>
       <label className="relative inline-flex shrink-0 cursor-pointer items-center">
         <input

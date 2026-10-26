@@ -4,6 +4,8 @@ import { buildComparison, commissionsByEmployee } from "@/lib/reports";
 import { periodSales, SALES_DETAIL_LIMIT } from "@/lib/cash-read";
 import { PageHeader } from "@/components/ui";
 import { ReportesView } from "@/components/reportes-view";
+import Link from "next/link";
+import { FileDown } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +34,11 @@ export default async function ReportesPage({
       <PageHeader
         title="Reportes"
         subtitle="Cómo viene el negocio esta semana y este mes, comparado con el período anterior."
+        action={
+          <Link href="/informe" className="btn-secondary">
+            <FileDown className="h-4 w-4" /> Informe del mes (PDF)
+          </Link>
+        }
       />
       <ReportesView
         kind={kind}

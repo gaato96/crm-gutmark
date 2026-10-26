@@ -25,18 +25,26 @@ export interface CampaignImpact {
 }
 
 export async function campaignImpact(businessId: string, days = 30): Promise<CampaignImpact> {
-  const now = Date.now();
-  const since = new Date(now - days * 86400000);
+  return campaignImpactBetween(businessId, new Date(Date.now() - days * 86400000), new Date());
+}
+
+// Lo mismo para un período cerrado (el informe del mes, el resumen semanal):
+// compras entre `since` y `until`, atribuidas a mensajes de hasta 14 días antes.
+export async function campaignImpactBetween(
+  businessId: string,
+  since: Date,
+  until: Date
+): Promise<CampaignImpact> {
   const contactsSince = new Date(since.getTime() - ATTRIBUTION_DAYS * 86400000);
 
   const [contacts, purchases] = await Promise.all([
     db.contactLog.findMany({
-      where: { businessId, campaignId: { not: null }, createdAt: { gte: contactsSince } },
+      where: { businessId, campaignId: { not: null }, createdAt: { gte: contactsSince, lt: until } },
       select: { customerId: true, campaignId: true, createdAt: true },
       orderBy: { createdAt: "asc" },
     }),
     db.purchase.findMany({
-      where: { businessId, date: { gte: since } },
+      where: { businessId, date: { gte: since, lt: until } },
       select: { customerId: true, date: true, amount: true },
       orderBy: { date: "asc" },
     }),

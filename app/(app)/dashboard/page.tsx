@@ -27,9 +27,8 @@ import {
   getServices,
   ruleDefaults,
   getCampaignContacts,
-  coveringContact,
+  buildDailyPlan,
 } from "@/lib/queries";
-import { matchesCampaign } from "@/lib/campaigns";
 import { campaignImpact, moneyAtStake } from "@/lib/insights";
 import { zonedDayKey } from "@/lib/tz";
 import { formatMoney } from "@/lib/format";
@@ -77,29 +76,12 @@ export default async function DashboardPage() {
   // Plan del día: por campaña, cuántos faltan y cuántos ya recibieron el
   // mensaje en este ciclo. Es lo primero que se ve: el panel no es un reporte,
   // es la lista de cosas que hoy traen plata.
-  const pendingSet = new Set<string>();
-  const sentSet = new Set<string>();
-  const plan = activeCampaigns
-    .map((c) => {
-      let pending = 0;
-      let sent = 0;
-      for (const cu of customers) {
-        if (!matchesCampaign(cu, c, defaults)) continue;
-        if (coveringContact(contacts, c, cu)) {
-          sent++;
-          sentSet.add(cu.id);
-        } else {
-          pending++;
-          pendingSet.add(cu.id);
-        }
-      }
-      return { id: c.id, name: c.name, pending, sent };
-    })
-    .filter((p) => p.pending + p.sent > 0)
-    .sort((a, b) => b.pending - a.pending);
-  for (const id of pendingSet) sentSet.delete(id);
-  const planTotal = pendingSet.size + sentSet.size;
-  const planPct = planTotal ? Math.round((sentSet.size / planTotal) * 100) : 0;
+  const dailyPlan = buildDailyPlan(customers, activeCampaigns, defaults, contacts);
+  const plan = dailyPlan.byCampaign;
+  const planPending = dailyPlan.pending;
+  const planSent = dailyPlan.sent;
+  const planTotal = planPending + planSent;
+  const planPct = planTotal ? Math.round((planSent / planTotal) * 100) : 0;
 
   const now = new Date();
   const since30 = new Date(now.getTime() - 30 * DAY);
@@ -216,9 +198,9 @@ export default async function DashboardPage() {
               Tu plan de hoy
             </h2>
             <p className="mt-0.5 flex items-baseline gap-2">
-              <span className="font-display text-3xl font-bold tabular-nums">{pendingSet.size}</span>
+              <span className="font-display text-3xl font-bold tabular-nums">{planPending}</span>
               <span className="text-sm font-medium text-accent-100">
-                {pendingSet.size === 1 ? "cliente para contactar" : "clientes para contactar"}
+                {planPending === 1 ? "cliente para contactar" : "clientes para contactar"}
               </span>
             </p>
             {planTotal > 0 && (
@@ -227,7 +209,7 @@ export default async function DashboardPage() {
                   <div className="h-full rounded-full bg-brand-400" style={{ width: `${planPct}%` }} />
                 </div>
                 <span className="whitespace-nowrap text-[11px] font-medium text-accent-100">
-                  {sentSet.size} de {planTotal} contactados
+                  {planSent} de {planTotal} contactados
                 </span>
               </div>
             )}
@@ -237,7 +219,7 @@ export default async function DashboardPage() {
             className="btn relative ml-auto shrink-0 bg-white !px-4 !py-2.5 text-sm text-accent-700 hover:bg-accent-50"
           >
             <Send className="h-4 w-4" aria-hidden="true" />
-            {pendingSet.size > 0 ? "Enviar" : "Ver"}
+            {planPending > 0 ? "Enviar" : "Ver"}
           </Link>
         </div>
         <div className="flex-1 p-2.5">
@@ -353,7 +335,12 @@ export default async function DashboardPage() {
           {/* Ventas en el tiempo */}
           <div className="card p-5">
             <div className="mb-1 flex items-center justify-between">
-              <SectionTitle hint="Últimos 30 días">Ventas</SectionTitle>
+              <div className="flex items-baseline gap-3">
+                <SectionTitle hint="Últimos 30 días">Ventas</SectionTitle>
+                <Link href="/informe" className="text-xs font-semibold text-brand-700 hover:underline dark:text-brand-400">
+                  Informe del mes
+                </Link>
+              </div>
               {salesDelta !== undefined && (
                 <span
                   className={`text-xs font-bold tabular-nums ${
