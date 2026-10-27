@@ -71,6 +71,8 @@ npm run db:migrate-modules     # fusiona el módulo "reportes" dentro de "caja";
 npm run db:migrate-rubros      # pasa Business.rubro de texto libre a códigos + fija catalogMode; idempotente
 npm run db:migrate-trigger-units  # triggerDays→triggerValue+unidad y commissionPct→valor+tipo; idempotente
 npm run db:migrate-platform    # plan base $35.000, precios nuevos de módulos, no construidos fuera; idempotente
+# prisma/manual/*.sql — la misma migración en SQL para pegar en el SQL Editor de
+# Supabase cuando no hay compu (esquema + seguridad + datos, idempotente)
 npm run demo:setup        # crea/regenera las cuentas demo (una por rubro); `-- barberia` para una sola
 npm run icons:generate    # regenera íconos PWA + og.png desde public/logo.svg via sharp
 node scripts/pdf-to-svg.cjs   # regenera public/logo*.svg desde el PDF del manual de marca
