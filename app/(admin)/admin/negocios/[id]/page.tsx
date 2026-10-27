@@ -272,7 +272,16 @@ export default async function NegocioDetailPage({
         </>
       )}
 
-      <SectionTitle hint="Se cobra aparte del plan base">Módulos</SectionTitle>
+      <div id="modulos" className="scroll-mt-24" />
+      {business.isDemo && (
+        <p className="mb-3 rounded-xl bg-accent-500/10 px-4 py-3 text-sm text-ink-soft">
+          <b className="text-ink">Cuenta demo:</b> prendé los módulos que quieras probar y después
+          tocá <b>Restaurar datos</b> en la lista de demos para que se generen datos de ejemplo
+          (en Stock: productos con unidades, costos y algunos para reponer). Restaurar respeta los
+          módulos que prendas acá.
+        </p>
+      )}
+      <SectionTitle hint={business.isDemo ? "Demo: no se cobra" : "Se cobra aparte del plan base"}>Módulos</SectionTitle>
       <div className="mb-6">
         <AdminBusinessCatalog
           businessId={business.id}

@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Loader2, RefreshCcw, Sparkles, LogIn, CheckCircle2, AlertCircle, Copy, Check } from "lucide-react";
+import { Loader2, RefreshCcw, Sparkles, LogIn, CheckCircle2, AlertCircle, Copy, Check, Blocks } from "lucide-react";
 import { restoreDemoBusiness, setupDemoAccounts } from "@/app/admin-actions";
 import { ImpersonateButton } from "@/components/admin-actions-buttons";
 import { rubroLabel } from "@/lib/rubros";
@@ -96,7 +97,9 @@ export function AdminDemoAccounts({ rows, password }: { rows: DemoAccountRow[]; 
             return (
               <li key={r.id} className="flex flex-col gap-3 px-5 py-3.5 lg:flex-row lg:items-center">
                 <div className="min-w-0 flex-1">
-                  <div className="font-semibold text-ink">{r.name}</div>
+                  <Link href={`/admin/negocios/${r.id}`} className="font-semibold text-ink hover:underline">
+                    {r.name}
+                  </Link>
                   <div className="text-xs text-ink-muted">
                     {rubroLabel(r.rubro)} · {r.customers} clientes · {r.purchases} ventas
                   </div>
@@ -122,6 +125,13 @@ export function AdminDemoAccounts({ rows, password }: { rows: DemoAccountRow[]; 
                       <AlertCircle className="h-3.5 w-3.5" /> {st.text}
                     </span>
                   )}
+                  <Link
+                    href={`/admin/negocios/${r.id}#modulos`}
+                    className="btn-secondary !py-1.5 text-xs"
+                    title="Prender o apagar módulos de esta demo para probarlos"
+                  >
+                    <Blocks className="h-3.5 w-3.5" /> Módulos
+                  </Link>
                   <button
                     onClick={() => restore(r.id).then(() => router.refresh())}
                     disabled={st.kind === "busy" || isPending}

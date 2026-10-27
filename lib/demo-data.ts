@@ -203,6 +203,7 @@ async function wipeBusinessData(businessId: string) {
   // explícito es más fácil de auditar: esto es lo único que borra en masa.
   await db.contactLog.deleteMany({ where: { businessId } });
   await db.pointsEntry.deleteMany({ where: { businessId } });
+  await db.stockMovement.deleteMany({ where: { businessId } });
   await db.saleCost.deleteMany({ where: { businessId } });
   await db.cashMovement.deleteMany({ where: { businessId } });
   await db.purchaseItem.deleteMany({ where: { businessId } });
@@ -214,7 +215,9 @@ async function wipeBusinessData(businessId: string) {
   await db.campaign.deleteMany({ where: { businessId } });
   await db.service.deleteMany({ where: { businessId } });
   await db.template.deleteMany({ where: { businessId } });
-  await db.businessModule.updateMany({ where: { businessId }, data: { enabled: false } });
+  // Los módulos NO se apagan: si el superadmin le activó uno a la demo para
+  // probarlo (Stock, por ejemplo), restaurar los datos no se lo tiene que
+  // sacar. El preset vuelve a prender los del rubro y el resto queda como está.
 }
 
 async function insertChunks<T>(rows: T[], insert: (chunk: T[]) => Promise<unknown>, size = 800) {
@@ -246,13 +249,19 @@ export async function resetDemoBusiness(businessId: string): Promise<DemoResetRe
   const clock: Clock = { now, tz: biz.timezone || DEFAULT_TZ, today: zonedParts(now, biz.timezone || DEFAULT_TZ) };
   const rng = mulberry32(hash(`${businessId}:${clock.today.year}-${clock.today.month}-${clock.today.day}`));
 
-  const [business, services, campaigns] = await Promise.all([
+  const [business, services, campaigns, enabledModules] = await Promise.all([
     db.business.findUniqueOrThrow({ where: { id: businessId } }),
     db.service.findMany({ where: { businessId }, orderBy: { sortOrder: "asc" } }),
     db.campaign.findMany({ where: { businessId } }),
+    db.businessModule.findMany({ where: { businessId, enabled: true }, select: { moduleCode: true } }),
   ]);
-  const hasCaja = preset.modules.includes("caja");
-  const hasPuntos = preset.modules.includes("puntos");
+  // Los datos se generan según los módulos que la demo tiene prendidos de
+  // verdad (los del rubro más los que el superadmin le sumó), no solo los del
+  // preset.
+  const active = new Set(enabledModules.map((m) => m.moduleCode));
+  const hasCaja = active.has("caja");
+  const hasPuntos = active.has("puntos");
+  const hasStock = active.has("stock");
   const R = business.recompraDays;
   const I = business.inactivityDays;
 
@@ -903,6 +912,69 @@ export async function resetDemoBusiness(businessId: string): Promise<DemoResetRe
     }
   }
 
+  // --- Stock (si la demo tiene el módulo) ----------------------------------------
+  // Cada producto queda con costo (~45-60% del precio), un mínimo y unidades en
+  // el estante, con un par por debajo del mínimo y uno agotado para que
+  // "Reponer" tenga algo que mostrar. Lo vendido en la historia suma su costo
+  // de mercadería, así Reportes muestra la ganancia real.
+  const stockMoves: {
+    id: string;
+    businessId: string;
+    serviceId: string;
+    kind: string;
+    quantity: number;
+    stockAfter: number;
+    unitCost: number | null;
+    supplier: string | null;
+    note: string | null;
+    createdAt: Date;
+  }[] = [];
+  const stockUpdates: { id: string; stock: number; minStock: number; cost: number }[] = [];
+  if (hasStock) {
+    const productos = services.filter((s) => s.kind === "producto");
+    productos.forEach((svc, i) => {
+      const cost = Math.round((svc.price * (0.45 + rng() * 0.15)) / 50) * 50;
+      const minStock = 3 + Math.floor(rng() * 6);
+      const stock = i === 0 && productos.length > 2 ? 0 : i % 4 === 1 ? Math.max(1, minStock - 2) : minStock + 4 + Math.floor(rng() * 25);
+      stockUpdates.push({ id: svc.id, stock, minStock, cost });
+      stockMoves.push({
+        id: uid(),
+        businessId,
+        serviceId: svc.id,
+        kind: "compra",
+        quantity: stock,
+        stockAfter: stock,
+        unitCost: cost,
+        supplier: "Distribuidora demo",
+        note: null,
+        createdAt: new Date(now.getTime() - (2 + Math.floor(rng() * 10)) * DAY),
+      });
+    });
+    const costById = new Map(stockUpdates.map((u) => [u.id, u.cost]));
+    const cmv = new Map<string, { amount: number; date: Date }>();
+    for (const it of items) {
+      const c = it.serviceId ? costById.get(it.serviceId) : undefined;
+      if (c === undefined) continue;
+      const cur = cmv.get(it.purchaseId) ?? { amount: 0, date: it.date };
+      cur.amount += c * it.quantity;
+      cmv.set(it.purchaseId, cur);
+    }
+    for (const [purchaseId, v] of cmv) {
+      saleCosts.push({
+        id: uid(),
+        businessId,
+        purchaseId,
+        kind: "mercaderia",
+        label: "Costo de mercadería",
+        amount: round2(v.amount),
+        employeeId: null,
+        costRuleId: null,
+        date: v.date,
+        paidAt: null,
+      });
+    }
+  }
+
   // --- Escritura en bloque ------------------------------------------------------
   await insertChunks(customerRows, (chunk) => db.customer.createMany({ data: chunk }));
   if (sessions.length) await db.cashSession.createMany({ data: sessions });
@@ -912,6 +984,13 @@ export async function resetDemoBusiness(businessId: string): Promise<DemoResetRe
   if (movements.length) await insertChunks(movements, (chunk) => db.cashMovement.createMany({ data: chunk }));
   if (points.length) await insertChunks(points, (chunk) => db.pointsEntry.createMany({ data: chunk }));
   if (contacts.length) await insertChunks(contacts, (chunk) => db.contactLog.createMany({ data: chunk }));
+  for (const u of stockUpdates) {
+    await db.service.update({
+      where: { id: u.id },
+      data: { trackStock: true, stock: u.stock, minStock: u.minStock, cost: u.cost },
+    });
+  }
+  if (stockMoves.length) await db.stockMovement.createMany({ data: stockMoves });
 
   await db.business.update({ where: { id: businessId }, data: { demoAnchorAt: now } });
 
@@ -964,6 +1043,7 @@ export async function refreshDemoDates(businessId: string): Promise<boolean> {
     db.$executeRaw`UPDATE "CashSession" SET "closedAt" = "closedAt" + make_interval(days => ${days}::int) WHERE "businessId" = ${businessId} AND "closedAt" <= ${anchor}`,
     db.$executeRaw`UPDATE "CashMovement" SET "createdAt" = "createdAt" + make_interval(days => ${days}::int) WHERE "businessId" = ${businessId} AND "createdAt" <= ${anchor}`,
     db.$executeRaw`UPDATE "PointsEntry" SET "createdAt" = "createdAt" + make_interval(days => ${days}::int) WHERE "businessId" = ${businessId} AND "createdAt" <= ${anchor}`,
+    db.$executeRaw`UPDATE "StockMovement" SET "createdAt" = "createdAt" + make_interval(days => ${days}::int) WHERE "businessId" = ${businessId} AND "createdAt" <= ${anchor}`,
     db.$executeRaw`UPDATE "ContactLog" SET "createdAt" = "createdAt" + make_interval(days => ${days}::int) WHERE "businessId" = ${businessId} AND "createdAt" <= ${anchor}`,
     db.$executeRaw`UPDATE "Customer" SET "createdAt" = "createdAt" + make_interval(days => ${days}::int) WHERE "businessId" = ${businessId} AND "createdAt" <= ${anchor}`,
     db.$executeRaw`UPDATE "Customer" SET "lastPurchaseAt" = "lastPurchaseAt" + make_interval(days => ${days}::int) WHERE "businessId" = ${businessId} AND "lastPurchaseAt" <= ${anchor}`,
